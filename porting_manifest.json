@@ -1393,12 +1393,12 @@
     {
       "source": "accounts/doctype/payment_schedule/__init__.py",
       "target": "accounts/doctype/payment_schedule/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_schedule/payment_schedule.py",
       "target": "accounts/doctype/payment_schedule/payment_schedule.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_term/__init__.py",

@@ -167,7 +167,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `payment_reconciliation_payment` | 3 | 2 | 1 | 0 | not_started | |
 | `payment_reference` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_payment_reference`. JSON kept external. |
 | `payment_request` | 7 | 4 | 1 | 2 | not_started | |
-| `payment_schedule` | 3 | 2 | 1 | 0 | not_started | |
+| `payment_schedule` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_payment_schedule`. JSON kept external. |
 | `payment_term` | 6 | 4 | 1 | 1 | not_started | |
 | `payment_terms_template` | 6 | 4 | 1 | 1 | not_started | |
 | `payment_terms_template_detail` | 3 | 2 | 1 | 0 | not_started | |
@@ -1027,3 +1027,57 @@ Target: `src/erpnext/accounts/doctype/payment_reference`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `payment_reference.py` | `payment_reference.rs` | parity_tested | No-op child table controller and payment reference metadata represented in Rust. |
 | `payment_reference.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `payment_schedule`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/payment_schedule`
+Target: `src/erpnext/accounts/doctype/payment_schedule`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes payment term, due date, credit/discount fields, payment amounts, base currency amounts, and child table parent fields.
+- DocType metadata:
+  - `name`: `Payment Schedule`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `editable_grid`: enabled
+  - `index_web_pages_for_search`: enabled
+  - `row_format`: `Dynamic`
+  - `field_order`: `payment_term`, `section_break_15`, `description`, `section_break_4`, `due_date`, `invoice_portion`, `mode_of_payment`, `column_break_5`, `due_date_based_on`, `credit_days`, `credit_months`, `section_break_6`, `discount_date`, `discount`, `discount_type`, `column_break_9`, `discount_validity_based_on`, `discount_validity`, `section_break_9`, `payment_amount`, `outstanding`, `paid_amount`, `discounted_amount`, `column_break_3`, `base_payment_amount`, `base_outstanding`, `base_paid_amount`
+  - `payment_term`: `Link`, label `Payment Term`, options `Payment Term`, `in_list_view: 1`, columns `2`
+  - `section_break_15`: `Section Break`, label `Description`
+  - `description`: `Small Text`, label `Description`, `in_list_view: 1`, columns `2`
+  - `section_break_4`: `Section Break`
+  - `due_date`: `Date`, label `Due Date`, required, `in_list_view: 1`, columns `2`
+  - `invoice_portion`: `Percent`, label `Invoice Portion`, `in_list_view: 1`, columns `2`
+  - `mode_of_payment`: `Link`, label `Mode of Payment`, options `Mode of Payment`
+  - `column_break_5`: `Column Break`
+  - `due_date_based_on`: `Select`, read-only, ERPNext due-date basis options retained exactly
+  - `credit_days`: `Int`, read-only, ERPNext `depends_on` expression retained exactly
+  - `credit_months`: `Int`, read-only, ERPNext `depends_on` expression retained exactly
+  - `section_break_6`: `Section Break`
+  - `discount_date`: `Date`, label `Discount Date`, `depends_on: discount`
+  - `discount`: `Float`, label `Discount`
+  - `discount_type`: `Select`, options `Percentage`/`Amount`, default `Percentage`
+  - `column_break_9`: `Column Break`
+  - `discount_validity_based_on`: `Select`, read-only, `depends_on: discount`, ERPNext discount basis options retained exactly
+  - `discount_validity`: `Int`, read-only, `depends_on: discount_validity_based_on`
+  - `section_break_9`: `Section Break`
+  - `payment_amount`: `Currency`, label `Payment Amount`, options `currency`, required, `in_list_view: 1`, columns `2`
+  - `outstanding`: `Currency`, label `Outstanding`, options `currency`, read-only
+  - `paid_amount`: `Currency`, label `Paid Amount`, options `currency`, `depends_on: paid_amount`
+  - `discounted_amount`: `Currency`, label `Discounted Amount`, read-only, default `0`, `depends_on: discounted_amount`
+  - `column_break_3`: `Column Break`
+  - `base_payment_amount`: `Currency`, label `Payment Amount (Company Currency)`, options `Company:company:default_currency`
+  - `base_outstanding`: `Currency`, label `Outstanding (Company Currency)`, options `Company:company:default_currency`, read-only
+  - `base_paid_amount`: `Currency`, label `Paid Amount (Company Currency)`, options `Company:company:default_currency`, read-only, `depends_on: base_paid_amount`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `payment_schedule.py` | `payment_schedule.rs` | parity_tested | No-op child table controller and payment schedule metadata represented in Rust. |
+| `payment_schedule.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

@@ -352,6 +352,38 @@ impl FieldSpec {
         }
     }
 
+    pub const fn int(fieldname: &'static str, label: &'static str) -> Self {
+        Self {
+            fieldname,
+            fieldtype: "Int",
+            label: Some(label),
+            options: None,
+            default: None,
+            columns: None,
+            depends_on: None,
+            mandatory_depends_on: None,
+            oldfieldname: None,
+            oldfieldtype: None,
+            width: None,
+            fetch_from: None,
+            precision: None,
+            read_only: false,
+            fetch_if_empty: false,
+            in_filter: false,
+            in_list_view: false,
+            in_standard_filter: false,
+            ignore_user_permissions: false,
+            search_index: false,
+            allow_on_submit: false,
+            collapsible: false,
+            hidden: false,
+            no_copy: false,
+            print_hide: false,
+            required: false,
+            unique: false,
+        }
+    }
+
     pub const fn percent(fieldname: &'static str, label: &'static str) -> Self {
         Self {
             fieldname,

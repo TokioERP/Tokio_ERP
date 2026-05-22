@@ -24,3 +24,4 @@ pub mod monthly_distribution_percentage;
 pub mod party_account;
 pub mod payment_entry_deduction;
 pub mod payment_reference;
+pub mod payment_schedule;
