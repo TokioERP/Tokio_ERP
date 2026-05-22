@@ -198,7 +198,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `pricing_rule_item_group` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pricing_rule_item_group`. JSON kept external. |
 | `process_deferred_accounting` | 5 | 3 | 1 | 1 | parity_tested | Rust covers validate, submit conversion branching, cancel GL-entry plan, and metadata in `accounts_process_deferred_accounting`. JSON/JS kept external. |
 | `process_payment_reconciliation` | 7 | 4 | 1 | 2 | parity_tested | Rust covers lifecycle hooks, account-company validation, dashboard/list helpers, progress seed, allocation grouping, reconcile job names, and metadata in `accounts_process_payment_reconciliation`. JSON/JS kept external. |
-| `process_payment_reconciliation_log` | 6 | 3 | 1 | 2 | not_started | |
+| `process_payment_reconciliation_log` | 6 | 3 | 1 | 2 | parity_tested | Python controller is pass/no-op; Rust metadata, progress helper, and list indicator mapping covered by `accounts_process_payment_reconciliation_log`. JSON/JS kept external. |
 | `process_payment_reconciliation_log_allocations` | 3 | 2 | 1 | 0 | not_started | |
 | `process_period_closing_voucher` | 5 | 3 | 1 | 1 | not_started | |
 | `process_period_closing_voucher_detail` | 3 | 2 | 1 | 0 | not_started | |
@@ -1728,3 +1728,46 @@ Target: `src/erpnext/accounts/doctype/process_payment_reconciliation`
 | `process_payment_reconciliation.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants, including description and documentation URL fields. |
 | `process_payment_reconciliation.js` | ERPNext client script retained | external_kept | Form queries, buttons, and client-side calls remain UI/Frappe-owned. |
 | `process_payment_reconciliation_list.js` | ERPNext list script retained | external_kept | List indicator mapping is mirrored in Rust helper; UI script remains Frappe-owned. |
+
+## Doctype Detail: `process_payment_reconciliation_log`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/process_payment_reconciliation_log`
+Target: `src/erpnext/accounts/doctype/process_payment_reconciliation_log`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Client refresh script shows reconciliation progress for `Completed`, `Running`, `Paused`, and `Partially Reconciled`.
+- Progress is `(reconciled_entries / total_allocations) * 100` when reconciled entries are non-zero.
+- Progress is `100` when total allocations are `0` and status is `Completed`.
+- List indicators map `Partially Reconciled` and `Paused` to orange, `Reconciled` to green, `Failed` and `Cancelled` to red, and `Running` to blue.
+- Source Python test class is currently `pass`; Rust tests cover deterministic metadata, no-op controller behavior, progress, and list indicator logic.
+- DocType metadata:
+  - `name`: `Process Payment Reconciliation Log`
+  - `module`: `Accounts`
+  - `autoname`: `format:PPR-LOG-{##}`
+  - `editable_grid`: enabled
+  - `in_create`: enabled
+  - `index_web_pages_for_search`: enabled
+  - `search_fields`: `allocated, reconciled, total_allocations, reconciled_entries`
+  - `field_order`: `process_pr`, `section_break_fvdw`, `status`, `tasks_section`, `allocated`, `reconciled`, `column_break_yhin`, `total_allocations`, `reconciled_entries`, `section_break_4ywv`, `error_log`, `allocations_section`, `allocations`
+  - `process_pr`: `Link`, label `Parent Document`, options `Process Payment Reconciliation`, required, read-only, `in_list_view: 1`
+  - `status`: `Select`, label `Status`, options `Running`, `Paused`, `Reconciled`, `Partially Reconciled`, `Failed`, `Cancelled`, read-only
+  - `allocated`: `Check`, label `Allocated`, default `0`, description retained, read-only
+  - `reconciled`: `Check`, label `Reconciled`, default `0`, description retained, read-only
+  - `total_allocations`: `Int`, label `Total Allocations`, read-only, `in_list_view: 1`
+  - `reconciled_entries`: `Int`, label `Reconciled Entries`, read-only, `in_list_view: 1`
+  - `error_log`: `Long Text`, label `Reconciliation Error Log`, `depends_on: eval:doc.error_log`, read-only
+  - `allocations`: `Table`, label `Allocations`, options `Process Payment Reconciliation Log Allocations`, read-only
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `process_payment_reconciliation_log.py` | `process_payment_reconciliation_log.rs` | parity_tested | No-op controller and metadata represented in Rust. |
+| `test_process_payment_reconciliation_log.py` | `tests/accounts_process_payment_reconciliation_log.rs` | parity_tested | Source test class is empty; Rust tests cover deterministic metadata and helper behavior. |
+| `process_payment_reconciliation_log.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+| `process_payment_reconciliation_log.js` | ERPNext client script retained | external_kept | Progress behavior is mirrored by Rust helper; UI script remains Frappe-owned. |
+| `process_payment_reconciliation_log_list.js` | ERPNext list script retained | external_kept | List indicator behavior is mirrored by Rust helper; UI script remains Frappe-owned. |
