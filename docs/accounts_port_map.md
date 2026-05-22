@@ -35,7 +35,7 @@ This is not an MVP list. Every source folder and file is tracked. A row is close
 | `custom` | 1 | 2 | 1 | 1 | 0 | not_started | |
 | `dashboard_chart` | 8 | 7 | 0 | 7 | 0 | not_started | |
 | `dashboard_chart_source` | 2 | 5 | 3 | 1 | 1 | not_started | |
-| `doctype` | 191 | 923 | 504 | 282 | 111 | not_started | |
+| `doctype` | 191 | 923 | 504 | 282 | 111 | mapped | `bank_account_subtype` parity-tested; remaining doctypes pending. |
 | `financial_report_template` | 7 | 14 | 7 | 7 | 0 | not_started | |
 | `letterhead` | 1 | 2 | 0 | 0 | 0 | not_started | |
 | `module_onboarding` | 2 | 1 | 0 | 1 | 0 | not_started | |
@@ -86,7 +86,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `applicable_on_account` | 3 | 2 | 1 | 0 | not_started | |
 | `bank` | 6 | 4 | 1 | 1 | not_started | |
 | `bank_account` | 5 | 3 | 1 | 1 | not_started | |
-| `bank_account_subtype` | 5 | 3 | 1 | 1 | not_started | |
+| `bank_account_subtype` | 5 | 3 | 1 | 1 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_bank_account_subtype`. JSON/JS kept external. |
 | `bank_account_type` | 5 | 3 | 1 | 1 | not_started | |
 | `bank_clearance` | 6 | 3 | 1 | 1 | not_started | |
 | `bank_clearance_detail` | 4 | 2 | 1 | 0 | not_started | |
@@ -256,3 +256,31 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `transaction_deletion_record_details` | 3 | 2 | 1 | 0 | not_started | |
 | `unreconcile_payment` | 5 | 3 | 1 | 1 | not_started | |
 | `unreconcile_payment_entries` | 3 | 2 | 1 | 0 | not_started | |
+
+## Doctype Detail: `bank_account_subtype`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/bank_account_subtype`
+Target: `src/erpnext/accounts/doctype/bank_account_subtype`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes `account_subtype: DF.Data | None`.
+- DocType metadata:
+  - `name`: `Bank Account Subtype`
+  - `module`: `Accounts`
+  - `autoname`: `field:account_subtype`
+  - `field_order`: `account_subtype`
+  - `account_subtype`: `Data`, label `Account Subtype`, `unique: 1`
+  - `allow_import`, `allow_rename`, and `quick_entry` are enabled.
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `bank_account_subtype.py` | `bank_account_subtype.rs` | parity_tested | No-op controller and `account_subtype` field represented in Rust. |
+| `test_bank_account_subtype.py` | `tests/accounts_bank_account_subtype.rs` | parity_tested | Empty ERPNext test replaced by Rust metadata/controller parity tests. |
+| `bank_account_subtype.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+| `bank_account_subtype.js` | ERPNext UI retained | external_kept | `refresh` handler is empty/no-op and remains UI-side. |

@@ -106,6 +106,10 @@ fn collect_python_files(
 }
 
 fn target_path_for_python_file(_target: &Path, relative: &Path) -> io::Result<PathBuf> {
+    if relative.file_name().and_then(|name| name.to_str()) == Some("__init__.py") {
+        return Ok(relative.with_file_name("mod.rs"));
+    }
+
     let mut path = relative.to_path_buf();
     path.set_extension("rs");
     Ok(path)

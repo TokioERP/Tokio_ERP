@@ -11,6 +11,11 @@ fn builds_manifest_for_python_files_without_runtime_cache_files() {
     fs::create_dir_all(source.join("accounts/doctype/bank_account_subtype")).expect("source dirs");
     fs::create_dir_all(source.join("accounts/__pycache__")).expect("cache dir");
     fs::write(
+        source.join("accounts/doctype/bank_account_subtype/__init__.py"),
+        "",
+    )
+    .expect("package marker");
+    fs::write(
         source.join("accounts/doctype/bank_account_subtype/bank_account_subtype.py"),
         "",
     )
@@ -20,16 +25,25 @@ fn builds_manifest_for_python_files_without_runtime_cache_files() {
 
     let manifest = build_porting_manifest(&source, &target).expect("manifest");
 
-    assert_eq!(manifest.entries.len(), 1);
+    assert_eq!(manifest.entries.len(), 2);
     assert_eq!(
         manifest.entries[0].source,
-        "accounts/doctype/bank_account_subtype/bank_account_subtype.py"
+        "accounts/doctype/bank_account_subtype/__init__.py"
     );
     assert_eq!(
         manifest.entries[0].target,
-        "accounts/doctype/bank_account_subtype/bank_account_subtype.rs"
+        "accounts/doctype/bank_account_subtype/mod.rs"
     );
     assert_eq!(manifest.entries[0].status, PortStatus::NotStarted);
+    assert_eq!(
+        manifest.entries[1].source,
+        "accounts/doctype/bank_account_subtype/bank_account_subtype.py"
+    );
+    assert_eq!(
+        manifest.entries[1].target,
+        "accounts/doctype/bank_account_subtype/bank_account_subtype.rs"
+    );
+    assert_eq!(manifest.entries[1].status, PortStatus::NotStarted);
 }
 
 #[test]
