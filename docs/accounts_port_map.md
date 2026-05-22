@@ -182,7 +182,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `pos_invoice` | 7 | 4 | 1 | 2 | not_started | |
 | `pos_invoice_item` | 3 | 2 | 1 | 0 | not_started | |
 | `pos_invoice_merge_log` | 5 | 3 | 1 | 1 | not_started | |
-| `pos_invoice_reference` | 3 | 2 | 1 | 0 | not_started | |
+| `pos_invoice_reference` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_invoice_reference`. JSON kept external. |
 | `pos_item_group` | 3 | 2 | 1 | 0 | not_started | |
 | `pos_opening_entry` | 6 | 3 | 1 | 2 | not_started | |
 | `pos_opening_entry_detail` | 3 | 2 | 1 | 0 | not_started | |
@@ -1379,3 +1379,35 @@ Target: `src/erpnext/accounts/doctype/pos_field`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `pos_field.py` | `pos_field.rs` | parity_tested | No-op child table controller and POS field metadata represented in Rust. |
 | `pos_field.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `pos_invoice_reference`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/pos_invoice_reference`
+Target: `src/erpnext/accounts/doctype/pos_invoice_reference`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes POS invoice, posting date, customer, grand total, return flags, and child table parent fields.
+- DocType metadata:
+  - `name`: `POS Invoice Reference`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `editable_grid`: enabled
+  - `field_order`: `pos_invoice`, `posting_date`, `column_break_3`, `customer`, `grand_total`, `is_return`, `return_against`
+  - `pos_invoice`: `Link`, label `POS Invoice`, options `POS Invoice`, required, `in_list_view: 1`
+  - `posting_date`: `Date`, label `Date`, required, `in_list_view: 1`
+  - `column_break_3`: `Column Break`
+  - `customer`: `Link`, label `Customer`, options `Customer`, required, read-only
+  - `grand_total`: `Currency`, label `Amount`, required, `in_list_view: 1`
+  - `is_return`: `Check`, label `Is Return`, read-only, default `0`
+  - `return_against`: `Link`, label `Return Against`, options `POS Invoice`, read-only
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `pos_invoice_reference.py` | `pos_invoice_reference.rs` | parity_tested | No-op child table controller and POS invoice reference metadata represented in Rust. |
+| `pos_invoice_reference.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

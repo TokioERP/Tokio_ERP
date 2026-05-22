@@ -1593,12 +1593,12 @@
     {
       "source": "accounts/doctype/pos_invoice_reference/__init__.py",
       "target": "accounts/doctype/pos_invoice_reference/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_invoice_reference/pos_invoice_reference.py",
       "target": "accounts/doctype/pos_invoice_reference/pos_invoice_reference.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_item_group/__init__.py",
