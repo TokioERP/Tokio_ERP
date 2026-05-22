@@ -176,7 +176,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `period_closing_voucher` | 6 | 3 | 1 | 1 | not_started | |
 | `pos_closing_entry` | 7 | 3 | 1 | 2 | not_started | |
 | `pos_closing_entry_detail` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_closing_entry_detail`. JSON kept external. |
-| `pos_closing_entry_taxes` | 3 | 2 | 1 | 0 | not_started | |
+| `pos_closing_entry_taxes` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_closing_entry_taxes`. JSON kept external. |
 | `pos_customer_group` | 3 | 2 | 1 | 0 | not_started | |
 | `pos_field` | 3 | 2 | 1 | 0 | not_started | |
 | `pos_invoice` | 7 | 4 | 1 | 2 | not_started | |
@@ -1293,3 +1293,30 @@ Target: `src/erpnext/accounts/doctype/pos_closing_entry_detail`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `pos_closing_entry_detail.py` | `pos_closing_entry_detail.rs` | parity_tested | No-op child table controller and POS closing detail metadata represented in Rust. |
 | `pos_closing_entry_detail.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `pos_closing_entry_taxes`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/pos_closing_entry_taxes`
+Target: `src/erpnext/accounts/doctype/pos_closing_entry_taxes`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes account head, amount, and child table parent fields.
+- DocType metadata:
+  - `name`: `POS Closing Entry Taxes`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `editable_grid`: enabled
+  - `field_order`: `account_head`, `amount`
+  - `account_head`: `Link`, label `Account Head`, options `Account`, read-only, `in_list_view: 1`
+  - `amount`: `Currency`, label `Amount`, read-only, `in_list_view: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `pos_closing_entry_taxes.py` | `pos_closing_entry_taxes.rs` | parity_tested | No-op child table controller and POS closing tax metadata represented in Rust. |
+| `pos_closing_entry_taxes.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

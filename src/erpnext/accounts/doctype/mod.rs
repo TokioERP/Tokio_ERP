@@ -31,3 +31,4 @@ pub mod payment_terms_template_detail;
 pub mod pegged_currencies;
 pub mod pegged_currency_details;
 pub mod pos_closing_entry_detail;
+pub mod pos_closing_entry_taxes;
