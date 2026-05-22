@@ -148,7 +148,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `mode_of_payment` | 6 | 3 | 1 | 1 | not_started | |
 | `mode_of_payment_account` | 3 | 2 | 1 | 0 | not_started | |
 | `monthly_distribution` | 7 | 4 | 1 | 1 | not_started | |
-| `monthly_distribution_percentage` | 3 | 2 | 1 | 0 | not_started | |
+| `monthly_distribution_percentage` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_monthly_distribution_percentage`. JSON kept external. |
 | `opening_invoice_creation_tool` | 6 | 3 | 1 | 1 | not_started | |
 | `opening_invoice_creation_tool_item` | 3 | 2 | 1 | 0 | not_started | |
 | `overdue_payment` | 3 | 2 | 1 | 0 | not_started | |
@@ -895,3 +895,32 @@ Target: `src/erpnext/accounts/doctype/ledger_merge_accounts`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `ledger_merge_accounts.py` | `ledger_merge_accounts.rs` | parity_tested | No-op child table controller and ledger merge account metadata represented in Rust. |
 | `ledger_merge_accounts.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `monthly_distribution_percentage`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/monthly_distribution_percentage`
+Target: `src/erpnext/accounts/doctype/monthly_distribution_percentage`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes required `month`, `percentage_allocation`, and child table parent fields.
+- DocType metadata:
+  - `name`: `Monthly Distribution Percentage`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `editable_grid`: enabled
+  - `autoname`: `hash`
+  - `idx`: `1`
+  - `field_order`: `month`, `percentage_allocation`
+  - `month`: `Data`, label `Month`, `reqd: 1`, `read_only: 1`, `in_list_view: 1`, old field `month:Data`
+  - `percentage_allocation`: `Float`, label `Percentage Allocation`, `in_list_view: 1`, old field `percentage_allocation:Currency`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `monthly_distribution_percentage.py` | `monthly_distribution_percentage.rs` | parity_tested | No-op child table controller and monthly allocation metadata represented in Rust. |
+| `monthly_distribution_percentage.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

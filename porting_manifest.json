@@ -1148,12 +1148,12 @@
     {
       "source": "accounts/doctype/monthly_distribution_percentage/__init__.py",
       "target": "accounts/doctype/monthly_distribution_percentage/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/monthly_distribution_percentage/monthly_distribution_percentage.py",
       "target": "accounts/doctype/monthly_distribution_percentage/monthly_distribution_percentage.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/opening_invoice_creation_tool/__init__.py",
