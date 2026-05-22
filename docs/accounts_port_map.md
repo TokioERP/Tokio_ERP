@@ -172,7 +172,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `payment_terms_template` | 6 | 4 | 1 | 1 | parity_tested | Controller validation, dashboard data, and ERPNext test scenarios covered by `accounts_payment_terms_template`. JSON/JS kept external. |
 | `payment_terms_template_detail` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_payment_terms_template_detail`. JSON kept external. |
 | `pegged_currencies` | 5 | 3 | 1 | 1 | not_started | |
-| `pegged_currency_details` | 3 | 2 | 1 | 0 | not_started | |
+| `pegged_currency_details` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pegged_currency_details`. JSON kept external. |
 | `period_closing_voucher` | 6 | 3 | 1 | 1 | not_started | |
 | `pos_closing_entry` | 7 | 3 | 1 | 2 | not_started | |
 | `pos_closing_entry_detail` | 3 | 2 | 1 | 0 | not_started | |
@@ -1205,3 +1205,32 @@ Target: `src/erpnext/accounts/doctype/payment_terms_template_detail`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `payment_terms_template_detail.py` | `payment_terms_template_detail.rs` | parity_tested | No-op child table controller and payment terms template detail metadata represented in Rust. |
 | `payment_terms_template_detail.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `pegged_currency_details`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/pegged_currency_details`
+Target: `src/erpnext/accounts/doctype/pegged_currency_details`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes source currency, pegged-against currency, pegged exchange rate, and child table parent fields.
+- DocType metadata:
+  - `name`: `Pegged Currency Details`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `editable_grid`: enabled
+  - `index_web_pages_for_search`: enabled
+  - `field_order`: `source_currency`, `pegged_against`, `pegged_exchange_rate`
+  - `source_currency`: `Link`, label `Currency`, options `Currency`, `in_list_view: 1`
+  - `pegged_against`: `Link`, label `Pegged Against`, options `Currency`, `in_list_view: 1`
+  - `pegged_exchange_rate`: `Data`, label `Exchange Rate`, `in_list_view: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `pegged_currency_details.py` | `pegged_currency_details.rs` | parity_tested | No-op child table controller and pegged currency detail metadata represented in Rust. |
+| `pegged_currency_details.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

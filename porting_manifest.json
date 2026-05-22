@@ -1468,12 +1468,12 @@
     {
       "source": "accounts/doctype/pegged_currency_details/__init__.py",
       "target": "accounts/doctype/pegged_currency_details/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pegged_currency_details/pegged_currency_details.py",
       "target": "accounts/doctype/pegged_currency_details/pegged_currency_details.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/period_closing_voucher/__init__.py",

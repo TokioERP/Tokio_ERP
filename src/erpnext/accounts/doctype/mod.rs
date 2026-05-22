@@ -28,3 +28,4 @@ pub mod payment_schedule;
 pub mod payment_term;
 pub mod payment_terms_template;
 pub mod payment_terms_template_detail;
+pub mod pegged_currency_details;
