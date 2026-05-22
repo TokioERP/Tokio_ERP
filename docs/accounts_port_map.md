@@ -193,7 +193,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `pos_settings` | 5 | 3 | 1 | 1 | not_started | |
 | `pricing_rule` | 6 | 4 | 1 | 1 | not_started | |
 | `pricing_rule_brand` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pricing_rule_brand`. JSON kept external. |
-| `pricing_rule_detail` | 3 | 2 | 1 | 0 | not_started | |
+| `pricing_rule_detail` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pricing_rule_detail`. JSON kept external. |
 | `pricing_rule_item_code` | 3 | 2 | 1 | 0 | not_started | |
 | `pricing_rule_item_group` | 3 | 2 | 1 | 0 | not_started | |
 | `process_deferred_accounting` | 5 | 3 | 1 | 1 | not_started | |
@@ -1548,3 +1548,36 @@ Target: `src/erpnext/accounts/doctype/pricing_rule_brand`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `pricing_rule_brand.py` | `pricing_rule_brand.rs` | parity_tested | No-op child table controller and pricing rule brand metadata represented in Rust. |
 | `pricing_rule_brand.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `pricing_rule_detail`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/pricing_rule_detail`
+Target: `src/erpnext/accounts/doctype/pricing_rule_detail`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes pricing rule, item code, margin metadata, child docname, rule applied, and child table parent fields.
+- DocType metadata:
+  - `name`: `Pricing Rule Detail`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `editable_grid`: enabled
+  - `quick_entry`: enabled
+  - `track_changes`: enabled
+  - `field_order`: `pricing_rule`, `item_code`, `margin_type`, `rate_or_discount`, `child_docname`, `rule_applied`
+  - `pricing_rule`: `Link`, label `Pricing Rule`, options `Pricing Rule`, `in_list_view: 1`, `read_only: 1`
+  - `item_code`: `Data`, label `Item Code`, `in_list_view: 1`, `read_only: 1`
+  - `margin_type`: `Data`, label `Margin Type`, `hidden: 1`, `read_only: 1`
+  - `rate_or_discount`: `Data`, label `Rate or Discount`, `hidden: 1`, `read_only: 1`
+  - `child_docname`: `Data`, label `Child Docname`, `hidden: 1`, `no_copy: 1`, `print_hide: 1`, `read_only: 1`
+  - `rule_applied`: `Check`, label `Rule Applied`, default `1`, `read_only: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `pricing_rule_detail.py` | `pricing_rule_detail.rs` | parity_tested | No-op child table controller and pricing rule detail metadata represented in Rust. |
+| `pricing_rule_detail.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
