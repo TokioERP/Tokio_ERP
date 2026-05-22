@@ -1508,12 +1508,12 @@
     {
       "source": "accounts/doctype/pos_closing_entry_detail/__init__.py",
       "target": "accounts/doctype/pos_closing_entry_detail/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_closing_entry_detail/pos_closing_entry_detail.py",
       "target": "accounts/doctype/pos_closing_entry_detail/pos_closing_entry_detail.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_closing_entry_taxes/__init__.py",
