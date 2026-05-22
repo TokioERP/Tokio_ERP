@@ -189,7 +189,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `pos_payment_method` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_payment_method`. JSON kept external. |
 | `pos_profile` | 5 | 3 | 1 | 1 | not_started | |
 | `pos_profile_user` | 5 | 3 | 1 | 1 | not_started | |
-| `pos_search_fields` | 3 | 2 | 1 | 0 | not_started | |
+| `pos_search_fields` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_search_fields`. JSON kept external. |
 | `pos_settings` | 5 | 3 | 1 | 1 | not_started | |
 | `pricing_rule` | 6 | 4 | 1 | 1 | not_started | |
 | `pricing_rule_brand` | 3 | 2 | 1 | 0 | not_started | |
@@ -1493,3 +1493,31 @@ Target: `src/erpnext/accounts/doctype/pos_payment_method`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `pos_payment_method.py` | `pos_payment_method.rs` | parity_tested | No-op child table controller and POS payment method metadata represented in Rust. |
 | `pos_payment_method.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `pos_search_fields`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/pos_search_fields`
+Target: `src/erpnext/accounts/doctype/pos_search_fields`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes search field selector, fieldname, and child table parent fields.
+- DocType metadata:
+  - `name`: `POS Search Fields`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `editable_grid`: enabled
+  - `index_web_pages_for_search`: enabled
+  - `field_order`: `field`, `fieldname`
+  - `field`: `Select`, label `Field`, required, `in_list_view: 1`
+  - `fieldname`: `Data`, label `Fieldname`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `pos_search_fields.py` | `pos_search_fields.rs` | parity_tested | No-op child table controller and POS search field metadata represented in Rust. |
+| `pos_search_fields.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

@@ -1678,12 +1678,12 @@
     {
       "source": "accounts/doctype/pos_search_fields/__init__.py",
       "target": "accounts/doctype/pos_search_fields/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_search_fields/pos_search_fields.py",
       "target": "accounts/doctype/pos_search_fields/pos_search_fields.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_settings/__init__.py",
