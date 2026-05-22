@@ -171,7 +171,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `payment_term` | 6 | 4 | 1 | 1 | parity_tested | Python controller is pass/no-op; dashboard data and empty test suite covered by `accounts_payment_term`. JSON/JS kept external. |
 | `payment_terms_template` | 6 | 4 | 1 | 1 | parity_tested | Controller validation, dashboard data, and ERPNext test scenarios covered by `accounts_payment_terms_template`. JSON/JS kept external. |
 | `payment_terms_template_detail` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_payment_terms_template_detail`. JSON kept external. |
-| `pegged_currencies` | 5 | 3 | 1 | 1 | not_started | |
+| `pegged_currencies` | 5 | 3 | 1 | 1 | parity_tested | Python controller/test are no-op; Rust metadata and controller behavior covered by `accounts_pegged_currencies`. JSON/JS kept external. |
 | `pegged_currency_details` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pegged_currency_details`. JSON kept external. |
 | `period_closing_voucher` | 6 | 3 | 1 | 1 | not_started | |
 | `pos_closing_entry` | 7 | 3 | 1 | 2 | not_started | |
@@ -1234,3 +1234,31 @@ Target: `src/erpnext/accounts/doctype/pegged_currency_details`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `pegged_currency_details.py` | `pegged_currency_details.rs` | parity_tested | No-op child table controller and pegged currency detail metadata represented in Rust. |
 | `pegged_currency_details.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `pegged_currencies`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/pegged_currencies`
+Target: `src/erpnext/accounts/doctype/pegged_currencies`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- `test_pegged_currencies.py` contains only imports/comments; Rust parity test covers metadata and no-op controller behavior.
+- DocType metadata:
+  - `name`: `Pegged Currencies`
+  - `module`: `Accounts`
+  - `index_web_pages_for_search`: enabled
+  - `field_order`: `pegged_currencies_item_section`, `pegged_currency_item`
+  - `pegged_currencies_item_section`: `Section Break`
+  - `pegged_currency_item`: `Table`, no label, options `Pegged Currency Details`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `pegged_currencies.py` | `pegged_currencies.rs` | parity_tested | No-op controller and pegged currencies table metadata represented in Rust. |
+| `test_pegged_currencies.py` | `tests/accounts_pegged_currencies.rs` | parity_tested | Empty ERPNext test file replaced by Rust metadata/controller parity tests. |
+| `pegged_currencies.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+| `pegged_currencies.js` | ERPNext UI retained | external_kept | Only commented refresh scaffold exists and remains UI-side. |
