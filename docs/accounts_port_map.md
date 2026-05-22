@@ -183,7 +183,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `pos_invoice_item` | 3 | 2 | 1 | 0 | not_started | |
 | `pos_invoice_merge_log` | 5 | 3 | 1 | 1 | not_started | |
 | `pos_invoice_reference` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_invoice_reference`. JSON kept external. |
-| `pos_item_group` | 3 | 2 | 1 | 0 | not_started | |
+| `pos_item_group` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_item_group`. JSON kept external. |
 | `pos_opening_entry` | 6 | 3 | 1 | 2 | not_started | |
 | `pos_opening_entry_detail` | 3 | 2 | 1 | 0 | not_started | |
 | `pos_payment_method` | 3 | 2 | 1 | 0 | not_started | |
@@ -1411,3 +1411,29 @@ Target: `src/erpnext/accounts/doctype/pos_invoice_reference`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `pos_invoice_reference.py` | `pos_invoice_reference.rs` | parity_tested | No-op child table controller and POS invoice reference metadata represented in Rust. |
 | `pos_invoice_reference.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `pos_item_group`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/pos_item_group`
+Target: `src/erpnext/accounts/doctype/pos_item_group`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes item group and child table parent fields.
+- DocType metadata:
+  - `name`: `POS Item Group`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `editable_grid`: enabled
+  - `field_order`: `item_group`
+  - `item_group`: `Link`, label `Item Group`, options `Item Group`, required, `in_list_view: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `pos_item_group.py` | `pos_item_group.rs` | parity_tested | No-op child table controller and POS item group metadata represented in Rust. |
+| `pos_item_group.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

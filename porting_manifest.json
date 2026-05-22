@@ -1603,12 +1603,12 @@
     {
       "source": "accounts/doctype/pos_item_group/__init__.py",
       "target": "accounts/doctype/pos_item_group/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_item_group/pos_item_group.py",
       "target": "accounts/doctype/pos_item_group/pos_item_group.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_opening_entry/__init__.py",
