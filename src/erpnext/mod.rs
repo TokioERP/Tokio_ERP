@@ -14,6 +14,7 @@ pub struct FieldSpec {
     pub oldfieldtype: Option<&'static str>,
     pub width: Option<&'static str>,
     pub fetch_from: Option<&'static str>,
+    pub precision: Option<&'static str>,
     pub read_only: bool,
     pub fetch_if_empty: bool,
     pub in_filter: bool,
@@ -22,6 +23,7 @@ pub struct FieldSpec {
     pub ignore_user_permissions: bool,
     pub search_index: bool,
     pub allow_on_submit: bool,
+    pub collapsible: bool,
     pub hidden: bool,
     pub no_copy: bool,
     pub print_hide: bool,
@@ -44,6 +46,7 @@ impl FieldSpec {
             oldfieldtype: None,
             width: None,
             fetch_from: None,
+            precision: None,
             read_only: false,
             fetch_if_empty: false,
             in_filter: false,
@@ -52,6 +55,7 @@ impl FieldSpec {
             ignore_user_permissions: false,
             search_index: false,
             allow_on_submit: false,
+            collapsible: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -74,6 +78,7 @@ impl FieldSpec {
             oldfieldtype: None,
             width: None,
             fetch_from: None,
+            precision: None,
             read_only: false,
             fetch_if_empty: false,
             in_filter: false,
@@ -82,6 +87,7 @@ impl FieldSpec {
             ignore_user_permissions: false,
             search_index: false,
             allow_on_submit: false,
+            collapsible: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -104,6 +110,7 @@ impl FieldSpec {
             oldfieldtype: None,
             width: None,
             fetch_from: None,
+            precision: None,
             read_only: false,
             fetch_if_empty: false,
             in_filter: false,
@@ -112,6 +119,7 @@ impl FieldSpec {
             ignore_user_permissions: false,
             search_index: false,
             allow_on_submit: false,
+            collapsible: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -134,6 +142,7 @@ impl FieldSpec {
             oldfieldtype: None,
             width: None,
             fetch_from: None,
+            precision: None,
             read_only: false,
             fetch_if_empty: false,
             in_filter: false,
@@ -142,6 +151,7 @@ impl FieldSpec {
             ignore_user_permissions: false,
             search_index: false,
             allow_on_submit: false,
+            collapsible: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -164,6 +174,7 @@ impl FieldSpec {
             oldfieldtype: None,
             width: None,
             fetch_from: None,
+            precision: None,
             read_only: false,
             fetch_if_empty: false,
             in_filter: false,
@@ -172,6 +183,7 @@ impl FieldSpec {
             ignore_user_permissions: false,
             search_index: false,
             allow_on_submit: false,
+            collapsible: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -194,6 +206,7 @@ impl FieldSpec {
             oldfieldtype: None,
             width: None,
             fetch_from: None,
+            precision: None,
             read_only: false,
             fetch_if_empty: false,
             in_filter: false,
@@ -202,6 +215,39 @@ impl FieldSpec {
             ignore_user_permissions: false,
             search_index: false,
             allow_on_submit: false,
+            collapsible: false,
+            hidden: false,
+            no_copy: false,
+            print_hide: false,
+            required: false,
+            unique: false,
+        }
+    }
+
+    pub const fn section_break(fieldname: &'static str) -> Self {
+        Self {
+            fieldname,
+            fieldtype: "Section Break",
+            label: None,
+            options: None,
+            default: None,
+            columns: None,
+            depends_on: None,
+            mandatory_depends_on: None,
+            oldfieldname: None,
+            oldfieldtype: None,
+            width: None,
+            fetch_from: None,
+            precision: None,
+            read_only: false,
+            fetch_if_empty: false,
+            in_filter: false,
+            in_list_view: false,
+            in_standard_filter: false,
+            ignore_user_permissions: false,
+            search_index: false,
+            allow_on_submit: false,
+            collapsible: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -224,6 +270,7 @@ impl FieldSpec {
             oldfieldtype: None,
             width: None,
             fetch_from: None,
+            precision: None,
             read_only: false,
             fetch_if_empty: false,
             in_filter: false,
@@ -232,6 +279,7 @@ impl FieldSpec {
             ignore_user_permissions: false,
             search_index: false,
             allow_on_submit: false,
+            collapsible: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -254,6 +302,7 @@ impl FieldSpec {
             oldfieldtype: None,
             width: None,
             fetch_from: None,
+            precision: None,
             read_only: false,
             fetch_if_empty: false,
             in_filter: false,
@@ -262,6 +311,7 @@ impl FieldSpec {
             ignore_user_permissions: false,
             search_index: false,
             allow_on_submit: false,
+            collapsible: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -284,6 +334,7 @@ impl FieldSpec {
             oldfieldtype: None,
             width: None,
             fetch_from: None,
+            precision: None,
             read_only: false,
             fetch_if_empty: false,
             in_filter: false,
@@ -292,6 +343,7 @@ impl FieldSpec {
             ignore_user_permissions: false,
             search_index: false,
             allow_on_submit: false,
+            collapsible: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -314,6 +366,7 @@ impl FieldSpec {
             oldfieldtype: None,
             width: None,
             fetch_from: None,
+            precision: None,
             read_only: false,
             fetch_if_empty: false,
             in_filter: false,
@@ -322,6 +375,7 @@ impl FieldSpec {
             ignore_user_permissions: false,
             search_index: false,
             allow_on_submit: false,
+            collapsible: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -344,6 +398,7 @@ impl FieldSpec {
             oldfieldtype: None,
             width: None,
             fetch_from: None,
+            precision: None,
             read_only: false,
             fetch_if_empty: false,
             in_filter: false,
@@ -352,6 +407,7 @@ impl FieldSpec {
             ignore_user_permissions: false,
             search_index: false,
             allow_on_submit: false,
+            collapsible: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -410,6 +466,11 @@ impl FieldSpec {
         self
     }
 
+    pub const fn precision(mut self, precision: &'static str) -> Self {
+        self.precision = Some(precision);
+        self
+    }
+
     pub const fn read_only(mut self) -> Self {
         self.read_only = true;
         self
@@ -452,6 +513,11 @@ impl FieldSpec {
 
     pub const fn allow_on_submit(mut self) -> Self {
         self.allow_on_submit = true;
+        self
+    }
+
+    pub const fn collapsible(mut self) -> Self {
+        self.collapsible = true;
         self
     }
 

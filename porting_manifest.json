@@ -1363,12 +1363,12 @@
     {
       "source": "accounts/doctype/payment_reference/__init__.py",
       "target": "accounts/doctype/payment_reference/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_reference/payment_reference.py",
       "target": "accounts/doctype/payment_reference/payment_reference.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_request/__init__.py",

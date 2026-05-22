@@ -165,7 +165,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `payment_reconciliation_allocation` | 3 | 2 | 1 | 0 | not_started | |
 | `payment_reconciliation_invoice` | 3 | 2 | 1 | 0 | not_started | |
 | `payment_reconciliation_payment` | 3 | 2 | 1 | 0 | not_started | |
-| `payment_reference` | 3 | 2 | 1 | 0 | not_started | |
+| `payment_reference` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_payment_reference`. JSON kept external. |
 | `payment_request` | 7 | 4 | 1 | 2 | not_started | |
 | `payment_schedule` | 3 | 2 | 1 | 0 | not_started | |
 | `payment_term` | 6 | 4 | 1 | 1 | not_started | |
@@ -988,3 +988,42 @@ Target: `src/erpnext/accounts/doctype/payment_entry_deduction`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `payment_entry_deduction.py` | `payment_entry_deduction.rs` | parity_tested | No-op child table controller and deduction metadata represented in Rust. |
 | `payment_entry_deduction.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `payment_reference`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/payment_reference`
+Target: `src/erpnext/accounts/doctype/payment_reference`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes payment term/schedule, description, due date, amount, and child table parent fields.
+- DocType metadata:
+  - `name`: `Payment Reference`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `allow_rename`: enabled
+  - `editable_grid`: enabled
+  - `index_web_pages_for_search`: enabled
+  - `grid_page_length`: `50`
+  - `row_format`: `Dynamic`
+  - `rows_threshold_for_grid_search`: `20`
+  - `field_order`: `payment_term`, `column_break_lnjp`, `payment_schedule`, `section_break_fjhh`, `description`, `section_break_mjlv`, `due_date`, `column_break_qghl`, `amount`
+  - `payment_term`: `Link`, label `Payment Term`, options `Payment Term`, `in_list_view: 1`
+  - `column_break_lnjp`: `Column Break`
+  - `payment_schedule`: `Link`, label `Payment Schedule`, options `Payment Schedule`, `allow_on_submit: 1`, `read_only: 1`
+  - `section_break_fjhh`: `Section Break`, label `Description`, `collapsible: 1`
+  - `description`: `Small Text`, label `Description`, `in_list_view: 1`
+  - `section_break_mjlv`: `Section Break`
+  - `due_date`: `Date`, label `Due Date`, `in_list_view: 1`
+  - `column_break_qghl`: `Column Break`
+  - `amount`: `Currency`, label `Amount`, precision `2`, `in_list_view: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `payment_reference.py` | `payment_reference.rs` | parity_tested | No-op child table controller and payment reference metadata represented in Rust. |
+| `payment_reference.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
