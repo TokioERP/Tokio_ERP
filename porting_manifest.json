@@ -1723,12 +1723,12 @@
     {
       "source": "accounts/doctype/pricing_rule_brand/__init__.py",
       "target": "accounts/doctype/pricing_rule_brand/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pricing_rule_brand/pricing_rule_brand.py",
       "target": "accounts/doctype/pricing_rule_brand/pricing_rule_brand.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pricing_rule_detail/__init__.py",

@@ -39,3 +39,4 @@ pub mod pos_item_group;
 pub mod pos_opening_entry_detail;
 pub mod pos_payment_method;
 pub mod pos_search_fields;
+pub mod pricing_rule_brand;

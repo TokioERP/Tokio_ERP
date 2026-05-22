@@ -192,7 +192,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `pos_search_fields` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_search_fields`. JSON kept external. |
 | `pos_settings` | 5 | 3 | 1 | 1 | not_started | |
 | `pricing_rule` | 6 | 4 | 1 | 1 | not_started | |
-| `pricing_rule_brand` | 3 | 2 | 1 | 0 | not_started | |
+| `pricing_rule_brand` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pricing_rule_brand`. JSON kept external. |
 | `pricing_rule_detail` | 3 | 2 | 1 | 0 | not_started | |
 | `pricing_rule_item_code` | 3 | 2 | 1 | 0 | not_started | |
 | `pricing_rule_item_group` | 3 | 2 | 1 | 0 | not_started | |
@@ -1521,3 +1521,30 @@ Target: `src/erpnext/accounts/doctype/pos_search_fields`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `pos_search_fields.py` | `pos_search_fields.rs` | parity_tested | No-op child table controller and POS search field metadata represented in Rust. |
 | `pos_search_fields.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `pricing_rule_brand`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/pricing_rule_brand`
+Target: `src/erpnext/accounts/doctype/pricing_rule_brand`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes brand, UOM, and child table parent fields.
+- DocType metadata:
+  - `name`: `Pricing Rule Brand`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `editable_grid`: enabled
+  - `field_order`: `brand`, `uom`
+  - `brand`: `Link`, label `Brand`, options `Brand`, `in_list_view: 1`, `depends_on: eval:parent.apply_on == 'Brand'`
+  - `uom`: `Link`, label `UOM`, options `UOM`, `in_list_view: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `pricing_rule_brand.py` | `pricing_rule_brand.rs` | parity_tested | No-op child table controller and pricing rule brand metadata represented in Rust. |
+| `pricing_rule_brand.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
