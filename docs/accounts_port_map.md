@@ -169,7 +169,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `payment_request` | 7 | 4 | 1 | 2 | not_started | |
 | `payment_schedule` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_payment_schedule`. JSON kept external. |
 | `payment_term` | 6 | 4 | 1 | 1 | parity_tested | Python controller is pass/no-op; dashboard data and empty test suite covered by `accounts_payment_term`. JSON/JS kept external. |
-| `payment_terms_template` | 6 | 4 | 1 | 1 | not_started | |
+| `payment_terms_template` | 6 | 4 | 1 | 1 | parity_tested | Controller validation, dashboard data, and ERPNext test scenarios covered by `accounts_payment_terms_template`. JSON/JS kept external. |
 | `payment_terms_template_detail` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_payment_terms_template_detail`. JSON kept external. |
 | `pegged_currencies` | 5 | 3 | 1 | 1 | not_started | |
 | `pegged_currency_details` | 3 | 2 | 1 | 0 | not_started | |
@@ -1126,6 +1126,43 @@ Target: `src/erpnext/accounts/doctype/payment_term`
 | `test_payment_term.py` | `tests/accounts_payment_term.rs` | parity_tested | Empty ERPNext test replaced by Rust metadata/controller/dashboard parity tests. |
 | `payment_term.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
 | `payment_term.js` | ERPNext UI retained | external_kept | Dynamic discount field description remains UI-side. |
+
+## Doctype Detail: `payment_terms_template`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/payment_terms_template`
+Target: `src/erpnext/accounts/doctype/payment_terms_template`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- `validate()` calls `validate_invoice_portion()` and then `validate_terms()`.
+- `validate_invoice_portion()` sums `terms[].invoice_portion` with Frappe-style `flt`; rounded total at precision `2` must equal `100.00`.
+- If invoice portions do not equal `100%`, validation raises `Combined invoice portion must equal 100%` with red indicator.
+- `validate_terms()` enforces `payment_term` when `allocate_payment_based_on_payment_terms` is enabled.
+- `validate_terms()` rejects duplicate `(payment_term, credit_days, credit_months, due_date_based_on)` tuples and reports the duplicate row.
+- `payment_terms_template_dashboard.get_data()` returns static non-standard fieldname mapping and Sales/Purchase/Party/Group transactions.
+- `test_payment_terms_template.py` create/invalid/duplicate scenarios are represented by Rust validation tests.
+- DocType metadata:
+  - `name`: `Payment Terms Template`
+  - `module`: `Accounts`
+  - `autoname`: `field:template_name`
+  - `allow_rename`: enabled
+  - `editable_grid`: enabled
+  - `field_order`: `template_name`, `allocate_payment_based_on_payment_terms`, `terms`
+  - `template_name`: `Data`, label `Template Name`, `unique: 1`
+  - `allocate_payment_based_on_payment_terms`: `Check`, label `Allocate Payment Based On Payment Terms`, default `0`
+  - `terms`: `Table`, label `Payment Terms`, options `Payment Terms Template Detail`, required
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `payment_terms_template.py` | `payment_terms_template.rs` | parity_tested | Controller validation and payment terms template metadata represented in Rust. |
+| `payment_terms_template_dashboard.py` | `payment_terms_template_dashboard.rs` | parity_tested | Static dashboard `get_data()` mapping and transactions represented in Rust. |
+| `test_payment_terms_template.py` | `tests/accounts_payment_terms_template.rs` | parity_tested | ERPNext create/invalid/duplicate scenarios represented by Rust validation tests. |
+| `payment_terms_template.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+| `payment_terms_template.js` | ERPNext UI retained | external_kept | Child table client-side field copy behavior remains UI-side. |
 
 ## Doctype Detail: `payment_terms_template_detail`
 
