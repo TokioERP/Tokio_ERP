@@ -37,3 +37,4 @@ pub mod pos_field;
 pub mod pos_invoice_reference;
 pub mod pos_item_group;
 pub mod pos_opening_entry_detail;
+pub mod pos_payment_method;

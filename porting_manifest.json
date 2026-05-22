@@ -1638,12 +1638,12 @@
     {
       "source": "accounts/doctype/pos_payment_method/__init__.py",
       "target": "accounts/doctype/pos_payment_method/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_payment_method/pos_payment_method.py",
       "target": "accounts/doctype/pos_payment_method/pos_payment_method.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_profile/__init__.py",
