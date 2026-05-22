@@ -115,7 +115,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `currency_exchange_settings_details` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_currency_exchange_settings_details`. JSON kept external. |
 | `currency_exchange_settings_result` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_currency_exchange_settings_result`. JSON kept external. |
 | `customer_group_item` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_customer_group_item`. JSON kept external. |
-| `customer_item` | 3 | 2 | 1 | 0 | not_started | |
+| `customer_item` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_customer_item`. JSON kept external. |
 | `discounted_invoice` | 3 | 2 | 1 | 0 | not_started | |
 | `dunning` | 6 | 3 | 1 | 2 | not_started | |
 | `dunning_letter_text` | 3 | 2 | 1 | 0 | not_started | |
@@ -714,3 +714,31 @@ Target: `src/erpnext/accounts/doctype/customer_group_item`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `customer_group_item.py` | `customer_group_item.rs` | parity_tested | No-op child table controller and customer-group metadata represented in Rust. |
 | `customer_group_item.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `customer_item`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/customer_item`
+Target: `src/erpnext/accounts/doctype/customer_item`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes optional `customer` and child table parent fields.
+- DocType metadata:
+  - `name`: `Customer Item`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `editable_grid`: enabled
+  - `index_web_pages_for_search`: enabled
+  - `track_changes`: enabled
+  - `field_order`: `customer`
+  - `customer`: `Link`, label `Customer `, options `Customer`, `in_list_view: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `customer_item.py` | `customer_item.rs` | parity_tested | No-op child table controller and customer metadata represented in Rust. |
+| `customer_item.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
