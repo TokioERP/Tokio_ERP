@@ -293,17 +293,17 @@
     {
       "source": "accounts/doctype/bank_account_type/__init__.py",
       "target": "accounts/doctype/bank_account_type/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_account_type/bank_account_type.py",
       "target": "accounts/doctype/bank_account_type/bank_account_type.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_account_type/test_bank_account_type.py",
       "target": "accounts/doctype/bank_account_type/test_bank_account_type.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_clearance/__init__.py",

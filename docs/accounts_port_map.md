@@ -87,7 +87,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `bank` | 6 | 4 | 1 | 1 | not_started | |
 | `bank_account` | 5 | 3 | 1 | 1 | not_started | |
 | `bank_account_subtype` | 5 | 3 | 1 | 1 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_bank_account_subtype`. JSON/JS kept external. |
-| `bank_account_type` | 5 | 3 | 1 | 1 | not_started | |
+| `bank_account_type` | 5 | 3 | 1 | 1 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_bank_account_type`. JSON/JS kept external. |
 | `bank_clearance` | 6 | 3 | 1 | 1 | not_started | |
 | `bank_clearance_detail` | 4 | 2 | 1 | 0 | not_started | |
 | `bank_guarantee` | 5 | 3 | 1 | 1 | not_started | |
@@ -284,3 +284,31 @@ Target: `src/erpnext/accounts/doctype/bank_account_subtype`
 | `test_bank_account_subtype.py` | `tests/accounts_bank_account_subtype.rs` | parity_tested | Empty ERPNext test replaced by Rust metadata/controller parity tests. |
 | `bank_account_subtype.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
 | `bank_account_subtype.js` | ERPNext UI retained | external_kept | `refresh` handler is empty/no-op and remains UI-side. |
+
+## Doctype Detail: `bank_account_type`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/bank_account_type`
+Target: `src/erpnext/accounts/doctype/bank_account_type`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes `account_type: DF.Data | None`.
+- DocType metadata:
+  - `name`: `Bank Account Type`
+  - `module`: `Accounts`
+  - `autoname`: `field:account_type`
+  - `field_order`: `account_type`
+  - `account_type`: `Data`, label `Account Type`, `unique: 1`
+  - `allow_import`, `allow_rename`, and `quick_entry` are enabled.
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `bank_account_type.py` | `bank_account_type.rs` | parity_tested | No-op controller and `account_type` field represented in Rust. |
+| `test_bank_account_type.py` | `tests/accounts_bank_account_type.rs` | parity_tested | Empty ERPNext test replaced by Rust metadata/controller parity tests. |
+| `bank_account_type.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+| `bank_account_type.js` | ERPNext UI retained | external_kept | Only commented refresh scaffold exists and remains UI-side. |
