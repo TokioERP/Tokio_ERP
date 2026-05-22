@@ -1403,22 +1403,22 @@
     {
       "source": "accounts/doctype/payment_term/__init__.py",
       "target": "accounts/doctype/payment_term/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_term/payment_term.py",
       "target": "accounts/doctype/payment_term/payment_term.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_term/payment_term_dashboard.py",
       "target": "accounts/doctype/payment_term/payment_term_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_term/test_payment_term.py",
       "target": "accounts/doctype/payment_term/test_payment_term.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_terms_template/__init__.py",

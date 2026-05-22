@@ -168,7 +168,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `payment_reference` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_payment_reference`. JSON kept external. |
 | `payment_request` | 7 | 4 | 1 | 2 | not_started | |
 | `payment_schedule` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_payment_schedule`. JSON kept external. |
-| `payment_term` | 6 | 4 | 1 | 1 | not_started | |
+| `payment_term` | 6 | 4 | 1 | 1 | parity_tested | Python controller is pass/no-op; dashboard data and empty test suite covered by `accounts_payment_term`. JSON/JS kept external. |
 | `payment_terms_template` | 6 | 4 | 1 | 1 | not_started | |
 | `payment_terms_template_detail` | 3 | 2 | 1 | 0 | not_started | |
 | `pegged_currencies` | 5 | 3 | 1 | 1 | not_started | |
@@ -1081,3 +1081,48 @@ Target: `src/erpnext/accounts/doctype/payment_schedule`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `payment_schedule.py` | `payment_schedule.rs` | parity_tested | No-op child table controller and payment schedule metadata represented in Rust. |
 | `payment_schedule.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `payment_term`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/payment_term`
+Target: `src/erpnext/accounts/doctype/payment_term`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- `payment_term_dashboard.get_data()` returns static dashboard data for Sales, Purchase, and Payment Terms Template transactions.
+- `test_payment_term.py` defines an empty `ERPNextTestSuite` subclass; Rust parity test covers metadata, no-op controller behavior, and dashboard data.
+- DocType metadata:
+  - `name`: `Payment Term`
+  - `module`: `Accounts`
+  - `autoname`: `field:payment_term_name`
+  - `allow_rename`: enabled
+  - `editable_grid`: enabled
+  - `field_order`: `payment_term_name`, `invoice_portion`, `mode_of_payment`, `column_break_3`, `due_date_based_on`, `credit_days`, `credit_months`, `section_break_8`, `discount_type`, `discount`, `column_break_11`, `discount_validity_based_on`, `discount_validity`, `section_break_6`, `description`
+  - `payment_term_name`: `Data`, label `Payment Term Name`, `unique: 1`
+  - `invoice_portion`: `Float`, label `Invoice Portion (%)`
+  - `mode_of_payment`: `Link`, label `Mode of Payment`, options `Mode of Payment`
+  - `column_break_3`: `Column Break`
+  - `due_date_based_on`: `Select`, ERPNext due-date basis options retained exactly
+  - `credit_days`: `Int`, ERPNext `depends_on` expression retained exactly
+  - `credit_months`: `Int`, ERPNext `depends_on` expression retained exactly
+  - `section_break_8`: `Section Break`, label `Discount Settings`
+  - `discount_type`: `Select`, options `Percentage`/`Amount`, default `Percentage`
+  - `discount`: `Float`, label `Discount`
+  - `column_break_11`: `Column Break`
+  - `discount_validity_based_on`: `Select`, ERPNext discount basis options retained exactly, default `Day(s) after invoice date`, `depends_on: discount`
+  - `discount_validity`: `Int`, `depends_on: discount`
+  - `section_break_6`: `Section Break`
+  - `description`: `Small Text`, label `Description`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `payment_term.py` | `payment_term.rs` | parity_tested | No-op controller and payment term metadata represented in Rust. |
+| `payment_term_dashboard.py` | `payment_term_dashboard.rs` | parity_tested | Static dashboard `get_data()` transactions represented in Rust. |
+| `test_payment_term.py` | `tests/accounts_payment_term.rs` | parity_tested | Empty ERPNext test replaced by Rust metadata/controller/dashboard parity tests. |
+| `payment_term.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+| `payment_term.js` | ERPNext UI retained | external_kept | Dynamic discount field description remains UI-side. |
