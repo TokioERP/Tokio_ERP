@@ -33,3 +33,4 @@ pub mod pegged_currency_details;
 pub mod pos_closing_entry_detail;
 pub mod pos_closing_entry_taxes;
 pub mod pos_customer_group;
+pub mod pos_field;

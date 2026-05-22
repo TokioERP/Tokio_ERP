@@ -1538,12 +1538,12 @@
     {
       "source": "accounts/doctype/pos_field/__init__.py",
       "target": "accounts/doctype/pos_field/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_field/pos_field.py",
       "target": "accounts/doctype/pos_field/pos_field.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_invoice/__init__.py",
