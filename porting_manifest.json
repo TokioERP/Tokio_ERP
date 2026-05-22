@@ -1743,12 +1743,12 @@
     {
       "source": "accounts/doctype/pricing_rule_item_code/__init__.py",
       "target": "accounts/doctype/pricing_rule_item_code/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pricing_rule_item_code/pricing_rule_item_code.py",
       "target": "accounts/doctype/pricing_rule_item_code/pricing_rule_item_code.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pricing_rule_item_group/__init__.py",
