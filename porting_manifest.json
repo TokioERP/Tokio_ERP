@@ -1013,12 +1013,12 @@
     {
       "source": "accounts/doctype/ledger_health_monitor_company/__init__.py",
       "target": "accounts/doctype/ledger_health_monitor_company/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/ledger_health_monitor_company/ledger_health_monitor_company.py",
       "target": "accounts/doctype/ledger_health_monitor_company/ledger_health_monitor_company.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/ledger_merge/__init__.py",
