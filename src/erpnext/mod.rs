@@ -260,6 +260,32 @@ impl FieldSpec {
         }
     }
 
+    pub const fn percent(fieldname: &'static str, label: &'static str) -> Self {
+        Self {
+            fieldname,
+            fieldtype: "Percent",
+            label: Some(label),
+            options: None,
+            default: None,
+            columns: None,
+            depends_on: None,
+            mandatory_depends_on: None,
+            oldfieldname: None,
+            oldfieldtype: None,
+            width: None,
+            read_only: false,
+            in_filter: false,
+            in_list_view: false,
+            in_standard_filter: false,
+            ignore_user_permissions: false,
+            hidden: false,
+            no_copy: false,
+            print_hide: false,
+            required: false,
+            unique: false,
+        }
+    }
+
     pub const fn label(mut self, label: &'static str) -> Self {
         self.label = Some(label);
         self

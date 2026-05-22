@@ -608,12 +608,12 @@
     {
       "source": "accounts/doctype/cost_center_allocation_percentage/__init__.py",
       "target": "accounts/doctype/cost_center_allocation_percentage/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/cost_center_allocation_percentage/cost_center_allocation_percentage.py",
       "target": "accounts/doctype/cost_center_allocation_percentage/cost_center_allocation_percentage.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/coupon_code/__init__.py",

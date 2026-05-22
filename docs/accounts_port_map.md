@@ -109,7 +109,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `closed_document` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_closed_document`. JSON kept external. |
 | `cost_center` | 8 | 4 | 1 | 2 | not_started | |
 | `cost_center_allocation` | 5 | 3 | 1 | 1 | not_started | |
-| `cost_center_allocation_percentage` | 3 | 2 | 1 | 0 | not_started | |
+| `cost_center_allocation_percentage` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_cost_center_allocation_percentage`. JSON kept external. |
 | `coupon_code` | 5 | 3 | 1 | 1 | not_started | |
 | `currency_exchange_settings` | 5 | 3 | 1 | 1 | not_started | |
 | `currency_exchange_settings_details` | 3 | 2 | 1 | 0 | not_started | |
@@ -600,3 +600,32 @@ Target: `src/erpnext/accounts/doctype/closed_document`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `closed_document.py` | `closed_document.rs` | parity_tested | No-op child table controller and closed-document metadata represented in Rust. |
 | `closed_document.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `cost_center_allocation_percentage`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/cost_center_allocation_percentage`
+Target: `src/erpnext/accounts/doctype/cost_center_allocation_percentage`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes required `cost_center`, `percentage`, and child table parent fields.
+- DocType metadata:
+  - `name`: `Cost Center Allocation Percentage`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `allow_rename`: enabled
+  - `editable_grid`: enabled
+  - `index_web_pages_for_search`: enabled
+  - `field_order`: `cost_center`, `percentage`
+  - `cost_center`: `Link`, label `Cost Center`, options `Cost Center`, `reqd: 1`, `in_list_view: 1`
+  - `percentage`: `Percent`, label `Percentage (%)`, `reqd: 1`, `in_list_view: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `cost_center_allocation_percentage.py` | `cost_center_allocation_percentage.rs` | parity_tested | No-op child table controller and cost-center percentage metadata represented in Rust. |
+| `cost_center_allocation_percentage.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

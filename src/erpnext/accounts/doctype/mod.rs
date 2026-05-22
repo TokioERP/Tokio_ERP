@@ -10,3 +10,4 @@ pub mod bank_transaction_payments;
 pub mod campaign_item;
 pub mod cashier_closing_payments;
 pub mod closed_document;
+pub mod cost_center_allocation_percentage;
