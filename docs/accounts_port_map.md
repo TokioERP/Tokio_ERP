@@ -94,7 +94,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `bank_reconciliation_tool` | 5 | 3 | 1 | 1 | not_started | |
 | `bank_statement_import` | 7 | 3 | 1 | 2 | not_started | |
 | `bank_transaction` | 10 | 7 | 1 | 2 | not_started | |
-| `bank_transaction_mapping` | 3 | 2 | 1 | 0 | not_started | |
+| `bank_transaction_mapping` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_bank_transaction_mapping`. JSON kept external. |
 | `bank_transaction_payments` | 3 | 2 | 1 | 0 | not_started | |
 | `bisect_accounting_statements` | 5 | 3 | 1 | 1 | not_started | |
 | `bisect_nodes` | 5 | 3 | 1 | 1 | not_started | |
@@ -461,3 +461,29 @@ Target: `src/erpnext/accounts/doctype/bank_clearance_detail`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `bank_clearance_detail.py` | `bank_clearance_detail.rs` | parity_tested | No-op child table controller and payment/date metadata represented in Rust. |
 | `bank_clearance_detail.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `bank_transaction_mapping`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/bank_transaction_mapping`
+Target: `src/erpnext/accounts/doctype/bank_transaction_mapping`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes required `bank_transaction_field`, `file_field`, and child table parent fields.
+- DocType metadata:
+  - `name`: `Bank Transaction Mapping`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `field_order`: `bank_transaction_field`, `file_field`
+  - `bank_transaction_field`: `Select`, label `Field in Bank Transaction`, `reqd: 1`, `in_list_view: 1`
+  - `file_field`: `Data`, label `Column in Bank File`, `reqd: 1`, `in_list_view: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `bank_transaction_mapping.py` | `bank_transaction_mapping.rs` | parity_tested | No-op child table controller and required mapping fields represented in Rust. |
+| `bank_transaction_mapping.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

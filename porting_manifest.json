@@ -413,12 +413,12 @@
     {
       "source": "accounts/doctype/bank_transaction_mapping/__init__.py",
       "target": "accounts/doctype/bank_transaction_mapping/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_transaction_mapping/bank_transaction_mapping.py",
       "target": "accounts/doctype/bank_transaction_mapping/bank_transaction_mapping.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_transaction_payments/__init__.py",

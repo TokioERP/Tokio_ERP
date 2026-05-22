@@ -105,6 +105,27 @@ impl FieldSpec {
         }
     }
 
+    pub const fn select(fieldname: &'static str, label: &'static str) -> Self {
+        Self {
+            fieldname,
+            fieldtype: "Select",
+            label: Some(label),
+            options: None,
+            default: None,
+            columns: None,
+            mandatory_depends_on: None,
+            oldfieldname: None,
+            oldfieldtype: None,
+            width: None,
+            read_only: false,
+            in_list_view: false,
+            ignore_user_permissions: false,
+            hidden: false,
+            required: false,
+            unique: false,
+        }
+    }
+
     pub const fn column_break(fieldname: &'static str) -> Self {
         Self {
             fieldname,
