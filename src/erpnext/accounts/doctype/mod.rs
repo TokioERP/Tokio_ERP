@@ -21,3 +21,4 @@ pub mod item_wise_tax_detail;
 pub mod ledger_health_monitor_company;
 pub mod ledger_merge_accounts;
 pub mod monthly_distribution_percentage;
+pub mod party_account;

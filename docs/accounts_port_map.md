@@ -152,7 +152,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `opening_invoice_creation_tool` | 6 | 3 | 1 | 1 | not_started | |
 | `opening_invoice_creation_tool_item` | 3 | 2 | 1 | 0 | not_started | |
 | `overdue_payment` | 3 | 2 | 1 | 0 | not_started | |
-| `party_account` | 3 | 2 | 1 | 0 | not_started | |
+| `party_account` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_party_account`. JSON kept external. |
 | `party_link` | 5 | 3 | 1 | 1 | not_started | |
 | `payment_entry` | 6 | 3 | 1 | 2 | not_started | |
 | `payment_entry_deduction` | 3 | 2 | 1 | 0 | not_started | |
@@ -924,3 +924,33 @@ Target: `src/erpnext/accounts/doctype/monthly_distribution_percentage`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `monthly_distribution_percentage.py` | `monthly_distribution_percentage.rs` | parity_tested | No-op child table controller and monthly allocation metadata represented in Rust. |
 | `monthly_distribution_percentage.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `party_account`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/party_account`
+Target: `src/erpnext/accounts/doctype/party_account`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes required `company`, optional default/advance accounts, and child table parent fields.
+- DocType metadata:
+  - `name`: `Party Account`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `editable_grid`: enabled
+  - `index_web_pages_for_search`: enabled
+  - `quick_entry`: enabled
+  - `field_order`: `company`, `account`, `advance_account`
+  - `company`: `Link`, label `Company`, options `Company`, `reqd: 1`, `ignore_user_permissions: 1`, `in_list_view: 1`
+  - `account`: `Link`, label `Default Account`, options `Account`, `in_list_view: 1`
+  - `advance_account`: `Link`, label `Advance Account`, options `Account`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `party_account.py` | `party_account.rs` | parity_tested | No-op child table controller and party account metadata represented in Rust. |
+| `party_account.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

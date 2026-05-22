@@ -1193,12 +1193,12 @@
     {
       "source": "accounts/doctype/party_account/__init__.py",
       "target": "accounts/doctype/party_account/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/party_account/party_account.py",
       "target": "accounts/doctype/party_account/party_account.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/party_link/__init__.py",
