@@ -89,7 +89,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `bank_account_subtype` | 5 | 3 | 1 | 1 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_bank_account_subtype`. JSON/JS kept external. |
 | `bank_account_type` | 5 | 3 | 1 | 1 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_bank_account_type`. JSON/JS kept external. |
 | `bank_clearance` | 6 | 3 | 1 | 1 | not_started | |
-| `bank_clearance_detail` | 4 | 2 | 1 | 0 | not_started | |
+| `bank_clearance_detail` | 4 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_bank_clearance_detail`. JSON kept external. |
 | `bank_guarantee` | 5 | 3 | 1 | 1 | not_started | |
 | `bank_reconciliation_tool` | 5 | 3 | 1 | 1 | not_started | |
 | `bank_statement_import` | 7 | 3 | 1 | 2 | not_started | |
@@ -425,3 +425,39 @@ Target: `src/erpnext/accounts/doctype/accounting_dimension_detail`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `accounting_dimension_detail.py` | `accounting_dimension_detail.rs` | parity_tested | No-op child table controller and metadata fields represented in Rust. |
 | `accounting_dimension_detail.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `bank_clearance_detail`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/bank_clearance_detail`
+Target: `src/erpnext/accounts/doctype/bank_clearance_detail`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes payment document/entry, account, amount, cheque, posting, and clearance date fields.
+- DocType metadata:
+  - `name`: `Bank Clearance Detail`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `quick_entry`: enabled
+  - `grid_page_length`: `50`
+  - `row_format`: `Dynamic`
+  - `field_order`: `payment_document`, `payment_entry`, `against_account`, `amount`, `column_break_5`, `posting_date`, `cheque_number`, `cheque_date`, `clearance_date`
+  - `payment_document`: `Link`, label `Payment Document`, options `DocType`
+  - `payment_entry`: `Dynamic Link`, label `Payment Entry`, options `payment_document`, columns `2`, `in_list_view: 1`, old field `voucher_id:Link`
+  - `against_account`: `Data`, label `Against Account`, columns `2`, `in_list_view: 1`, `read_only: 1`, old field `against_account:Data`, width `15`
+  - `amount`: `Data`, label `Amount`, columns `2`, `in_list_view: 1`, `read_only: 1`, old field `debit:Currency`
+  - `column_break_5`: `Column Break`, width `50%`
+  - `posting_date`: `Date`, label `Posting Date`, columns `2`, `read_only: 1`, old field `posting_date:Date`
+  - `cheque_number`: `Data`, label `Cheque Number`, columns `1`, `in_list_view: 1`, `read_only: 1`, old field `cheque_number:Data`
+  - `cheque_date`: `Date`, label `Cheque Date`, columns `2`, `in_list_view: 1`, `read_only: 1`, old field `cheque_date:Date`
+  - `clearance_date`: `Date`, label `Clearance Date`, columns `2`, `in_list_view: 1`, old field `clearance_date:Date`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `bank_clearance_detail.py` | `bank_clearance_detail.rs` | parity_tested | No-op child table controller and payment/date metadata represented in Rust. |
+| `bank_clearance_detail.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

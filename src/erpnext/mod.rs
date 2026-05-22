@@ -9,6 +9,9 @@ pub struct FieldSpec {
     pub default: Option<&'static str>,
     pub columns: Option<u8>,
     pub mandatory_depends_on: Option<&'static str>,
+    pub oldfieldname: Option<&'static str>,
+    pub oldfieldtype: Option<&'static str>,
+    pub width: Option<&'static str>,
     pub read_only: bool,
     pub in_list_view: bool,
     pub ignore_user_permissions: bool,
@@ -27,6 +30,9 @@ impl FieldSpec {
             default: None,
             columns: None,
             mandatory_depends_on: None,
+            oldfieldname: None,
+            oldfieldtype: None,
+            width: None,
             read_only: false,
             in_list_view: false,
             ignore_user_permissions: false,
@@ -45,6 +51,9 @@ impl FieldSpec {
             default: None,
             columns: None,
             mandatory_depends_on: None,
+            oldfieldname: None,
+            oldfieldtype: None,
+            width: None,
             read_only: false,
             in_list_view: false,
             ignore_user_permissions: false,
@@ -63,6 +72,9 @@ impl FieldSpec {
             default: None,
             columns: None,
             mandatory_depends_on: None,
+            oldfieldname: None,
+            oldfieldtype: None,
+            width: None,
             read_only: false,
             in_list_view: false,
             ignore_user_permissions: false,
@@ -81,6 +93,9 @@ impl FieldSpec {
             default: None,
             columns: None,
             mandatory_depends_on: None,
+            oldfieldname: None,
+            oldfieldtype: None,
+            width: None,
             read_only: false,
             in_list_view: false,
             ignore_user_permissions: false,
@@ -99,6 +114,30 @@ impl FieldSpec {
             default: None,
             columns: None,
             mandatory_depends_on: None,
+            oldfieldname: None,
+            oldfieldtype: None,
+            width: None,
+            read_only: false,
+            in_list_view: false,
+            ignore_user_permissions: false,
+            hidden: false,
+            required: false,
+            unique: false,
+        }
+    }
+
+    pub const fn date(fieldname: &'static str, label: &'static str) -> Self {
+        Self {
+            fieldname,
+            fieldtype: "Date",
+            label: Some(label),
+            options: None,
+            default: None,
+            columns: None,
+            mandatory_depends_on: None,
+            oldfieldname: None,
+            oldfieldtype: None,
+            width: None,
             read_only: false,
             in_list_view: false,
             ignore_user_permissions: false,
@@ -130,6 +169,21 @@ impl FieldSpec {
 
     pub const fn mandatory_depends_on(mut self, mandatory_depends_on: &'static str) -> Self {
         self.mandatory_depends_on = Some(mandatory_depends_on);
+        self
+    }
+
+    pub const fn oldfield(
+        mut self,
+        oldfieldname: &'static str,
+        oldfieldtype: &'static str,
+    ) -> Self {
+        self.oldfieldname = Some(oldfieldname);
+        self.oldfieldtype = Some(oldfieldtype);
+        self
+    }
+
+    pub const fn width(mut self, width: &'static str) -> Self {
+        self.width = Some(width);
         self
     }
 

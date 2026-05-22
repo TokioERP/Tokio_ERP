@@ -323,12 +323,12 @@
     {
       "source": "accounts/doctype/bank_clearance_detail/__init__.py",
       "target": "accounts/doctype/bank_clearance_detail/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_clearance_detail/bank_clearance_detail.py",
       "target": "accounts/doctype/bank_clearance_detail/bank_clearance_detail.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_guarantee/__init__.py",
