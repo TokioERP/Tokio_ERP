@@ -101,7 +101,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `budget` | 5 | 3 | 1 | 1 | not_started | |
 | `budget_account` | 3 | 2 | 1 | 0 | not_started | |
 | `budget_distribution` | 3 | 2 | 1 | 0 | not_started | |
-| `campaign_item` | 3 | 2 | 1 | 0 | not_started | |
+| `campaign_item` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_campaign_item`. JSON kept external. |
 | `cashier_closing` | 5 | 3 | 1 | 1 | not_started | |
 | `cashier_closing_payments` | 3 | 2 | 1 | 0 | not_started | |
 | `chart_of_accounts_importer` | 6 | 3 | 1 | 1 | not_started | |
@@ -517,3 +517,30 @@ Target: `src/erpnext/accounts/doctype/bank_transaction_payments`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `bank_transaction_payments.py` | `bank_transaction_payments.rs` | parity_tested | No-op child table controller and payment allocation metadata represented in Rust. |
 | `bank_transaction_payments.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `campaign_item`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/campaign_item`
+Target: `src/erpnext/accounts/doctype/campaign_item`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes optional `campaign` and child table parent fields.
+- DocType metadata:
+  - `name`: `Campaign Item`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `index_web_pages_for_search`: enabled
+  - `track_changes`: enabled
+  - `field_order`: `campaign`
+  - `campaign`: `Link`, label `Campaign`, options `UTM Campaign`, `in_list_view: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `campaign_item.py` | `campaign_item.rs` | parity_tested | No-op child table controller and campaign link metadata represented in Rust. |
+| `campaign_item.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

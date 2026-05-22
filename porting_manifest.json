@@ -498,12 +498,12 @@
     {
       "source": "accounts/doctype/campaign_item/__init__.py",
       "target": "accounts/doctype/campaign_item/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/campaign_item/campaign_item.py",
       "target": "accounts/doctype/campaign_item/campaign_item.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/cashier_closing/__init__.py",
