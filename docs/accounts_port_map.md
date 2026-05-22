@@ -177,7 +177,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `pos_closing_entry` | 7 | 3 | 1 | 2 | not_started | |
 | `pos_closing_entry_detail` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_closing_entry_detail`. JSON kept external. |
 | `pos_closing_entry_taxes` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_closing_entry_taxes`. JSON kept external. |
-| `pos_customer_group` | 3 | 2 | 1 | 0 | not_started | |
+| `pos_customer_group` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_customer_group`. JSON kept external. |
 | `pos_field` | 3 | 2 | 1 | 0 | not_started | |
 | `pos_invoice` | 7 | 4 | 1 | 2 | not_started | |
 | `pos_invoice_item` | 3 | 2 | 1 | 0 | not_started | |
@@ -1320,3 +1320,29 @@ Target: `src/erpnext/accounts/doctype/pos_closing_entry_taxes`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `pos_closing_entry_taxes.py` | `pos_closing_entry_taxes.rs` | parity_tested | No-op child table controller and POS closing tax metadata represented in Rust. |
 | `pos_closing_entry_taxes.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `pos_customer_group`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/pos_customer_group`
+Target: `src/erpnext/accounts/doctype/pos_customer_group`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes customer group and child table parent fields.
+- DocType metadata:
+  - `name`: `POS Customer Group`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `editable_grid`: enabled
+  - `field_order`: `customer_group`
+  - `customer_group`: `Link`, label `Customer Group`, options `Customer Group`, required, `in_list_view: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `pos_customer_group.py` | `pos_customer_group.rs` | parity_tested | No-op child table controller and POS customer group metadata represented in Rust. |
+| `pos_customer_group.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

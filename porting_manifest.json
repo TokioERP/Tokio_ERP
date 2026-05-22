@@ -1528,12 +1528,12 @@
     {
       "source": "accounts/doctype/pos_customer_group/__init__.py",
       "target": "accounts/doctype/pos_customer_group/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_customer_group/pos_customer_group.py",
       "target": "accounts/doctype/pos_customer_group/pos_customer_group.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_field/__init__.py",
