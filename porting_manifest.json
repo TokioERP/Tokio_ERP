@@ -563,12 +563,12 @@
     {
       "source": "accounts/doctype/closed_document/__init__.py",
       "target": "accounts/doctype/closed_document/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/closed_document/closed_document.py",
       "target": "accounts/doctype/closed_document/closed_document.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/cost_center/__init__.py",
