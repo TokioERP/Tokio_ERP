@@ -155,7 +155,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `party_account` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_party_account`. JSON kept external. |
 | `party_link` | 5 | 3 | 1 | 1 | not_started | |
 | `payment_entry` | 6 | 3 | 1 | 2 | not_started | |
-| `payment_entry_deduction` | 3 | 2 | 1 | 0 | not_started | |
+| `payment_entry_deduction` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_payment_entry_deduction`. JSON kept external. |
 | `payment_entry_reference` | 3 | 2 | 1 | 0 | not_started | |
 | `payment_gateway_account` | 6 | 4 | 1 | 1 | not_started | |
 | `payment_ledger_entry` | 5 | 3 | 1 | 1 | not_started | |
@@ -954,3 +954,37 @@ Target: `src/erpnext/accounts/doctype/party_account`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `party_account.py` | `party_account.rs` | parity_tested | No-op child table controller and party account metadata represented in Rust. |
 | `party_account.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `payment_entry_deduction`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/payment_entry_deduction`
+Target: `src/erpnext/accounts/doctype/payment_entry_deduction`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes required account, cost center, amount, exchange gain/loss flag, optional description, and child table parent fields.
+- DocType metadata:
+  - `name`: `Payment Entry Deduction`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `editable_grid`: enabled
+  - `index_web_pages_for_search`: enabled
+  - `quick_entry`: enabled
+  - `row_format`: `Dynamic`
+  - `field_order`: `account`, `cost_center`, `amount`, `column_break_2`, `is_exchange_gain_loss`, `description`
+  - `account`: `Link`, label `Account`, options `Account`, `reqd: 1`, `in_list_view: 1`
+  - `cost_center`: `Link`, label `Cost Center`, options `Cost Center`, `reqd: 1`, `allow_on_submit: 1`, `print_hide: 1`, `in_list_view: 1`
+  - `amount`: `Currency`, label `Amount (Company Currency)`, options `Company:company:default_currency`, `reqd: 1`, `in_list_view: 1`
+  - `column_break_2`: `Column Break`
+  - `is_exchange_gain_loss`: `Check`, label `Is Exchange Gain / Loss?`, default `0`, depends on `eval:doc.is_exchange_gain_loss`, `read_only: 1`
+  - `description`: `Small Text`, label `Description`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `payment_entry_deduction.py` | `payment_entry_deduction.rs` | parity_tested | No-op child table controller and deduction metadata represented in Rust. |
+| `payment_entry_deduction.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

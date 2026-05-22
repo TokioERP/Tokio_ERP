@@ -22,3 +22,4 @@ pub mod ledger_health_monitor_company;
 pub mod ledger_merge_accounts;
 pub mod monthly_distribution_percentage;
 pub mod party_account;
+pub mod payment_entry_deduction;

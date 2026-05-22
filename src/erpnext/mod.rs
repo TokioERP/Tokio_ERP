@@ -21,6 +21,7 @@ pub struct FieldSpec {
     pub in_standard_filter: bool,
     pub ignore_user_permissions: bool,
     pub search_index: bool,
+    pub allow_on_submit: bool,
     pub hidden: bool,
     pub no_copy: bool,
     pub print_hide: bool,
@@ -50,6 +51,7 @@ impl FieldSpec {
             in_standard_filter: false,
             ignore_user_permissions: false,
             search_index: false,
+            allow_on_submit: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -79,6 +81,7 @@ impl FieldSpec {
             in_standard_filter: false,
             ignore_user_permissions: false,
             search_index: false,
+            allow_on_submit: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -108,6 +111,7 @@ impl FieldSpec {
             in_standard_filter: false,
             ignore_user_permissions: false,
             search_index: false,
+            allow_on_submit: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -137,6 +141,7 @@ impl FieldSpec {
             in_standard_filter: false,
             ignore_user_permissions: false,
             search_index: false,
+            allow_on_submit: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -166,6 +171,7 @@ impl FieldSpec {
             in_standard_filter: false,
             ignore_user_permissions: false,
             search_index: false,
+            allow_on_submit: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -195,6 +201,7 @@ impl FieldSpec {
             in_standard_filter: false,
             ignore_user_permissions: false,
             search_index: false,
+            allow_on_submit: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -224,6 +231,7 @@ impl FieldSpec {
             in_standard_filter: false,
             ignore_user_permissions: false,
             search_index: false,
+            allow_on_submit: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -253,6 +261,7 @@ impl FieldSpec {
             in_standard_filter: false,
             ignore_user_permissions: false,
             search_index: false,
+            allow_on_submit: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -282,6 +291,7 @@ impl FieldSpec {
             in_standard_filter: false,
             ignore_user_permissions: false,
             search_index: false,
+            allow_on_submit: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -311,6 +321,37 @@ impl FieldSpec {
             in_standard_filter: false,
             ignore_user_permissions: false,
             search_index: false,
+            allow_on_submit: false,
+            hidden: false,
+            no_copy: false,
+            print_hide: false,
+            required: false,
+            unique: false,
+        }
+    }
+
+    pub const fn small_text(fieldname: &'static str, label: &'static str) -> Self {
+        Self {
+            fieldname,
+            fieldtype: "Small Text",
+            label: Some(label),
+            options: None,
+            default: None,
+            columns: None,
+            depends_on: None,
+            mandatory_depends_on: None,
+            oldfieldname: None,
+            oldfieldtype: None,
+            width: None,
+            fetch_from: None,
+            read_only: false,
+            fetch_if_empty: false,
+            in_filter: false,
+            in_list_view: false,
+            in_standard_filter: false,
+            ignore_user_permissions: false,
+            search_index: false,
+            allow_on_submit: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -406,6 +447,11 @@ impl FieldSpec {
 
     pub const fn search_index(mut self) -> Self {
         self.search_index = true;
+        self
+    }
+
+    pub const fn allow_on_submit(mut self) -> Self {
+        self.allow_on_submit = true;
         self
     }
 

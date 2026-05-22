@@ -1233,12 +1233,12 @@
     {
       "source": "accounts/doctype/payment_entry_deduction/__init__.py",
       "target": "accounts/doctype/payment_entry_deduction/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_entry_deduction/payment_entry_deduction.py",
       "target": "accounts/doctype/payment_entry_deduction/payment_entry_deduction.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_entry_reference/__init__.py",
