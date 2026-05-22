@@ -126,7 +126,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `financial_report_row` | 3 | 2 | 1 | 0 | not_started | |
 | `financial_report_template` | 8 | 6 | 1 | 1 | not_started | |
 | `fiscal_year` | 7 | 4 | 1 | 1 | not_started | |
-| `fiscal_year_company` | 3 | 2 | 1 | 0 | not_started | |
+| `fiscal_year_company` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_fiscal_year_company`. JSON kept external. |
 | `gl_entry` | 6 | 3 | 1 | 1 | not_started | |
 | `invoice_discounting` | 7 | 4 | 1 | 2 | not_started | |
 | `item_tax_template` | 6 | 4 | 1 | 1 | not_started | |
@@ -775,3 +775,33 @@ Target: `src/erpnext/accounts/doctype/discounted_invoice`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `discounted_invoice.py` | `discounted_invoice.rs` | parity_tested | No-op child table controller and discounted invoice metadata represented in Rust. |
 | `discounted_invoice.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `fiscal_year_company`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/fiscal_year_company`
+Target: `src/erpnext/accounts/doctype/fiscal_year_company`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes required `company` and child table parent fields.
+- DocType metadata:
+  - `name`: `Fiscal Year Company`
+  - `module`: `Accounts`
+  - `document_type`: `Setup`
+  - `istable`: enabled
+  - `editable_grid`: enabled
+  - `index_web_pages_for_search`: enabled
+  - `track_changes`: enabled
+  - `row_format`: `Dynamic`
+  - `field_order`: `company`
+  - `company`: `Link`, label `Company`, options `Company`, `reqd: 1`, `ignore_user_permissions: 1`, `in_list_view: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `fiscal_year_company.py` | `fiscal_year_company.rs` | parity_tested | No-op child table controller and company link metadata represented in Rust. |
+| `fiscal_year_company.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

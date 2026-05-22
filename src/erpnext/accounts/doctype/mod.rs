@@ -16,3 +16,4 @@ pub mod currency_exchange_settings_result;
 pub mod customer_group_item;
 pub mod customer_item;
 pub mod discounted_invoice;
+pub mod fiscal_year_company;

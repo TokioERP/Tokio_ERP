@@ -848,12 +848,12 @@
     {
       "source": "accounts/doctype/fiscal_year_company/__init__.py",
       "target": "accounts/doctype/fiscal_year_company/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/fiscal_year_company/fiscal_year_company.py",
       "target": "accounts/doctype/fiscal_year_company/fiscal_year_company.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/gl_entry/__init__.py",
