@@ -131,7 +131,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `invoice_discounting` | 7 | 4 | 1 | 2 | not_started | |
 | `item_tax_template` | 6 | 4 | 1 | 1 | not_started | |
 | `item_tax_template_detail` | 3 | 2 | 1 | 0 | not_started | |
-| `item_wise_tax_detail` | 3 | 2 | 1 | 0 | not_started | |
+| `item_wise_tax_detail` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_item_wise_tax_detail`. JSON kept external. |
 | `journal_entry` | 8 | 3 | 2 | 2 | not_started | |
 | `journal_entry_account` | 4 | 2 | 1 | 0 | not_started | |
 | `journal_entry_template` | 5 | 3 | 1 | 1 | not_started | |
@@ -805,3 +805,35 @@ Target: `src/erpnext/accounts/doctype/fiscal_year_company`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `fiscal_year_company.py` | `fiscal_year_company.rs` | parity_tested | No-op child table controller and company link metadata represented in Rust. |
 | `fiscal_year_company.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `item_wise_tax_detail`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/item_wise_tax_detail`
+Target: `src/erpnext/accounts/doctype/item_wise_tax_detail`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes item/tax rows, rate, amount, taxable amount, and child table parent fields.
+- DocType metadata:
+  - `name`: `Item Wise Tax Detail`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `index_web_pages_for_search`: enabled
+  - `grid_page_length`: `50`
+  - `row_format`: `Dynamic`
+  - `field_order`: `item_row`, `tax_row`, `rate`, `amount`, `taxable_amount`
+  - `item_row`: `Data`, label `Item Row`, `reqd: 1`, `in_list_view: 1`
+  - `tax_row`: `Data`, label `Tax Row`, `reqd: 1`, `in_list_view: 1`
+  - `rate`: `Float`, label `Tax Rate`, `in_list_view: 1`
+  - `amount`: `Currency`, label `Tax Amount`, options `Company:company:default_currency`, `in_list_view: 1`
+  - `taxable_amount`: `Currency`, label `Taxable Amount`, options `Company:company:default_currency`, `in_list_view: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `item_wise_tax_detail.py` | `item_wise_tax_detail.rs` | parity_tested | No-op child table controller and item-wise tax metadata represented in Rust. |
+| `item_wise_tax_detail.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

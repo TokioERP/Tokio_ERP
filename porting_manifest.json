@@ -923,12 +923,12 @@
     {
       "source": "accounts/doctype/item_wise_tax_detail/__init__.py",
       "target": "accounts/doctype/item_wise_tax_detail/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/item_wise_tax_detail/item_wise_tax_detail.py",
       "target": "accounts/doctype/item_wise_tax_detail/item_wise_tax_detail.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/journal_entry/__init__.py",
