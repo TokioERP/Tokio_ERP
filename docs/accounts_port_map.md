@@ -82,7 +82,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `advance_payment_ledger_entry` | 5 | 3 | 1 | 1 | not_started | |
 | `advance_taxes_and_charges` | 3 | 2 | 1 | 0 | not_started | |
 | `allowed_dimension` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_allowed_dimension`. JSON kept external. |
-| `allowed_to_transact_with` | 3 | 2 | 1 | 0 | not_started | |
+| `allowed_to_transact_with` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_allowed_to_transact_with`. JSON kept external. |
 | `applicable_on_account` | 3 | 2 | 1 | 0 | not_started | |
 | `bank` | 6 | 4 | 1 | 1 | not_started | |
 | `bank_account` | 5 | 3 | 1 | 1 | not_started | |
@@ -339,3 +339,29 @@ Target: `src/erpnext/accounts/doctype/allowed_dimension`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `allowed_dimension.py` | `allowed_dimension.rs` | parity_tested | No-op child table controller and fields represented in Rust. |
 | `allowed_dimension.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `allowed_to_transact_with`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/allowed_to_transact_with`
+Target: `src/erpnext/accounts/doctype/allowed_to_transact_with`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes required `company` and child table parent fields.
+- DocType metadata:
+  - `name`: `Allowed To Transact With`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `field_order`: `company`
+  - `company`: `Link`, label `Company`, options `Company`, `reqd: 1`, `in_list_view: 1`, `ignore_user_permissions: 1`
+  - `quick_entry` and `track_changes` are enabled.
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `allowed_to_transact_with.py` | `allowed_to_transact_with.rs` | parity_tested | No-op child table controller and required company link represented in Rust. |
+| `allowed_to_transact_with.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

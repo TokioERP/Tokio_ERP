@@ -8,6 +8,7 @@ pub struct FieldSpec {
     pub options: Option<&'static str>,
     pub read_only: bool,
     pub in_list_view: bool,
+    pub ignore_user_permissions: bool,
     pub required: bool,
     pub unique: bool,
 }
@@ -21,6 +22,7 @@ impl FieldSpec {
             options: None,
             read_only: false,
             in_list_view: false,
+            ignore_user_permissions: false,
             required: false,
             unique: false,
         }
@@ -34,6 +36,7 @@ impl FieldSpec {
             options: None,
             read_only: false,
             in_list_view: false,
+            ignore_user_permissions: false,
             required: false,
             unique: false,
         }
@@ -47,6 +50,7 @@ impl FieldSpec {
             options: None,
             read_only: false,
             in_list_view: false,
+            ignore_user_permissions: false,
             required: false,
             unique: false,
         }
@@ -69,6 +73,11 @@ impl FieldSpec {
 
     pub const fn required(mut self) -> Self {
         self.required = true;
+        self
+    }
+
+    pub const fn ignore_user_permissions(mut self) -> Self {
+        self.ignore_user_permissions = true;
         self
     }
 

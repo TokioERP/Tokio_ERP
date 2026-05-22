@@ -223,12 +223,12 @@
     {
       "source": "accounts/doctype/allowed_to_transact_with/__init__.py",
       "target": "accounts/doctype/allowed_to_transact_with/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/allowed_to_transact_with/allowed_to_transact_with.py",
       "target": "accounts/doctype/allowed_to_transact_with/allowed_to_transact_with.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/applicable_on_account/__init__.py",
