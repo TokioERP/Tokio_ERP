@@ -213,12 +213,12 @@
     {
       "source": "accounts/doctype/allowed_dimension/__init__.py",
       "target": "accounts/doctype/allowed_dimension/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/allowed_dimension/allowed_dimension.py",
       "target": "accounts/doctype/allowed_dimension/allowed_dimension.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/allowed_to_transact_with/__init__.py",
