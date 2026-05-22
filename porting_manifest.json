@@ -688,12 +688,12 @@
     {
       "source": "accounts/doctype/discounted_invoice/__init__.py",
       "target": "accounts/doctype/discounted_invoice/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/discounted_invoice/discounted_invoice.py",
       "target": "accounts/doctype/discounted_invoice/discounted_invoice.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/dunning/__init__.py",

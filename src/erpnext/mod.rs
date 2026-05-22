@@ -13,11 +13,14 @@ pub struct FieldSpec {
     pub oldfieldname: Option<&'static str>,
     pub oldfieldtype: Option<&'static str>,
     pub width: Option<&'static str>,
+    pub fetch_from: Option<&'static str>,
     pub read_only: bool,
+    pub fetch_if_empty: bool,
     pub in_filter: bool,
     pub in_list_view: bool,
     pub in_standard_filter: bool,
     pub ignore_user_permissions: bool,
+    pub search_index: bool,
     pub hidden: bool,
     pub no_copy: bool,
     pub print_hide: bool,
@@ -39,11 +42,14 @@ impl FieldSpec {
             oldfieldname: None,
             oldfieldtype: None,
             width: None,
+            fetch_from: None,
             read_only: false,
+            fetch_if_empty: false,
             in_filter: false,
             in_list_view: false,
             in_standard_filter: false,
             ignore_user_permissions: false,
+            search_index: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -65,11 +71,14 @@ impl FieldSpec {
             oldfieldname: None,
             oldfieldtype: None,
             width: None,
+            fetch_from: None,
             read_only: false,
+            fetch_if_empty: false,
             in_filter: false,
             in_list_view: false,
             in_standard_filter: false,
             ignore_user_permissions: false,
+            search_index: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -91,11 +100,14 @@ impl FieldSpec {
             oldfieldname: None,
             oldfieldtype: None,
             width: None,
+            fetch_from: None,
             read_only: false,
+            fetch_if_empty: false,
             in_filter: false,
             in_list_view: false,
             in_standard_filter: false,
             ignore_user_permissions: false,
+            search_index: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -117,11 +129,14 @@ impl FieldSpec {
             oldfieldname: None,
             oldfieldtype: None,
             width: None,
+            fetch_from: None,
             read_only: false,
+            fetch_if_empty: false,
             in_filter: false,
             in_list_view: false,
             in_standard_filter: false,
             ignore_user_permissions: false,
+            search_index: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -143,11 +158,14 @@ impl FieldSpec {
             oldfieldname: None,
             oldfieldtype: None,
             width: None,
+            fetch_from: None,
             read_only: false,
+            fetch_if_empty: false,
             in_filter: false,
             in_list_view: false,
             in_standard_filter: false,
             ignore_user_permissions: false,
+            search_index: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -169,11 +187,14 @@ impl FieldSpec {
             oldfieldname: None,
             oldfieldtype: None,
             width: None,
+            fetch_from: None,
             read_only: false,
+            fetch_if_empty: false,
             in_filter: false,
             in_list_view: false,
             in_standard_filter: false,
             ignore_user_permissions: false,
+            search_index: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -195,11 +216,14 @@ impl FieldSpec {
             oldfieldname: None,
             oldfieldtype: None,
             width: None,
+            fetch_from: None,
             read_only: false,
+            fetch_if_empty: false,
             in_filter: false,
             in_list_view: false,
             in_standard_filter: false,
             ignore_user_permissions: false,
+            search_index: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -221,11 +245,14 @@ impl FieldSpec {
             oldfieldname: None,
             oldfieldtype: None,
             width: None,
+            fetch_from: None,
             read_only: false,
+            fetch_if_empty: false,
             in_filter: false,
             in_list_view: false,
             in_standard_filter: false,
             ignore_user_permissions: false,
+            search_index: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -247,11 +274,14 @@ impl FieldSpec {
             oldfieldname: None,
             oldfieldtype: None,
             width: None,
+            fetch_from: None,
             read_only: false,
+            fetch_if_empty: false,
             in_filter: false,
             in_list_view: false,
             in_standard_filter: false,
             ignore_user_permissions: false,
+            search_index: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -273,11 +303,14 @@ impl FieldSpec {
             oldfieldname: None,
             oldfieldtype: None,
             width: None,
+            fetch_from: None,
             read_only: false,
+            fetch_if_empty: false,
             in_filter: false,
             in_list_view: false,
             in_standard_filter: false,
             ignore_user_permissions: false,
+            search_index: false,
             hidden: false,
             no_copy: false,
             print_hide: false,
@@ -331,8 +364,18 @@ impl FieldSpec {
         self
     }
 
+    pub const fn fetch_from(mut self, fetch_from: &'static str) -> Self {
+        self.fetch_from = Some(fetch_from);
+        self
+    }
+
     pub const fn read_only(mut self) -> Self {
         self.read_only = true;
+        self
+    }
+
+    pub const fn fetch_if_empty(mut self) -> Self {
+        self.fetch_if_empty = true;
         self
     }
 
@@ -358,6 +401,11 @@ impl FieldSpec {
 
     pub const fn ignore_user_permissions(mut self) -> Self {
         self.ignore_user_permissions = true;
+        self
+    }
+
+    pub const fn search_index(mut self) -> Self {
+        self.search_index = true;
         self
     }
 

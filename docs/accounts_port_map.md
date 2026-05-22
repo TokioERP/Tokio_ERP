@@ -116,7 +116,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `currency_exchange_settings_result` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_currency_exchange_settings_result`. JSON kept external. |
 | `customer_group_item` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_customer_group_item`. JSON kept external. |
 | `customer_item` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_customer_item`. JSON kept external. |
-| `discounted_invoice` | 3 | 2 | 1 | 0 | not_started | |
+| `discounted_invoice` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_discounted_invoice`. JSON kept external. |
 | `dunning` | 6 | 3 | 1 | 2 | not_started | |
 | `dunning_letter_text` | 3 | 2 | 1 | 0 | not_started | |
 | `dunning_type` | 5 | 3 | 1 | 1 | not_started | |
@@ -742,3 +742,36 @@ Target: `src/erpnext/accounts/doctype/customer_item`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `customer_item.py` | `customer_item.rs` | parity_tested | No-op child table controller and customer metadata represented in Rust. |
 | `customer_item.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `discounted_invoice`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/discounted_invoice`
+Target: `src/erpnext/accounts/doctype/discounted_invoice`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes required `sales_invoice`, invoice-derived fields, and child table parent fields.
+- DocType metadata:
+  - `name`: `Discounted Invoice`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `editable_grid`: enabled
+  - `quick_entry`: enabled
+  - `track_changes`: enabled
+  - `field_order`: `sales_invoice`, `customer`, `column_break_3`, `posting_date`, `outstanding_amount`, `debit_to`
+  - `sales_invoice`: `Link`, label `Invoice`, options `Sales Invoice`, `reqd: 1`, `in_list_view: 1`, `search_index: 1`
+  - `customer`: `Link`, label `Customer`, options `Customer`, fetches `sales_invoice.customer`, `read_only: 1`, `in_list_view: 1`
+  - `column_break_3`: `Column Break`
+  - `posting_date`: `Date`, label `Date`, fetches `sales_invoice.posting_date`, `read_only: 1`, `in_list_view: 1`
+  - `outstanding_amount`: `Currency`, label `Outstanding Amount`, options `Company:company:default_currency`, fetches `sales_invoice.outstanding_amount`, `fetch_if_empty: 1`, `in_list_view: 1`
+  - `debit_to`: `Link`, label `Debit to`, options `Account`, fetches `sales_invoice.debit_to`, `read_only: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `discounted_invoice.py` | `discounted_invoice.rs` | parity_tested | No-op child table controller and discounted invoice metadata represented in Rust. |
+| `discounted_invoice.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
