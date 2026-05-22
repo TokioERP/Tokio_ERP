@@ -199,7 +199,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `process_deferred_accounting` | 5 | 3 | 1 | 1 | parity_tested | Rust covers validate, submit conversion branching, cancel GL-entry plan, and metadata in `accounts_process_deferred_accounting`. JSON/JS kept external. |
 | `process_payment_reconciliation` | 7 | 4 | 1 | 2 | parity_tested | Rust covers lifecycle hooks, account-company validation, dashboard/list helpers, progress seed, allocation grouping, reconcile job names, and metadata in `accounts_process_payment_reconciliation`. JSON/JS kept external. |
 | `process_payment_reconciliation_log` | 6 | 3 | 1 | 2 | parity_tested | Python controller is pass/no-op; Rust metadata, progress helper, and list indicator mapping covered by `accounts_process_payment_reconciliation_log`. JSON/JS kept external. |
-| `process_payment_reconciliation_log_allocations` | 3 | 2 | 1 | 0 | not_started | |
+| `process_payment_reconciliation_log_allocations` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_process_payment_reconciliation_log_allocations`. JSON kept external. |
 | `process_period_closing_voucher` | 5 | 3 | 1 | 1 | not_started | |
 | `process_period_closing_voucher_detail` | 3 | 2 | 1 | 0 | not_started | |
 | `process_statement_of_accounts` | 7 | 3 | 1 | 1 | not_started | |
@@ -1771,3 +1771,44 @@ Target: `src/erpnext/accounts/doctype/process_payment_reconciliation_log`
 | `process_payment_reconciliation_log.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
 | `process_payment_reconciliation_log.js` | ERPNext client script retained | external_kept | Progress behavior is mirrored by Rust helper; UI script remains Frappe-owned. |
 | `process_payment_reconciliation_log_list.js` | ERPNext list script retained | external_kept | List indicator behavior is mirrored by Rust helper; UI script remains Frappe-owned. |
+
+## Doctype Detail: `process_payment_reconciliation_log_allocations`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/process_payment_reconciliation_log_allocations`
+Target: `src/erpnext/accounts/doctype/process_payment_reconciliation_log_allocations`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes reference, invoice, allocation, difference, currency, and reconciliation fields.
+- DocType metadata:
+  - `name`: `Process Payment Reconciliation Log Allocations`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `editable_grid`: enabled
+  - `track_changes`: enabled
+  - `field_order`: `reference_type`, `reference_name`, `reference_row`, `column_break_3`, `invoice_type`, `invoice_number`, `section_break_6`, `allocated_amount`, `unreconciled_amount`, `column_break_8`, `amount`, `is_advance`, `section_break_5`, `difference_amount`, `gain_loss_posting_date`, `column_break_7`, `difference_account`, `exchange_rate`, `currency`, `reconciled`
+  - `reference_type`: `Link`, label `Reference Type`, options `DocType`, required, read-only
+  - `reference_name`: `Dynamic Link`, label `Reference Name`, options `reference_type`, required, read-only, `in_list_view: 1`
+  - `reference_row`: `Data`, label `Reference Row`, hidden, read-only
+  - `invoice_type`: `Link`, label `Invoice Type`, options `DocType`, required, read-only
+  - `invoice_number`: `Dynamic Link`, label `Invoice Number`, options `invoice_type`, required, read-only, `in_list_view: 1`
+  - `allocated_amount`: `Currency`, label `Allocated Amount`, options `currency`, required, `in_list_view: 1`
+  - `unreconciled_amount`: `Currency`, label `Unreconciled Amount`, options `currency`, hidden, read-only
+  - `amount`: `Currency`, label `Amount`, options `currency`, hidden, read-only
+  - `is_advance`: `Data`, label `Is Advance`, hidden, read-only
+  - `difference_amount`: `Currency`, label `Difference Amount`, options `Currency`, read-only, `in_list_view: 1`
+  - `gain_loss_posting_date`: `Date`, label `Difference Posting Date`
+  - `difference_account`: `Link`, label `Difference Account`, options `Account`, read-only
+  - `exchange_rate`: `Float`, label `Exchange Rate`, read-only
+  - `currency`: `Link`, label `Currency`, options `Currency`, hidden
+  - `reconciled`: `Check`, label `Reconciled`, default `0`, `in_list_view: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `process_payment_reconciliation_log_allocations.py` | `process_payment_reconciliation_log_allocations.rs` | parity_tested | No-op child table controller and metadata represented in Rust. |
+| `process_payment_reconciliation_log_allocations.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

@@ -1813,12 +1813,12 @@
     {
       "source": "accounts/doctype/process_payment_reconciliation_log_allocations/__init__.py",
       "target": "accounts/doctype/process_payment_reconciliation_log_allocations/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/process_payment_reconciliation_log_allocations/process_payment_reconciliation_log_allocations.py",
       "target": "accounts/doctype/process_payment_reconciliation_log_allocations/process_payment_reconciliation_log_allocations.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/process_period_closing_voucher/__init__.py",
