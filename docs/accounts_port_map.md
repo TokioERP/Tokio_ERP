@@ -140,7 +140,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `ledger_health_monitor` | 5 | 3 | 1 | 1 | not_started | |
 | `ledger_health_monitor_company` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_ledger_health_monitor_company`. JSON kept external. |
 | `ledger_merge` | 5 | 3 | 1 | 1 | not_started | |
-| `ledger_merge_accounts` | 3 | 2 | 1 | 0 | not_started | |
+| `ledger_merge_accounts` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_ledger_merge_accounts`. JSON kept external. |
 | `loyalty_point_entry` | 5 | 3 | 1 | 1 | not_started | |
 | `loyalty_point_entry_redemption` | 3 | 2 | 1 | 0 | not_started | |
 | `loyalty_program` | 6 | 4 | 1 | 1 | not_started | |
@@ -865,3 +865,33 @@ Target: `src/erpnext/accounts/doctype/ledger_health_monitor_company`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `ledger_health_monitor_company.py` | `ledger_health_monitor_company.rs` | parity_tested | No-op child table controller and company metadata represented in Rust. |
 | `ledger_health_monitor_company.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `ledger_merge_accounts`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/ledger_merge_accounts`
+Target: `src/erpnext/accounts/doctype/ledger_merge_accounts`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes required `account`, required `account_name`, `merged`, and child table parent fields.
+- DocType metadata:
+  - `name`: `Ledger Merge Accounts`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `allow_rename`: enabled
+  - `editable_grid`: enabled
+  - `index_web_pages_for_search`: enabled
+  - `field_order`: `account`, `account_name`, `merged`
+  - `account`: `Link`, label `Account`, options `Account`, columns `4`, `reqd: 1`, `in_list_view: 1`
+  - `account_name`: `Data`, label `Account Name`, columns `4`, `reqd: 1`, `read_only: 1`
+  - `merged`: `Check`, label `Merged`, columns `2`, default `0`, `read_only: 1`, `in_list_view: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `ledger_merge_accounts.py` | `ledger_merge_accounts.rs` | parity_tested | No-op child table controller and ledger merge account metadata represented in Rust. |
+| `ledger_merge_accounts.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

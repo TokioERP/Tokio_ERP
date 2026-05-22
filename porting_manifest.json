@@ -1038,12 +1038,12 @@
     {
       "source": "accounts/doctype/ledger_merge_accounts/__init__.py",
       "target": "accounts/doctype/ledger_merge_accounts/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/ledger_merge_accounts/ledger_merge_accounts.py",
       "target": "accounts/doctype/ledger_merge_accounts/ledger_merge_accounts.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/loyalty_point_entry/__init__.py",
