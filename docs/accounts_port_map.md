@@ -75,7 +75,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `account_category` | 5 | 3 | 1 | 1 | not_started | |
 | `account_closing_balance` | 5 | 3 | 1 | 1 | not_started | |
 | `accounting_dimension` | 5 | 3 | 1 | 1 | not_started | |
-| `accounting_dimension_detail` | 3 | 2 | 1 | 0 | not_started | |
+| `accounting_dimension_detail` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_accounting_dimension_detail`. JSON kept external. |
 | `accounting_dimension_filter` | 5 | 3 | 1 | 1 | not_started | |
 | `accounting_period` | 5 | 3 | 1 | 1 | not_started | |
 | `accounts_settings` | 6 | 3 | 1 | 2 | not_started | |
@@ -392,3 +392,36 @@ Target: `src/erpnext/accounts/doctype/applicable_on_account`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `applicable_on_account.py` | `applicable_on_account.rs` | parity_tested | No-op child table controller and account/check fields represented in Rust. |
 | `applicable_on_account.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `accounting_dimension_detail`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/accounting_dimension_detail`
+Target: `src/erpnext/accounts/doctype/accounting_dimension_detail`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes company, reference/default dimension links, check fields, offsetting account, and child table parent fields.
+- DocType metadata:
+  - `name`: `Accounting Dimension Detail`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `field_order`: `company`, `reference_document`, `default_dimension`, `mandatory_for_bs`, `mandatory_for_pl`, `column_break_lqns`, `automatically_post_balancing_accounting_entry`, `offsetting_account`
+  - `company`: `Link`, label `Company`, options `Company`, columns `2`, `in_list_view: 1`
+  - `reference_document`: `Link`, label `Reference Document`, options `DocType`, `hidden: 1`, `read_only: 1`
+  - `default_dimension`: `Dynamic Link`, label `Default Dimension`, options `reference_document`, columns `2`, `in_list_view: 1`
+  - `mandatory_for_bs`: `Check`, label `Mandatory For Balance Sheet`, default `0`, columns `3`, `in_list_view: 1`
+  - `mandatory_for_pl`: `Check`, label `Mandatory For Profit and Loss Account`, default `0`, columns `3`, `in_list_view: 1`
+  - `automatically_post_balancing_accounting_entry`: `Check`, default `0`
+  - `offsetting_account`: `Link`, label `Offsetting Account`, options `Account`, `mandatory_depends_on: eval: doc.automatically_post_balancing_accounting_entry`
+  - `column_break_lqns`: `Column Break`
+  - `track_changes` is enabled.
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `accounting_dimension_detail.py` | `accounting_dimension_detail.rs` | parity_tested | No-op child table controller and metadata fields represented in Rust. |
+| `accounting_dimension_detail.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

@@ -133,12 +133,12 @@
     {
       "source": "accounts/doctype/accounting_dimension_detail/__init__.py",
       "target": "accounts/doctype/accounting_dimension_detail/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/accounting_dimension_detail/accounting_dimension_detail.py",
       "target": "accounts/doctype/accounting_dimension_detail/accounting_dimension_detail.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/accounting_dimension_filter/__init__.py",

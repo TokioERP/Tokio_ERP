@@ -1,3 +1,4 @@
+pub mod accounting_dimension_detail;
 pub mod allowed_dimension;
 pub mod allowed_to_transact_with;
 pub mod applicable_on_account;

@@ -8,9 +8,11 @@ pub struct FieldSpec {
     pub options: Option<&'static str>,
     pub default: Option<&'static str>,
     pub columns: Option<u8>,
+    pub mandatory_depends_on: Option<&'static str>,
     pub read_only: bool,
     pub in_list_view: bool,
     pub ignore_user_permissions: bool,
+    pub hidden: bool,
     pub required: bool,
     pub unique: bool,
 }
@@ -24,9 +26,11 @@ impl FieldSpec {
             options: None,
             default: None,
             columns: None,
+            mandatory_depends_on: None,
             read_only: false,
             in_list_view: false,
             ignore_user_permissions: false,
+            hidden: false,
             required: false,
             unique: false,
         }
@@ -40,9 +44,11 @@ impl FieldSpec {
             options: None,
             default: None,
             columns: None,
+            mandatory_depends_on: None,
             read_only: false,
             in_list_view: false,
             ignore_user_permissions: false,
+            hidden: false,
             required: false,
             unique: false,
         }
@@ -56,9 +62,11 @@ impl FieldSpec {
             options: None,
             default: None,
             columns: None,
+            mandatory_depends_on: None,
             read_only: false,
             in_list_view: false,
             ignore_user_permissions: false,
+            hidden: false,
             required: false,
             unique: false,
         }
@@ -72,12 +80,37 @@ impl FieldSpec {
             options: None,
             default: None,
             columns: None,
+            mandatory_depends_on: None,
             read_only: false,
             in_list_view: false,
             ignore_user_permissions: false,
+            hidden: false,
             required: false,
             unique: false,
         }
+    }
+
+    pub const fn column_break(fieldname: &'static str) -> Self {
+        Self {
+            fieldname,
+            fieldtype: "Column Break",
+            label: None,
+            options: None,
+            default: None,
+            columns: None,
+            mandatory_depends_on: None,
+            read_only: false,
+            in_list_view: false,
+            ignore_user_permissions: false,
+            hidden: false,
+            required: false,
+            unique: false,
+        }
+    }
+
+    pub const fn label(mut self, label: &'static str) -> Self {
+        self.label = Some(label);
+        self
     }
 
     pub const fn options(mut self, options: &'static str) -> Self {
@@ -92,6 +125,11 @@ impl FieldSpec {
 
     pub const fn columns(mut self, columns: u8) -> Self {
         self.columns = Some(columns);
+        self
+    }
+
+    pub const fn mandatory_depends_on(mut self, mandatory_depends_on: &'static str) -> Self {
+        self.mandatory_depends_on = Some(mandatory_depends_on);
         self
     }
 
@@ -112,6 +150,11 @@ impl FieldSpec {
 
     pub const fn ignore_user_permissions(mut self) -> Self {
         self.ignore_user_permissions = true;
+        self
+    }
+
+    pub const fn hidden(mut self) -> Self {
+        self.hidden = true;
         self
     }
 
