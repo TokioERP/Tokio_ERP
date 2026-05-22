@@ -1763,17 +1763,17 @@
     {
       "source": "accounts/doctype/process_deferred_accounting/__init__.py",
       "target": "accounts/doctype/process_deferred_accounting/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/process_deferred_accounting/process_deferred_accounting.py",
       "target": "accounts/doctype/process_deferred_accounting/process_deferred_accounting.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/process_deferred_accounting/test_process_deferred_accounting.py",
       "target": "accounts/doctype/process_deferred_accounting/test_process_deferred_accounting.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/process_payment_reconciliation/__init__.py",

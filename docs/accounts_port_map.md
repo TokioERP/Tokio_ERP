@@ -196,7 +196,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `pricing_rule_detail` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pricing_rule_detail`. JSON kept external. |
 | `pricing_rule_item_code` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pricing_rule_item_code`. JSON kept external. |
 | `pricing_rule_item_group` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pricing_rule_item_group`. JSON kept external. |
-| `process_deferred_accounting` | 5 | 3 | 1 | 1 | not_started | |
+| `process_deferred_accounting` | 5 | 3 | 1 | 1 | parity_tested | Rust covers validate, submit conversion branching, cancel GL-entry plan, and metadata in `accounts_process_deferred_accounting`. JSON/JS kept external. |
 | `process_payment_reconciliation` | 7 | 4 | 1 | 2 | not_started | |
 | `process_payment_reconciliation_log` | 6 | 3 | 1 | 2 | not_started | |
 | `process_payment_reconciliation_log_allocations` | 3 | 2 | 1 | 0 | not_started | |
@@ -1638,3 +1638,43 @@ Target: `src/erpnext/accounts/doctype/pricing_rule_item_group`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `pricing_rule_item_group.py` | `pricing_rule_item_group.rs` | parity_tested | No-op child table controller and pricing rule item group metadata represented in Rust. |
 | `pricing_rule_item_group.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `process_deferred_accounting`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/process_deferred_accounting`
+Target: `src/erpnext/accounts/doctype/process_deferred_accounting`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- `validate` throws `End date cannot be before start date` when `end_date < start_date`.
+- `on_submit` builds deferred accounting conditions from `type`, `account`, and `company`.
+- `on_submit` calls deferred revenue conversion when `type == "Income"`.
+- `on_submit` calls deferred expense conversion for all other types, matching the Python `else` branch.
+- `on_cancel` ignores linked `GL Entry` doctypes, fetches GL Entries by `against_voucher_type` and `against_voucher`, then cancels them through `make_gl_entries(cancel=1)`.
+- Source Python tests cover submit/cancel GL behavior; Rust tests cover the local controller branching and cancellation plan without owning ERPNext DB/GL side effects.
+- DocType metadata:
+  - `name`: `Process Deferred Accounting`
+  - `module`: `Accounts`
+  - `autoname`: `ACC-PDA-.#####`
+  - `editable_grid`: enabled
+  - `index_web_pages_for_search`: enabled
+  - `is_submittable`: enabled
+  - `field_order`: `company`, `type`, `account`, `column_break_3`, `posting_date`, `start_date`, `end_date`, `amended_from`
+  - `company`: `Link`, label `Company`, options `Company`, required
+  - `type`: `Select`, label `Type`, options newline, `Income`, `Expense`, required, `in_list_view: 1`
+  - `account`: `Link`, label `Account`, options `Account`, `depends_on: eval: doc.type`
+  - `posting_date`: `Date`, label `Posting Date`, default `Today`, required, `in_list_view: 1`
+  - `start_date`: `Date`, label `Service Start Date`, required, `in_list_view: 1`
+  - `end_date`: `Date`, label `Service End Date`, required, `in_list_view: 1`
+  - `amended_from`: `Link`, label `Amended From`, options `Process Deferred Accounting`, `no_copy: 1`, `print_hide: 1`, `read_only: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `process_deferred_accounting.py` | `process_deferred_accounting.rs` | parity_tested | Validate, submit conversion branch, cancel GL plan, hooks, and metadata represented in Rust. |
+| `test_process_deferred_accounting.py` | `tests/accounts_process_deferred_accounting.rs` | parity_tested | Rust tests cover deterministic controller behavior; ERPNext integration DB/GL tests remain source reference. |
+| `process_deferred_accounting.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+| `process_deferred_accounting.js` | ERPNext client script retained | external_kept | Client-side query, settings, and date defaults remain UI/Frappe-owned. |
