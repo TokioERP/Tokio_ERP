@@ -103,7 +103,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `budget_distribution` | 3 | 2 | 1 | 0 | not_started | |
 | `campaign_item` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_campaign_item`. JSON kept external. |
 | `cashier_closing` | 5 | 3 | 1 | 1 | not_started | |
-| `cashier_closing_payments` | 3 | 2 | 1 | 0 | not_started | |
+| `cashier_closing_payments` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_cashier_closing_payments`. JSON kept external. |
 | `chart_of_accounts_importer` | 6 | 3 | 1 | 1 | not_started | |
 | `cheque_print_template` | 5 | 3 | 1 | 1 | not_started | |
 | `closed_document` | 3 | 2 | 1 | 0 | not_started | |
@@ -544,3 +544,31 @@ Target: `src/erpnext/accounts/doctype/campaign_item`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `campaign_item.py` | `campaign_item.rs` | parity_tested | No-op child table controller and campaign link metadata represented in Rust. |
 | `campaign_item.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `cashier_closing_payments`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/cashier_closing_payments`
+Target: `src/erpnext/accounts/doctype/cashier_closing_payments`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes required `mode_of_payment`, `amount`, and child table parent fields.
+- DocType metadata:
+  - `name`: `Cashier Closing Payments`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `quick_entry`: enabled
+  - `track_changes`: enabled
+  - `field_order`: `mode_of_payment`, `amount`
+  - `mode_of_payment`: `Link`, label `Mode of Payment`, options `Mode of Payment`, `reqd: 1`, `in_list_view: 1`, `in_filter: 1`, `in_standard_filter: 1`
+  - `amount`: `Float`, label `Amount`, default `0.00`, `in_list_view: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `cashier_closing_payments.py` | `cashier_closing_payments.rs` | parity_tested | No-op child table controller and payment summary metadata represented in Rust. |
+| `cashier_closing_payments.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

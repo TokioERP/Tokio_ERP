@@ -8,3 +8,4 @@ pub mod bank_clearance_detail;
 pub mod bank_transaction_mapping;
 pub mod bank_transaction_payments;
 pub mod campaign_item;
+pub mod cashier_closing_payments;

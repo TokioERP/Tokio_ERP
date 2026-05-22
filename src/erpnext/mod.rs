@@ -14,7 +14,9 @@ pub struct FieldSpec {
     pub oldfieldtype: Option<&'static str>,
     pub width: Option<&'static str>,
     pub read_only: bool,
+    pub in_filter: bool,
     pub in_list_view: bool,
+    pub in_standard_filter: bool,
     pub ignore_user_permissions: bool,
     pub hidden: bool,
     pub no_copy: bool,
@@ -38,7 +40,9 @@ impl FieldSpec {
             oldfieldtype: None,
             width: None,
             read_only: false,
+            in_filter: false,
             in_list_view: false,
+            in_standard_filter: false,
             ignore_user_permissions: false,
             hidden: false,
             no_copy: false,
@@ -62,7 +66,9 @@ impl FieldSpec {
             oldfieldtype: None,
             width: None,
             read_only: false,
+            in_filter: false,
             in_list_view: false,
+            in_standard_filter: false,
             ignore_user_permissions: false,
             hidden: false,
             no_copy: false,
@@ -86,7 +92,9 @@ impl FieldSpec {
             oldfieldtype: None,
             width: None,
             read_only: false,
+            in_filter: false,
             in_list_view: false,
+            in_standard_filter: false,
             ignore_user_permissions: false,
             hidden: false,
             no_copy: false,
@@ -110,7 +118,9 @@ impl FieldSpec {
             oldfieldtype: None,
             width: None,
             read_only: false,
+            in_filter: false,
             in_list_view: false,
+            in_standard_filter: false,
             ignore_user_permissions: false,
             hidden: false,
             no_copy: false,
@@ -134,7 +144,9 @@ impl FieldSpec {
             oldfieldtype: None,
             width: None,
             read_only: false,
+            in_filter: false,
             in_list_view: false,
+            in_standard_filter: false,
             ignore_user_permissions: false,
             hidden: false,
             no_copy: false,
@@ -158,7 +170,9 @@ impl FieldSpec {
             oldfieldtype: None,
             width: None,
             read_only: false,
+            in_filter: false,
             in_list_view: false,
+            in_standard_filter: false,
             ignore_user_permissions: false,
             hidden: false,
             no_copy: false,
@@ -182,7 +196,9 @@ impl FieldSpec {
             oldfieldtype: None,
             width: None,
             read_only: false,
+            in_filter: false,
             in_list_view: false,
+            in_standard_filter: false,
             ignore_user_permissions: false,
             hidden: false,
             no_copy: false,
@@ -206,7 +222,35 @@ impl FieldSpec {
             oldfieldtype: None,
             width: None,
             read_only: false,
+            in_filter: false,
             in_list_view: false,
+            in_standard_filter: false,
+            ignore_user_permissions: false,
+            hidden: false,
+            no_copy: false,
+            print_hide: false,
+            required: false,
+            unique: false,
+        }
+    }
+
+    pub const fn float(fieldname: &'static str, label: &'static str) -> Self {
+        Self {
+            fieldname,
+            fieldtype: "Float",
+            label: Some(label),
+            options: None,
+            default: None,
+            columns: None,
+            depends_on: None,
+            mandatory_depends_on: None,
+            oldfieldname: None,
+            oldfieldtype: None,
+            width: None,
+            read_only: false,
+            in_filter: false,
+            in_list_view: false,
+            in_standard_filter: false,
             ignore_user_permissions: false,
             hidden: false,
             no_copy: false,
@@ -266,8 +310,18 @@ impl FieldSpec {
         self
     }
 
+    pub const fn in_filter(mut self) -> Self {
+        self.in_filter = true;
+        self
+    }
+
     pub const fn in_list_view(mut self) -> Self {
         self.in_list_view = true;
+        self
+    }
+
+    pub const fn in_standard_filter(mut self) -> Self {
+        self.in_standard_filter = true;
         self
     }
 

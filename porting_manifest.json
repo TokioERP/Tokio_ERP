@@ -523,12 +523,12 @@
     {
       "source": "accounts/doctype/cashier_closing_payments/__init__.py",
       "target": "accounts/doctype/cashier_closing_payments/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/cashier_closing_payments/cashier_closing_payments.py",
       "target": "accounts/doctype/cashier_closing_payments/cashier_closing_payments.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/chart_of_accounts_importer/__init__.py",
