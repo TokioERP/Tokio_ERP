@@ -8,6 +8,7 @@ pub struct FieldSpec {
     pub options: Option<&'static str>,
     pub default: Option<&'static str>,
     pub columns: Option<u8>,
+    pub depends_on: Option<&'static str>,
     pub mandatory_depends_on: Option<&'static str>,
     pub oldfieldname: Option<&'static str>,
     pub oldfieldtype: Option<&'static str>,
@@ -16,6 +17,8 @@ pub struct FieldSpec {
     pub in_list_view: bool,
     pub ignore_user_permissions: bool,
     pub hidden: bool,
+    pub no_copy: bool,
+    pub print_hide: bool,
     pub required: bool,
     pub unique: bool,
 }
@@ -29,6 +32,7 @@ impl FieldSpec {
             options: None,
             default: None,
             columns: None,
+            depends_on: None,
             mandatory_depends_on: None,
             oldfieldname: None,
             oldfieldtype: None,
@@ -37,6 +41,8 @@ impl FieldSpec {
             in_list_view: false,
             ignore_user_permissions: false,
             hidden: false,
+            no_copy: false,
+            print_hide: false,
             required: false,
             unique: false,
         }
@@ -50,6 +56,7 @@ impl FieldSpec {
             options: None,
             default: None,
             columns: None,
+            depends_on: None,
             mandatory_depends_on: None,
             oldfieldname: None,
             oldfieldtype: None,
@@ -58,6 +65,8 @@ impl FieldSpec {
             in_list_view: false,
             ignore_user_permissions: false,
             hidden: false,
+            no_copy: false,
+            print_hide: false,
             required: false,
             unique: false,
         }
@@ -71,6 +80,7 @@ impl FieldSpec {
             options: None,
             default: None,
             columns: None,
+            depends_on: None,
             mandatory_depends_on: None,
             oldfieldname: None,
             oldfieldtype: None,
@@ -79,6 +89,8 @@ impl FieldSpec {
             in_list_view: false,
             ignore_user_permissions: false,
             hidden: false,
+            no_copy: false,
+            print_hide: false,
             required: false,
             unique: false,
         }
@@ -92,6 +104,7 @@ impl FieldSpec {
             options: None,
             default: None,
             columns: None,
+            depends_on: None,
             mandatory_depends_on: None,
             oldfieldname: None,
             oldfieldtype: None,
@@ -100,6 +113,8 @@ impl FieldSpec {
             in_list_view: false,
             ignore_user_permissions: false,
             hidden: false,
+            no_copy: false,
+            print_hide: false,
             required: false,
             unique: false,
         }
@@ -113,6 +128,7 @@ impl FieldSpec {
             options: None,
             default: None,
             columns: None,
+            depends_on: None,
             mandatory_depends_on: None,
             oldfieldname: None,
             oldfieldtype: None,
@@ -121,6 +137,8 @@ impl FieldSpec {
             in_list_view: false,
             ignore_user_permissions: false,
             hidden: false,
+            no_copy: false,
+            print_hide: false,
             required: false,
             unique: false,
         }
@@ -134,6 +152,7 @@ impl FieldSpec {
             options: None,
             default: None,
             columns: None,
+            depends_on: None,
             mandatory_depends_on: None,
             oldfieldname: None,
             oldfieldtype: None,
@@ -142,6 +161,8 @@ impl FieldSpec {
             in_list_view: false,
             ignore_user_permissions: false,
             hidden: false,
+            no_copy: false,
+            print_hide: false,
             required: false,
             unique: false,
         }
@@ -155,6 +176,7 @@ impl FieldSpec {
             options: None,
             default: None,
             columns: None,
+            depends_on: None,
             mandatory_depends_on: None,
             oldfieldname: None,
             oldfieldtype: None,
@@ -163,6 +185,32 @@ impl FieldSpec {
             in_list_view: false,
             ignore_user_permissions: false,
             hidden: false,
+            no_copy: false,
+            print_hide: false,
+            required: false,
+            unique: false,
+        }
+    }
+
+    pub const fn currency(fieldname: &'static str, label: &'static str) -> Self {
+        Self {
+            fieldname,
+            fieldtype: "Currency",
+            label: Some(label),
+            options: None,
+            default: None,
+            columns: None,
+            depends_on: None,
+            mandatory_depends_on: None,
+            oldfieldname: None,
+            oldfieldtype: None,
+            width: None,
+            read_only: false,
+            in_list_view: false,
+            ignore_user_permissions: false,
+            hidden: false,
+            no_copy: false,
+            print_hide: false,
             required: false,
             unique: false,
         }
@@ -185,6 +233,11 @@ impl FieldSpec {
 
     pub const fn columns(mut self, columns: u8) -> Self {
         self.columns = Some(columns);
+        self
+    }
+
+    pub const fn depends_on(mut self, depends_on: &'static str) -> Self {
+        self.depends_on = Some(depends_on);
         self
     }
 
@@ -230,6 +283,16 @@ impl FieldSpec {
 
     pub const fn hidden(mut self) -> Self {
         self.hidden = true;
+        self
+    }
+
+    pub const fn no_copy(mut self) -> Self {
+        self.no_copy = true;
+        self
+    }
+
+    pub const fn print_hide(mut self) -> Self {
+        self.print_hide = true;
         self
     }
 

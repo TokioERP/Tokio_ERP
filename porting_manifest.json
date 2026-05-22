@@ -423,12 +423,12 @@
     {
       "source": "accounts/doctype/bank_transaction_payments/__init__.py",
       "target": "accounts/doctype/bank_transaction_payments/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_transaction_payments/bank_transaction_payments.py",
       "target": "accounts/doctype/bank_transaction_payments/bank_transaction_payments.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bisect_accounting_statements/__init__.py",

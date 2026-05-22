@@ -95,7 +95,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `bank_statement_import` | 7 | 3 | 1 | 2 | not_started | |
 | `bank_transaction` | 10 | 7 | 1 | 2 | not_started | |
 | `bank_transaction_mapping` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_bank_transaction_mapping`. JSON kept external. |
-| `bank_transaction_payments` | 3 | 2 | 1 | 0 | not_started | |
+| `bank_transaction_payments` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_bank_transaction_payments`. JSON kept external. |
 | `bisect_accounting_statements` | 5 | 3 | 1 | 1 | not_started | |
 | `bisect_nodes` | 5 | 3 | 1 | 1 | not_started | |
 | `budget` | 5 | 3 | 1 | 1 | not_started | |
@@ -487,3 +487,33 @@ Target: `src/erpnext/accounts/doctype/bank_transaction_mapping`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `bank_transaction_mapping.py` | `bank_transaction_mapping.rs` | parity_tested | No-op child table controller and required mapping fields represented in Rust. |
 | `bank_transaction_mapping.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `bank_transaction_payments`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/bank_transaction_payments`
+Target: `src/erpnext/accounts/doctype/bank_transaction_payments`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes required payment document/entry, allocated amount, clearance date, and child table parent fields.
+- DocType metadata:
+  - `name`: `Bank Transaction Payments`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `quick_entry`: enabled
+  - `track_changes`: enabled
+  - `field_order`: `payment_document`, `payment_entry`, `allocated_amount`, `clearance_date`
+  - `payment_document`: `Link`, label `Payment Document`, options `DocType`, `reqd: 1`, `in_list_view: 1`
+  - `payment_entry`: `Dynamic Link`, label `Payment Entry`, options `payment_document`, `reqd: 1`, `in_list_view: 1`
+  - `allocated_amount`: `Currency`, label `Allocated Amount`, `reqd: 1`, `in_list_view: 1`
+  - `clearance_date`: `Date`, label `Clearance Date`, `depends_on: eval:doc.docstatus==1`, `no_copy: 1`, `print_hide: 1`, `read_only: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `bank_transaction_payments.py` | `bank_transaction_payments.rs` | parity_tested | No-op child table controller and payment allocation metadata represented in Rust. |
+| `bank_transaction_payments.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
