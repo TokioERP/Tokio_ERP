@@ -1,0 +1,1 @@
+pub mod payment_terms_template_detail;

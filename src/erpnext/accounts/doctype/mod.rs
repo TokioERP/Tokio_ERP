@@ -26,3 +26,4 @@ pub mod payment_entry_deduction;
 pub mod payment_reference;
 pub mod payment_schedule;
 pub mod payment_term;
+pub mod payment_terms_template_detail;
