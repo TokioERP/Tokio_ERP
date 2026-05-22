@@ -6,6 +6,8 @@ pub struct FieldSpec {
     pub fieldtype: &'static str,
     pub label: Option<&'static str>,
     pub options: Option<&'static str>,
+    pub default: Option<&'static str>,
+    pub columns: Option<u8>,
     pub read_only: bool,
     pub in_list_view: bool,
     pub ignore_user_permissions: bool,
@@ -20,6 +22,8 @@ impl FieldSpec {
             fieldtype: "Data",
             label: Some(label),
             options: None,
+            default: None,
+            columns: None,
             read_only: false,
             in_list_view: false,
             ignore_user_permissions: false,
@@ -34,6 +38,8 @@ impl FieldSpec {
             fieldtype: "Link",
             label: Some(label),
             options: None,
+            default: None,
+            columns: None,
             read_only: false,
             in_list_view: false,
             ignore_user_permissions: false,
@@ -48,6 +54,24 @@ impl FieldSpec {
             fieldtype: "Dynamic Link",
             label: None,
             options: None,
+            default: None,
+            columns: None,
+            read_only: false,
+            in_list_view: false,
+            ignore_user_permissions: false,
+            required: false,
+            unique: false,
+        }
+    }
+
+    pub const fn check(fieldname: &'static str, label: &'static str) -> Self {
+        Self {
+            fieldname,
+            fieldtype: "Check",
+            label: Some(label),
+            options: None,
+            default: None,
+            columns: None,
             read_only: false,
             in_list_view: false,
             ignore_user_permissions: false,
@@ -58,6 +82,16 @@ impl FieldSpec {
 
     pub const fn options(mut self, options: &'static str) -> Self {
         self.options = Some(options);
+        self
+    }
+
+    pub const fn default(mut self, default: &'static str) -> Self {
+        self.default = Some(default);
+        self
+    }
+
+    pub const fn columns(mut self, columns: u8) -> Self {
+        self.columns = Some(columns);
         self
     }
 

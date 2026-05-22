@@ -233,12 +233,12 @@
     {
       "source": "accounts/doctype/applicable_on_account/__init__.py",
       "target": "accounts/doctype/applicable_on_account/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/applicable_on_account/applicable_on_account.py",
       "target": "accounts/doctype/applicable_on_account/applicable_on_account.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank/__init__.py",

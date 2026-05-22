@@ -83,7 +83,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `advance_taxes_and_charges` | 3 | 2 | 1 | 0 | not_started | |
 | `allowed_dimension` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_allowed_dimension`. JSON kept external. |
 | `allowed_to_transact_with` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_allowed_to_transact_with`. JSON kept external. |
-| `applicable_on_account` | 3 | 2 | 1 | 0 | not_started | |
+| `applicable_on_account` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_applicable_on_account`. JSON kept external. |
 | `bank` | 6 | 4 | 1 | 1 | not_started | |
 | `bank_account` | 5 | 3 | 1 | 1 | not_started | |
 | `bank_account_subtype` | 5 | 3 | 1 | 1 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_bank_account_subtype`. JSON/JS kept external. |
@@ -365,3 +365,30 @@ Target: `src/erpnext/accounts/doctype/allowed_to_transact_with`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `allowed_to_transact_with.py` | `allowed_to_transact_with.rs` | parity_tested | No-op child table controller and required company link represented in Rust. |
 | `allowed_to_transact_with.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `applicable_on_account`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/applicable_on_account`
+Target: `src/erpnext/accounts/doctype/applicable_on_account`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes required `applicable_on_account`, `is_mandatory`, and child table parent fields.
+- DocType metadata:
+  - `name`: `Applicable On Account`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `field_order`: `applicable_on_account`, `is_mandatory`
+  - `applicable_on_account`: `Link`, label `Accounts`, options `Account`, `reqd: 1`, `in_list_view: 1`
+  - `is_mandatory`: `Check`, label `Is Mandatory`, default `0`, columns `2`, `in_list_view: 1`
+  - `quick_entry`, `index_web_pages_for_search`, and `track_changes` are enabled.
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `applicable_on_account.py` | `applicable_on_account.rs` | parity_tested | No-op child table controller and account/check fields represented in Rust. |
+| `applicable_on_account.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
