@@ -648,12 +648,12 @@
     {
       "source": "accounts/doctype/currency_exchange_settings_details/__init__.py",
       "target": "accounts/doctype/currency_exchange_settings_details/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/currency_exchange_settings_details/currency_exchange_settings_details.py",
       "target": "accounts/doctype/currency_exchange_settings_details/currency_exchange_settings_details.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/currency_exchange_settings_result/__init__.py",
