@@ -668,12 +668,12 @@
     {
       "source": "accounts/doctype/customer_group_item/__init__.py",
       "target": "accounts/doctype/customer_group_item/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/customer_group_item/customer_group_item.py",
       "target": "accounts/doctype/customer_group_item/customer_group_item.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/customer_item/__init__.py",

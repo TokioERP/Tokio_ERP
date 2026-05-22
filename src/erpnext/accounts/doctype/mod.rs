@@ -13,3 +13,4 @@ pub mod closed_document;
 pub mod cost_center_allocation_percentage;
 pub mod currency_exchange_settings_details;
 pub mod currency_exchange_settings_result;
+pub mod customer_group_item;
