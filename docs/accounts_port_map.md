@@ -185,7 +185,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `pos_invoice_reference` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_invoice_reference`. JSON kept external. |
 | `pos_item_group` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_item_group`. JSON kept external. |
 | `pos_opening_entry` | 6 | 3 | 1 | 2 | not_started | |
-| `pos_opening_entry_detail` | 3 | 2 | 1 | 0 | not_started | |
+| `pos_opening_entry_detail` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_opening_entry_detail`. JSON kept external. |
 | `pos_payment_method` | 3 | 2 | 1 | 0 | not_started | |
 | `pos_profile` | 5 | 3 | 1 | 1 | not_started | |
 | `pos_profile_user` | 5 | 3 | 1 | 1 | not_started | |
@@ -1437,3 +1437,30 @@ Target: `src/erpnext/accounts/doctype/pos_item_group`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `pos_item_group.py` | `pos_item_group.rs` | parity_tested | No-op child table controller and POS item group metadata represented in Rust. |
 | `pos_item_group.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `pos_opening_entry_detail`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/pos_opening_entry_detail`
+Target: `src/erpnext/accounts/doctype/pos_opening_entry_detail`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes mode of payment, opening amount, and child table parent fields.
+- DocType metadata:
+  - `name`: `POS Opening Entry Detail`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `editable_grid`: enabled
+  - `field_order`: `mode_of_payment`, `opening_amount`
+  - `mode_of_payment`: `Link`, label `Mode of Payment`, options `Mode of Payment`, required, `in_list_view: 1`
+  - `opening_amount`: `Currency`, label `Opening Amount`, options `company:company_currency`, required, default `0`, `in_list_view: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `pos_opening_entry_detail.py` | `pos_opening_entry_detail.rs` | parity_tested | No-op child table controller and POS opening detail metadata represented in Rust. |
+| `pos_opening_entry_detail.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

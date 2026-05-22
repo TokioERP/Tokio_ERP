@@ -1628,12 +1628,12 @@
     {
       "source": "accounts/doctype/pos_opening_entry_detail/__init__.py",
       "target": "accounts/doctype/pos_opening_entry_detail/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_opening_entry_detail/pos_opening_entry_detail.py",
       "target": "accounts/doctype/pos_opening_entry_detail/pos_opening_entry_detail.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_payment_method/__init__.py",
