@@ -1,0 +1,258 @@
+# Accounts Module Port Map
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts`
+Target: `src/erpnext/accounts`
+
+## Rule
+
+This is not an MVP list. Every source folder and file is tracked. A row is closed only when the Rust side preserves the ERPNext-visible behavior for that item or the item is explicitly classified as metadata/UI/static and intentionally left to ERPNext.
+
+## Status Values
+
+- `not_started`: inventory exists, no port work done.
+- `mapped`: source behavior and target Rust file/path are identified.
+- `ported`: Rust implementation exists.
+- `parity_tested`: compared against ERPNext behavior and passed.
+- `external_kept`: JSON, JS, HTML, CSV, CSS, or static metadata intentionally remains in ERPNext/Frappe.
+
+## Totals
+
+- Directories: 317
+- Files: 1291
+- `py`: 686
+- `json`: 393
+- `js`: 162
+- `html`: 28
+- `md`: 20
+- `csv`: 1
+- `css`: 1
+
+## Submodules
+
+| Submodule | Dirs | Files | Python | JSON | JS | Status | Notes |
+|---|---:|---:|---:|---:|---:|---|---|
+| `accounts_dashboard` | 3 | 2 | 0 | 2 | 0 | not_started | |
+| `custom` | 1 | 2 | 1 | 1 | 0 | not_started | |
+| `dashboard_chart` | 8 | 7 | 0 | 7 | 0 | not_started | |
+| `dashboard_chart_source` | 2 | 5 | 3 | 1 | 1 | not_started | |
+| `doctype` | 191 | 923 | 504 | 282 | 111 | not_started | |
+| `financial_report_template` | 7 | 14 | 7 | 7 | 0 | not_started | |
+| `letterhead` | 1 | 2 | 0 | 0 | 0 | not_started | |
+| `module_onboarding` | 2 | 1 | 0 | 1 | 0 | not_started | |
+| `notification` | 2 | 5 | 3 | 1 | 0 | not_started | |
+| `number_card` | 5 | 4 | 0 | 4 | 0 | not_started | |
+| `onboarding_step` | 7 | 6 | 0 | 6 | 0 | not_started | |
+| `page` | 1 | 1 | 1 | 0 | 0 | not_started | |
+| `print_format` | 26 | 57 | 26 | 25 | 0 | not_started | |
+| `print_format_field_template` | 3 | 5 | 3 | 2 | 0 | not_started | |
+| `report` | 53 | 244 | 128 | 52 | 50 | not_started | |
+| `test` | 1 | 4 | 4 | 0 | 0 | not_started | |
+| `workspace` | 3 | 2 | 0 | 2 | 0 | not_started | |
+
+## First Pass Order
+
+1. `doctype`: primary Accounts Python controllers and child table controllers.
+2. `report`: Python report logic after controller mapping exists.
+3. `dashboard_chart_source`, `notification`, `custom`, `page`, `print_format_field_template`, `financial_report_template`, `print_format`, `test`: smaller Python logic groups.
+4. `accounts_dashboard`, `dashboard_chart`, `letterhead`, `module_onboarding`, `number_card`, `onboarding_step`, `workspace`: mostly metadata/static files, classify as `external_kept` after verification.
+
+## Closure Checklist
+
+For a Python file to move from `not_started` to `parity_tested`:
+
+1. Source file path and Rust target path are recorded in `porting_manifest.json`.
+2. Python behavior is summarized in this document or a linked child map.
+3. Rust file exists at the mirrored path.
+4. Unit test covers pure behavior where possible.
+5. ERPNext parity test or fixture comparison passes where ERPNext-visible behavior exists.
+6. This markdown row is updated with the closed status.
+
+## Doctype Inventory
+
+| Doctype Folder | Files | Python | JSON | JS | Status | Notes |
+|---|---:|---:|---:|---:|---|---|
+| `account` | 106 | 9 | 94 | 2 | not_started | |
+| `account_category` | 5 | 3 | 1 | 1 | not_started | |
+| `account_closing_balance` | 5 | 3 | 1 | 1 | not_started | |
+| `accounting_dimension` | 5 | 3 | 1 | 1 | not_started | |
+| `accounting_dimension_detail` | 3 | 2 | 1 | 0 | not_started | |
+| `accounting_dimension_filter` | 5 | 3 | 1 | 1 | not_started | |
+| `accounting_period` | 5 | 3 | 1 | 1 | not_started | |
+| `accounts_settings` | 6 | 3 | 1 | 2 | not_started | |
+| `advance_payment_ledger_entry` | 5 | 3 | 1 | 1 | not_started | |
+| `advance_taxes_and_charges` | 3 | 2 | 1 | 0 | not_started | |
+| `allowed_dimension` | 3 | 2 | 1 | 0 | not_started | |
+| `allowed_to_transact_with` | 3 | 2 | 1 | 0 | not_started | |
+| `applicable_on_account` | 3 | 2 | 1 | 0 | not_started | |
+| `bank` | 6 | 4 | 1 | 1 | not_started | |
+| `bank_account` | 5 | 3 | 1 | 1 | not_started | |
+| `bank_account_subtype` | 5 | 3 | 1 | 1 | not_started | |
+| `bank_account_type` | 5 | 3 | 1 | 1 | not_started | |
+| `bank_clearance` | 6 | 3 | 1 | 1 | not_started | |
+| `bank_clearance_detail` | 4 | 2 | 1 | 0 | not_started | |
+| `bank_guarantee` | 5 | 3 | 1 | 1 | not_started | |
+| `bank_reconciliation_tool` | 5 | 3 | 1 | 1 | not_started | |
+| `bank_statement_import` | 7 | 3 | 1 | 2 | not_started | |
+| `bank_transaction` | 10 | 7 | 1 | 2 | not_started | |
+| `bank_transaction_mapping` | 3 | 2 | 1 | 0 | not_started | |
+| `bank_transaction_payments` | 3 | 2 | 1 | 0 | not_started | |
+| `bisect_accounting_statements` | 5 | 3 | 1 | 1 | not_started | |
+| `bisect_nodes` | 5 | 3 | 1 | 1 | not_started | |
+| `budget` | 5 | 3 | 1 | 1 | not_started | |
+| `budget_account` | 3 | 2 | 1 | 0 | not_started | |
+| `budget_distribution` | 3 | 2 | 1 | 0 | not_started | |
+| `campaign_item` | 3 | 2 | 1 | 0 | not_started | |
+| `cashier_closing` | 5 | 3 | 1 | 1 | not_started | |
+| `cashier_closing_payments` | 3 | 2 | 1 | 0 | not_started | |
+| `chart_of_accounts_importer` | 6 | 3 | 1 | 1 | not_started | |
+| `cheque_print_template` | 5 | 3 | 1 | 1 | not_started | |
+| `closed_document` | 3 | 2 | 1 | 0 | not_started | |
+| `cost_center` | 8 | 4 | 1 | 2 | not_started | |
+| `cost_center_allocation` | 5 | 3 | 1 | 1 | not_started | |
+| `cost_center_allocation_percentage` | 3 | 2 | 1 | 0 | not_started | |
+| `coupon_code` | 5 | 3 | 1 | 1 | not_started | |
+| `currency_exchange_settings` | 5 | 3 | 1 | 1 | not_started | |
+| `currency_exchange_settings_details` | 3 | 2 | 1 | 0 | not_started | |
+| `currency_exchange_settings_result` | 3 | 2 | 1 | 0 | not_started | |
+| `customer_group_item` | 3 | 2 | 1 | 0 | not_started | |
+| `customer_item` | 3 | 2 | 1 | 0 | not_started | |
+| `discounted_invoice` | 3 | 2 | 1 | 0 | not_started | |
+| `dunning` | 6 | 3 | 1 | 2 | not_started | |
+| `dunning_letter_text` | 3 | 2 | 1 | 0 | not_started | |
+| `dunning_type` | 5 | 3 | 1 | 1 | not_started | |
+| `exchange_rate_revaluation` | 6 | 4 | 1 | 1 | not_started | |
+| `exchange_rate_revaluation_account` | 3 | 2 | 1 | 0 | not_started | |
+| `finance_book` | 6 | 4 | 1 | 1 | not_started | |
+| `financial_report_row` | 3 | 2 | 1 | 0 | not_started | |
+| `financial_report_template` | 8 | 6 | 1 | 1 | not_started | |
+| `fiscal_year` | 7 | 4 | 1 | 1 | not_started | |
+| `fiscal_year_company` | 3 | 2 | 1 | 0 | not_started | |
+| `gl_entry` | 6 | 3 | 1 | 1 | not_started | |
+| `invoice_discounting` | 7 | 4 | 1 | 2 | not_started | |
+| `item_tax_template` | 6 | 4 | 1 | 1 | not_started | |
+| `item_tax_template_detail` | 3 | 2 | 1 | 0 | not_started | |
+| `item_wise_tax_detail` | 3 | 2 | 1 | 0 | not_started | |
+| `journal_entry` | 8 | 3 | 2 | 2 | not_started | |
+| `journal_entry_account` | 4 | 2 | 1 | 0 | not_started | |
+| `journal_entry_template` | 5 | 3 | 1 | 1 | not_started | |
+| `journal_entry_template_account` | 3 | 2 | 1 | 0 | not_started | |
+| `ledger_health` | 5 | 3 | 1 | 1 | not_started | |
+| `ledger_health_monitor` | 5 | 3 | 1 | 1 | not_started | |
+| `ledger_health_monitor_company` | 3 | 2 | 1 | 0 | not_started | |
+| `ledger_merge` | 5 | 3 | 1 | 1 | not_started | |
+| `ledger_merge_accounts` | 3 | 2 | 1 | 0 | not_started | |
+| `loyalty_point_entry` | 5 | 3 | 1 | 1 | not_started | |
+| `loyalty_point_entry_redemption` | 3 | 2 | 1 | 0 | not_started | |
+| `loyalty_program` | 6 | 4 | 1 | 1 | not_started | |
+| `loyalty_program_collection` | 3 | 2 | 1 | 0 | not_started | |
+| `mode_of_payment` | 6 | 3 | 1 | 1 | not_started | |
+| `mode_of_payment_account` | 3 | 2 | 1 | 0 | not_started | |
+| `monthly_distribution` | 7 | 4 | 1 | 1 | not_started | |
+| `monthly_distribution_percentage` | 3 | 2 | 1 | 0 | not_started | |
+| `opening_invoice_creation_tool` | 6 | 3 | 1 | 1 | not_started | |
+| `opening_invoice_creation_tool_item` | 3 | 2 | 1 | 0 | not_started | |
+| `overdue_payment` | 3 | 2 | 1 | 0 | not_started | |
+| `party_account` | 3 | 2 | 1 | 0 | not_started | |
+| `party_link` | 5 | 3 | 1 | 1 | not_started | |
+| `payment_entry` | 6 | 3 | 1 | 2 | not_started | |
+| `payment_entry_deduction` | 3 | 2 | 1 | 0 | not_started | |
+| `payment_entry_reference` | 3 | 2 | 1 | 0 | not_started | |
+| `payment_gateway_account` | 6 | 4 | 1 | 1 | not_started | |
+| `payment_ledger_entry` | 5 | 3 | 1 | 1 | not_started | |
+| `payment_order` | 6 | 4 | 1 | 1 | not_started | |
+| `payment_order_reference` | 3 | 2 | 1 | 0 | not_started | |
+| `payment_reconciliation` | 5 | 3 | 1 | 1 | not_started | |
+| `payment_reconciliation_allocation` | 3 | 2 | 1 | 0 | not_started | |
+| `payment_reconciliation_invoice` | 3 | 2 | 1 | 0 | not_started | |
+| `payment_reconciliation_payment` | 3 | 2 | 1 | 0 | not_started | |
+| `payment_reference` | 3 | 2 | 1 | 0 | not_started | |
+| `payment_request` | 7 | 4 | 1 | 2 | not_started | |
+| `payment_schedule` | 3 | 2 | 1 | 0 | not_started | |
+| `payment_term` | 6 | 4 | 1 | 1 | not_started | |
+| `payment_terms_template` | 6 | 4 | 1 | 1 | not_started | |
+| `payment_terms_template_detail` | 3 | 2 | 1 | 0 | not_started | |
+| `pegged_currencies` | 5 | 3 | 1 | 1 | not_started | |
+| `pegged_currency_details` | 3 | 2 | 1 | 0 | not_started | |
+| `period_closing_voucher` | 6 | 3 | 1 | 1 | not_started | |
+| `pos_closing_entry` | 7 | 3 | 1 | 2 | not_started | |
+| `pos_closing_entry_detail` | 3 | 2 | 1 | 0 | not_started | |
+| `pos_closing_entry_taxes` | 3 | 2 | 1 | 0 | not_started | |
+| `pos_customer_group` | 3 | 2 | 1 | 0 | not_started | |
+| `pos_field` | 3 | 2 | 1 | 0 | not_started | |
+| `pos_invoice` | 7 | 4 | 1 | 2 | not_started | |
+| `pos_invoice_item` | 3 | 2 | 1 | 0 | not_started | |
+| `pos_invoice_merge_log` | 5 | 3 | 1 | 1 | not_started | |
+| `pos_invoice_reference` | 3 | 2 | 1 | 0 | not_started | |
+| `pos_item_group` | 3 | 2 | 1 | 0 | not_started | |
+| `pos_opening_entry` | 6 | 3 | 1 | 2 | not_started | |
+| `pos_opening_entry_detail` | 3 | 2 | 1 | 0 | not_started | |
+| `pos_payment_method` | 3 | 2 | 1 | 0 | not_started | |
+| `pos_profile` | 5 | 3 | 1 | 1 | not_started | |
+| `pos_profile_user` | 5 | 3 | 1 | 1 | not_started | |
+| `pos_search_fields` | 3 | 2 | 1 | 0 | not_started | |
+| `pos_settings` | 5 | 3 | 1 | 1 | not_started | |
+| `pricing_rule` | 6 | 4 | 1 | 1 | not_started | |
+| `pricing_rule_brand` | 3 | 2 | 1 | 0 | not_started | |
+| `pricing_rule_detail` | 3 | 2 | 1 | 0 | not_started | |
+| `pricing_rule_item_code` | 3 | 2 | 1 | 0 | not_started | |
+| `pricing_rule_item_group` | 3 | 2 | 1 | 0 | not_started | |
+| `process_deferred_accounting` | 5 | 3 | 1 | 1 | not_started | |
+| `process_payment_reconciliation` | 7 | 4 | 1 | 2 | not_started | |
+| `process_payment_reconciliation_log` | 6 | 3 | 1 | 2 | not_started | |
+| `process_payment_reconciliation_log_allocations` | 3 | 2 | 1 | 0 | not_started | |
+| `process_period_closing_voucher` | 5 | 3 | 1 | 1 | not_started | |
+| `process_period_closing_voucher_detail` | 3 | 2 | 1 | 0 | not_started | |
+| `process_statement_of_accounts` | 7 | 3 | 1 | 1 | not_started | |
+| `process_statement_of_accounts_cc` | 3 | 2 | 1 | 0 | not_started | |
+| `process_statement_of_accounts_customer` | 3 | 2 | 1 | 0 | not_started | |
+| `process_subscription` | 5 | 3 | 1 | 1 | not_started | |
+| `promotional_scheme` | 6 | 4 | 1 | 1 | not_started | |
+| `promotional_scheme_price_discount` | 3 | 2 | 1 | 0 | not_started | |
+| `promotional_scheme_product_discount` | 3 | 2 | 1 | 0 | not_started | |
+| `psoa_cost_center` | 3 | 2 | 1 | 0 | not_started | |
+| `psoa_project` | 3 | 2 | 1 | 0 | not_started | |
+| `purchase_invoice` | 9 | 4 | 2 | 2 | not_started | |
+| `purchase_invoice_advance` | 4 | 2 | 1 | 0 | not_started | |
+| `purchase_invoice_item` | 4 | 2 | 1 | 0 | not_started | |
+| `purchase_taxes_and_charges` | 4 | 2 | 1 | 0 | not_started | |
+| `purchase_taxes_and_charges_template` | 6 | 4 | 1 | 1 | not_started | |
+| `repost_accounting_ledger` | 6 | 3 | 1 | 1 | not_started | |
+| `repost_accounting_ledger_items` | 3 | 2 | 1 | 0 | not_started | |
+| `repost_allowed_types` | 3 | 2 | 1 | 0 | not_started | |
+| `repost_payment_ledger` | 6 | 3 | 1 | 2 | not_started | |
+| `repost_payment_ledger_items` | 3 | 2 | 1 | 0 | not_started | |
+| `sales_invoice` | 10 | 4 | 2 | 3 | not_started | |
+| `sales_invoice_advance` | 4 | 2 | 1 | 0 | not_started | |
+| `sales_invoice_item` | 4 | 2 | 1 | 0 | not_started | |
+| `sales_invoice_payment` | 3 | 2 | 1 | 0 | not_started | |
+| `sales_invoice_reference` | 3 | 2 | 1 | 0 | not_started | |
+| `sales_invoice_timesheet` | 3 | 2 | 1 | 0 | not_started | |
+| `sales_partner_item` | 3 | 2 | 1 | 0 | not_started | |
+| `sales_taxes_and_charges` | 4 | 2 | 1 | 0 | not_started | |
+| `sales_taxes_and_charges_template` | 6 | 4 | 1 | 1 | not_started | |
+| `share_balance` | 3 | 2 | 1 | 0 | not_started | |
+| `share_transfer` | 5 | 3 | 1 | 1 | not_started | |
+| `share_type` | 6 | 4 | 1 | 1 | not_started | |
+| `shareholder` | 6 | 4 | 1 | 1 | not_started | |
+| `shipping_rule` | 7 | 4 | 2 | 1 | not_started | |
+| `shipping_rule_condition` | 3 | 2 | 1 | 0 | not_started | |
+| `shipping_rule_country` | 3 | 2 | 1 | 0 | not_started | |
+| `south_africa_vat_account` | 3 | 2 | 1 | 0 | not_started | |
+| `subscription` | 6 | 3 | 1 | 2 | not_started | |
+| `subscription_invoice` | 5 | 3 | 1 | 1 | not_started | |
+| `subscription_plan` | 6 | 4 | 1 | 1 | not_started | |
+| `subscription_plan_detail` | 3 | 2 | 1 | 0 | not_started | |
+| `subscription_settings` | 5 | 3 | 1 | 1 | not_started | |
+| `supplier_group_item` | 3 | 2 | 1 | 0 | not_started | |
+| `supplier_item` | 3 | 2 | 1 | 0 | not_started | |
+| `tax_category` | 6 | 4 | 1 | 1 | not_started | |
+| `tax_rule` | 5 | 3 | 1 | 1 | not_started | |
+| `tax_withholding_account` | 3 | 2 | 1 | 0 | not_started | |
+| `tax_withholding_category` | 6 | 4 | 1 | 1 | not_started | |
+| `tax_withholding_entry` | 4 | 3 | 1 | 0 | not_started | |
+| `tax_withholding_group` | 5 | 3 | 1 | 1 | not_started | |
+| `tax_withholding_rate` | 3 | 2 | 1 | 0 | not_started | |
+| `territory_item` | 3 | 2 | 1 | 0 | not_started | |
+| `transaction_deletion_record_details` | 3 | 2 | 1 | 0 | not_started | |
+| `unreconcile_payment` | 5 | 3 | 1 | 1 | not_started | |
+| `unreconcile_payment_entries` | 3 | 2 | 1 | 0 | not_started | |
