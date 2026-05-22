@@ -113,7 +113,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `coupon_code` | 5 | 3 | 1 | 1 | not_started | |
 | `currency_exchange_settings` | 5 | 3 | 1 | 1 | not_started | |
 | `currency_exchange_settings_details` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_currency_exchange_settings_details`. JSON kept external. |
-| `currency_exchange_settings_result` | 3 | 2 | 1 | 0 | not_started | |
+| `currency_exchange_settings_result` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_currency_exchange_settings_result`. JSON kept external. |
 | `customer_group_item` | 3 | 2 | 1 | 0 | not_started | |
 | `customer_item` | 3 | 2 | 1 | 0 | not_started | |
 | `discounted_invoice` | 3 | 2 | 1 | 0 | not_started | |
@@ -658,3 +658,31 @@ Target: `src/erpnext/accounts/doctype/currency_exchange_settings_details`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `currency_exchange_settings_details.py` | `currency_exchange_settings_details.rs` | parity_tested | No-op child table controller and key/value metadata represented in Rust. |
 | `currency_exchange_settings_details.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `currency_exchange_settings_result`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/currency_exchange_settings_result`
+Target: `src/erpnext/accounts/doctype/currency_exchange_settings_result`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes required `key` and child table parent fields.
+- DocType metadata:
+  - `name`: `Currency Exchange Settings Result`
+  - `module`: `Accounts`
+  - `istable`: enabled
+  - `editable_grid`: enabled
+  - `index_web_pages_for_search`: enabled
+  - `track_changes`: enabled
+  - `field_order`: `key`
+  - `key`: `Data`, label `Key`, `reqd: 1`, `in_list_view: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `currency_exchange_settings_result.py` | `currency_exchange_settings_result.rs` | parity_tested | No-op child table controller and key metadata represented in Rust. |
+| `currency_exchange_settings_result.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

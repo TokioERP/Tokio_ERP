@@ -658,12 +658,12 @@
     {
       "source": "accounts/doctype/currency_exchange_settings_result/__init__.py",
       "target": "accounts/doctype/currency_exchange_settings_result/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/currency_exchange_settings_result/currency_exchange_settings_result.py",
       "target": "accounts/doctype/currency_exchange_settings_result/currency_exchange_settings_result.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/customer_group_item/__init__.py",
