@@ -1753,12 +1753,12 @@
     {
       "source": "accounts/doctype/pricing_rule_item_group/__init__.py",
       "target": "accounts/doctype/pricing_rule_item_group/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pricing_rule_item_group/pricing_rule_item_group.py",
       "target": "accounts/doctype/pricing_rule_item_group/pricing_rule_item_group.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/process_deferred_accounting/__init__.py",

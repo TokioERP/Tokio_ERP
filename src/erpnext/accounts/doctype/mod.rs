@@ -42,3 +42,4 @@ pub mod pos_search_fields;
 pub mod pricing_rule_brand;
 pub mod pricing_rule_detail;
 pub mod pricing_rule_item_code;
+pub mod pricing_rule_item_group;
