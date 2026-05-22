@@ -44,3 +44,4 @@ pub mod pricing_rule_detail;
 pub mod pricing_rule_item_code;
 pub mod pricing_rule_item_group;
 pub mod process_deferred_accounting;
+pub mod process_payment_reconciliation;

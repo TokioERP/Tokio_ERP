@@ -1778,22 +1778,22 @@
     {
       "source": "accounts/doctype/process_payment_reconciliation/__init__.py",
       "target": "accounts/doctype/process_payment_reconciliation/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/process_payment_reconciliation/process_payment_reconciliation.py",
       "target": "accounts/doctype/process_payment_reconciliation/process_payment_reconciliation.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/process_payment_reconciliation/process_payment_reconciliation_dashboard.py",
       "target": "accounts/doctype/process_payment_reconciliation/process_payment_reconciliation_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/process_payment_reconciliation/test_process_payment_reconciliation.py",
       "target": "accounts/doctype/process_payment_reconciliation/test_process_payment_reconciliation.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/process_payment_reconciliation_log/__init__.py",
