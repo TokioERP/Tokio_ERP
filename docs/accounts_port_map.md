@@ -237,14 +237,14 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `shipping_rule` | 7 | 4 | 2 | 1 | parity_tested | Rust covers metadata, validate condition ranges, overlap checks, country restriction, amount selection/conversion, tax-table append/update behavior, dashboard groups, JS hook constants, and controller hooks in `accounts_shipping_rule`. JSON/JS kept external. |
 | `shipping_rule_condition` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_shipping_rule`. JSON kept external. |
 | `shipping_rule_country` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_shipping_rule`. JSON kept external. |
-| `south_africa_vat_account` | 3 | 2 | 1 | 0 | not_started | |
+| `south_africa_vat_account` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_supplier_static_items`. JSON kept external. |
 | `subscription` | 6 | 3 | 1 | 2 | not_started | |
 | `subscription_invoice` | 5 | 3 | 1 | 1 | not_started | |
 | `subscription_plan` | 6 | 4 | 1 | 1 | not_started | |
 | `subscription_plan_detail` | 3 | 2 | 1 | 0 | not_started | |
 | `subscription_settings` | 5 | 3 | 1 | 1 | not_started | |
-| `supplier_group_item` | 3 | 2 | 1 | 0 | not_started | |
-| `supplier_item` | 3 | 2 | 1 | 0 | not_started | |
+| `supplier_group_item` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_supplier_static_items`. JSON kept external. |
+| `supplier_item` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_supplier_static_items`. JSON kept external. |
 | `tax_category` | 6 | 4 | 1 | 1 | not_started | |
 | `tax_rule` | 5 | 3 | 1 | 1 | not_started | |
 | `tax_withholding_account` | 3 | 2 | 1 | 0 | not_started | |

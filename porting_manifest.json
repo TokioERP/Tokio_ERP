@@ -2303,12 +2303,12 @@
     {
       "source": "accounts/doctype/south_africa_vat_account/__init__.py",
       "target": "accounts/doctype/south_africa_vat_account/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/south_africa_vat_account/south_africa_vat_account.py",
       "target": "accounts/doctype/south_africa_vat_account/south_africa_vat_account.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/subscription/__init__.py",
@@ -2388,22 +2388,22 @@
     {
       "source": "accounts/doctype/supplier_group_item/__init__.py",
       "target": "accounts/doctype/supplier_group_item/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/supplier_group_item/supplier_group_item.py",
       "target": "accounts/doctype/supplier_group_item/supplier_group_item.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/supplier_item/__init__.py",
       "target": "accounts/doctype/supplier_item/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/supplier_item/supplier_item.py",
       "target": "accounts/doctype/supplier_item/supplier_item.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/tax_category/__init__.py",

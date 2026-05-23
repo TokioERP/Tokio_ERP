@@ -81,3 +81,6 @@ pub mod shareholder;
 pub mod shipping_rule;
 pub mod shipping_rule_condition;
 pub mod shipping_rule_country;
+pub mod south_africa_vat_account;
+pub mod supplier_group_item;
+pub mod supplier_item;
