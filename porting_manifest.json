@@ -1898,12 +1898,12 @@
     {
       "source": "accounts/doctype/promotional_scheme/__init__.py",
       "target": "accounts/doctype/promotional_scheme/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/promotional_scheme/promotional_scheme.py",
       "target": "accounts/doctype/promotional_scheme/promotional_scheme.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/promotional_scheme/promotional_scheme_dashboard.py",
@@ -1913,7 +1913,7 @@
     {
       "source": "accounts/doctype/promotional_scheme/test_promotional_scheme.py",
       "target": "accounts/doctype/promotional_scheme/test_promotional_scheme.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/promotional_scheme_price_discount/__init__.py",

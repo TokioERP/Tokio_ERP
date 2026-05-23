@@ -206,7 +206,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `process_statement_of_accounts_cc` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_process_statement_of_accounts_cc`. JSON kept external. |
 | `process_statement_of_accounts_customer` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_process_statement_of_accounts_customer`. JSON kept external. |
 | `process_subscription` | 5 | 3 | 1 | 1 | parity_tested | Rust covers submit hook, subscription filtering, 500-size batch enqueue plans, helper document creation, and metadata in `accounts_process_subscription`. JSON/JS kept external. |
-| `promotional_scheme` | 6 | 4 | 1 | 1 | not_started | |
+| `promotional_scheme` | 6 | 4 | 1 | 1 | parity_tested | Rust covers validation, applicable-for checks, recursion guard, pricing rule draft generation, transaction-exists message, trash delete plan, and metadata in `accounts_promotional_scheme`. JSON/JS kept external. |
 | `promotional_scheme_price_discount` | 3 | 2 | 1 | 0 | not_started | |
 | `promotional_scheme_product_discount` | 3 | 2 | 1 | 0 | not_started | |
 | `psoa_cost_center` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_psoa_cost_center`. JSON kept external. |
@@ -2069,3 +2069,41 @@ Target: `src/erpnext/accounts/doctype/process_subscription`
 | `test_process_subscription.py` | `tests/accounts_process_subscription.rs` | parity_tested | Source test class is empty; Rust tests cover deterministic controller behavior. |
 | `process_subscription.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
 | `process_subscription.js` | ERPNext client script retained | external_kept | Client/UI behavior remains Frappe-owned. |
+
+## Doctype Detail: `promotional_scheme`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/promotional_scheme`
+Target: `src/erpnext/accounts/doctype/promotional_scheme`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- `validate` requires either Selling or Buying, requires at least one price/product discount slab, validates that the selected Applicable For table has values, and rejects recursive product discounts when mixed conditions are enabled.
+- `get_args_for_pricing_rule` copies scheme-level pricing rule fields and expands the selected Applicable For table into a value list.
+- `get_pricing_rules` creates pricing rule drafts for price discount slabs and product discount slabs, one rule per applicable-for value when applicable, or one rule per slab without party targeting.
+- `set_args` behavior is mirrored for deterministic fields: slab `min_amount`/`max_amount` become pricing rule `min_amt`/`max_amt`, slab name becomes `promotional_scheme_id`, scheme name becomes `promotional_scheme`, discount type becomes `Price` or `Product`, and item rows are copied onto the pricing rule draft.
+- `raise_for_transaction_exists` returns the ERPNext transaction-blocking message.
+- `on_trash` plans deletion of existing Pricing Rules for the scheme.
+- DocType metadata:
+  - `name`: `Promotional Scheme`
+  - `module`: `Accounts`
+  - `autoname`: `Prompt`
+  - `allow_rename`: enabled
+  - `editable_grid`: enabled
+  - `track_changes`: enabled
+  - `field_order`: 37 fields from `section_break_1` through `product_discount_slabs`
+  - `apply_on`: `Select`, required, default `Item Code`, options blank, `Item Code`, `Item Group`, `Brand`, `Transaction`
+  - `customer`: `Table MultiSelect`, options `Customer Item`, depends on `Applicable For == Customer`
+  - `company`: `Link`, options `Company`, required, `in_list_view: 1`
+  - `price_discount_slabs`: `Table`, options `Promotional Scheme Price Discount`
+  - `product_discount_slabs`: `Table`, options `Promotional Scheme Product Discount`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `promotional_scheme.py` | `promotional_scheme.rs` | parity_tested | Validation, pricing rule draft generation, transaction-exists message, trash delete plan, and metadata represented in Rust. |
+| `test_promotional_scheme.py` | `tests/accounts_promotional_scheme.rs` | parity_tested | Rust tests cover deterministic equivalents of ERPNext validation and pricing rule creation/update behavior. |
+| `promotional_scheme.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+| `promotional_scheme.js` | ERPNext client script retained | external_kept | Client/UI behavior remains Frappe-owned. |
