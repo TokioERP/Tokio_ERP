@@ -207,8 +207,8 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `process_statement_of_accounts_customer` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_process_statement_of_accounts_customer`. JSON kept external. |
 | `process_subscription` | 5 | 3 | 1 | 1 | parity_tested | Rust covers submit hook, subscription filtering, 500-size batch enqueue plans, helper document creation, and metadata in `accounts_process_subscription`. JSON/JS kept external. |
 | `promotional_scheme` | 6 | 4 | 1 | 1 | parity_tested | Rust covers validation, applicable-for checks, recursion guard, pricing rule draft generation, transaction-exists message, trash delete plan, and metadata in `accounts_promotional_scheme`. JSON/JS kept external. |
-| `promotional_scheme_price_discount` | 3 | 2 | 1 | 0 | not_started | |
-| `promotional_scheme_product_discount` | 3 | 2 | 1 | 0 | not_started | |
+| `promotional_scheme_price_discount` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_promotional_scheme_price_discount`. JSON kept external. |
+| `promotional_scheme_product_discount` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_promotional_scheme_product_discount`. JSON kept external. |
 | `psoa_cost_center` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_psoa_cost_center`. JSON kept external. |
 | `psoa_project` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_psoa_project`. JSON kept external. |
 | `purchase_invoice` | 9 | 4 | 2 | 2 | not_started | |
@@ -2107,3 +2107,60 @@ Target: `src/erpnext/accounts/doctype/promotional_scheme`
 | `test_promotional_scheme.py` | `tests/accounts_promotional_scheme.rs` | parity_tested | Rust tests cover deterministic equivalents of ERPNext validation and pricing rule creation/update behavior. |
 | `promotional_scheme.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
 | `promotional_scheme.js` | ERPNext client script retained | external_kept | Client/UI behavior remains Frappe-owned. |
+
+## Doctype Detail: `promotional_scheme_price_discount`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/promotional_scheme_price_discount`
+Target: `src/erpnext/accounts/doctype/promotional_scheme_price_discount`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- DocType metadata:
+  - `name`: `Promotional Scheme Price Discount`
+  - `module`: `Accounts`
+  - `editable_grid`: enabled
+  - `istable`: enabled
+  - `field_order`: 24 fields from `disable` through `apply_discount_on_rate`
+  - `rule_description`: `Small Text`, required
+  - `min_qty`, `max_qty`: `Float`, default `0`, `in_list_view: 1`
+  - `min_amount`, `max_amount`: `Currency`, default `0`, `in_list_view: 1`
+  - `rate_or_discount`: `Select`, default `Discount Percentage`, options blank, `Rate`, `Discount Percentage`, `Discount Amount`
+  - `apply_discount_on_rate`: `Check`, default `0`, depends on discount type and multiple pricing rules
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `promotional_scheme_price_discount.py` | `promotional_scheme_price_discount.rs` | parity_tested | No-op child table controller and metadata represented in Rust. |
+| `promotional_scheme_price_discount.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `promotional_scheme_product_discount`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/promotional_scheme_product_discount`
+Target: `src/erpnext/accounts/doctype/promotional_scheme_product_discount`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- DocType metadata:
+  - `name`: `Promotional Scheme Product Discount`
+  - `module`: `Accounts`
+  - `editable_grid`: enabled
+  - `istable`: enabled
+  - `field_order`: 26 fields from `disable` through `apply_recursion_over`
+  - `rule_description`: `Small Text`, required
+  - `same_item`: `Check`, default `0`, depends on parent mixed condition
+  - `free_item`: `Link`, options `Item`, visible when not same item or parent has mixed conditions, `in_list_view: 1`
+  - `recurse_for` and `apply_recursion_over`: `Float`, default `0`, depend on and are mandatory when recursive
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `promotional_scheme_product_discount.py` | `promotional_scheme_product_discount.rs` | parity_tested | No-op child table controller and metadata represented in Rust. |
+| `promotional_scheme_product_discount.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

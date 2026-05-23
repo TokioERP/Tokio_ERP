@@ -54,5 +54,7 @@ pub mod process_statement_of_accounts_cc;
 pub mod process_statement_of_accounts_customer;
 pub mod process_subscription;
 pub mod promotional_scheme;
+pub mod promotional_scheme_price_discount;
+pub mod promotional_scheme_product_discount;
 pub mod psoa_cost_center;
 pub mod psoa_project;

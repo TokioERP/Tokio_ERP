@@ -1918,22 +1918,22 @@
     {
       "source": "accounts/doctype/promotional_scheme_price_discount/__init__.py",
       "target": "accounts/doctype/promotional_scheme_price_discount/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/promotional_scheme_price_discount/promotional_scheme_price_discount.py",
       "target": "accounts/doctype/promotional_scheme_price_discount/promotional_scheme_price_discount.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/promotional_scheme_product_discount/__init__.py",
       "target": "accounts/doctype/promotional_scheme_product_discount/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/promotional_scheme_product_discount/promotional_scheme_product_discount.py",
       "target": "accounts/doctype/promotional_scheme_product_discount/promotional_scheme_product_discount.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/psoa_cost_center/__init__.py",
