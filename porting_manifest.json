@@ -1938,22 +1938,22 @@
     {
       "source": "accounts/doctype/psoa_cost_center/__init__.py",
       "target": "accounts/doctype/psoa_cost_center/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/psoa_cost_center/psoa_cost_center.py",
       "target": "accounts/doctype/psoa_cost_center/psoa_cost_center.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/psoa_project/__init__.py",
       "target": "accounts/doctype/psoa_project/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/psoa_project/psoa_project.py",
       "target": "accounts/doctype/psoa_project/psoa_project.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/purchase_invoice/__init__.py",

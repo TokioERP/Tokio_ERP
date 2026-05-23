@@ -209,8 +209,8 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `promotional_scheme` | 6 | 4 | 1 | 1 | not_started | |
 | `promotional_scheme_price_discount` | 3 | 2 | 1 | 0 | not_started | |
 | `promotional_scheme_product_discount` | 3 | 2 | 1 | 0 | not_started | |
-| `psoa_cost_center` | 3 | 2 | 1 | 0 | not_started | |
-| `psoa_project` | 3 | 2 | 1 | 0 | not_started | |
+| `psoa_cost_center` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_psoa_cost_center`. JSON kept external. |
+| `psoa_project` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_psoa_project`. JSON kept external. |
 | `purchase_invoice` | 9 | 4 | 2 | 2 | not_started | |
 | `purchase_invoice_advance` | 4 | 2 | 1 | 0 | not_started | |
 | `purchase_invoice_item` | 4 | 2 | 1 | 0 | not_started | |
@@ -1986,3 +1986,53 @@ Target: `src/erpnext/accounts/doctype/process_statement_of_accounts_customer`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `process_statement_of_accounts_customer.py` | `process_statement_of_accounts_customer.rs` | parity_tested | No-op child table controller and metadata represented in Rust. |
 | `process_statement_of_accounts_customer.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `psoa_cost_center`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/psoa_cost_center`
+Target: `src/erpnext/accounts/doctype/psoa_cost_center`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- DocType metadata:
+  - `name`: `PSOA Cost Center`
+  - `module`: `Accounts`
+  - `editable_grid`: enabled
+  - `istable`: enabled
+  - `field_order`: `cost_center_name`
+  - `cost_center_name`: `Link`, label `Cost Center`, options `Cost Center`, required, `in_list_view: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `psoa_cost_center.py` | `psoa_cost_center.rs` | parity_tested | No-op child table controller and metadata represented in Rust. |
+| `psoa_cost_center.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `psoa_project`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/psoa_project`
+Target: `src/erpnext/accounts/doctype/psoa_project`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- DocType metadata:
+  - `name`: `PSOA Project`
+  - `module`: `Accounts`
+  - `editable_grid`: enabled
+  - `istable`: enabled
+  - `field_order`: `project_name`
+  - `project_name`: `Link`, label `Project`, options `Project`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `psoa_project.py` | `psoa_project.rs` | parity_tested | No-op child table controller and metadata represented in Rust. |
+| `psoa_project.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
