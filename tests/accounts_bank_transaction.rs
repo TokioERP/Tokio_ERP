@@ -1,7 +1,9 @@
 use tokio_erp::erpnext::accounts::doctype::bank_transaction::bank_transaction::{
-    get_clearance_details, get_payment_doctypes, BankGlAllocation, BankTransaction,
-    BankTransactionError, BankTransactionPayment, BankTransactionStatus, ClearanceDetails,
-    LinkedBankTransaction,
+    get_clearance_details, get_payment_doctypes, group_related_bank_gl_entries,
+    group_total_allocated_amount, remove_from_bank_transaction_plan, BankGlAllocation,
+    BankTransaction, BankTransactionError, BankTransactionPayment, BankTransactionStatus,
+    ClearanceDetails, LinkedBankTransaction, RelatedBankGlEntryRow, RemoveFromBankTransactionPlan,
+    TotalAllocatedAmountRow,
 };
 use tokio_erp::erpnext::{DocumentController, FieldSpec};
 
@@ -441,5 +443,117 @@ fn bank_transaction_clearance_details_preserve_erpnext_error_and_partial_clear_r
         .unwrap()
         .should_clear,
         false
+    );
+}
+
+#[test]
+fn bank_transaction_groups_related_bank_gl_entries_like_erpnext() {
+    assert_eq!(group_related_bank_gl_entries(&[]), Default::default());
+
+    let grouped = group_related_bank_gl_entries(&[
+        RelatedBankGlEntryRow::new("Payment Entry", "PE-0001", "Bank - TC", 700.0),
+        RelatedBankGlEntryRow::new("Payment Entry", "PE-0001", "Cash - TC", 50.0),
+        RelatedBankGlEntryRow::new("Journal Entry", "JE-0001", "Bank - TC", 30.0),
+    ]);
+
+    assert_eq!(
+        grouped[&("Payment Entry".to_string(), "PE-0001".to_string())]["Bank - TC"],
+        700.0
+    );
+    assert_eq!(
+        grouped[&("Payment Entry".to_string(), "PE-0001".to_string())]["Cash - TC"],
+        50.0
+    );
+    assert_eq!(
+        grouped[&("Journal Entry".to_string(), "JE-0001".to_string())]["Bank - TC"],
+        30.0
+    );
+}
+
+#[test]
+fn bank_transaction_groups_total_allocated_amount_like_erpnext() {
+    assert_eq!(group_total_allocated_amount(&[]), Default::default());
+
+    let grouped = group_total_allocated_amount(&[
+        TotalAllocatedAmountRow::new("Payment Entry", "PE-0001", "Bank - TC", 200.0, "2026-05-12"),
+        TotalAllocatedAmountRow::new("Payment Entry", "PE-0001", "Cash - TC", 50.0, "2026-05-11"),
+        TotalAllocatedAmountRow::new("Journal Entry", "JE-0001", "Bank - TC", 30.0, "2026-05-10"),
+    ]);
+
+    assert_eq!(
+        grouped[&("Payment Entry".to_string(), "PE-0001".to_string())]["Bank - TC"],
+        BankGlAllocation {
+            total: 200.0,
+            latest_date: Some("2026-05-12".to_string()),
+        }
+    );
+    assert_eq!(
+        grouped[&("Payment Entry".to_string(), "PE-0001".to_string())]["Cash - TC"],
+        BankGlAllocation {
+            total: 50.0,
+            latest_date: Some("2026-05-11".to_string()),
+        }
+    );
+    assert_eq!(
+        grouped[&("Journal Entry".to_string(), "JE-0001".to_string())]["Bank - TC"],
+        BankGlAllocation {
+            total: 30.0,
+            latest_date: Some("2026-05-10".to_string()),
+        }
+    );
+}
+
+#[test]
+fn bank_transaction_remove_from_bank_transaction_plan_matches_erpnext_cancel_skip_and_save() {
+    let submitted = BankTransaction {
+        name: Some("BT-0001".to_string()),
+        docstatus: 1,
+        payment_entries: vec![
+            BankTransactionPayment::new("Payment Entry", "PE-0001", 100.0),
+            BankTransactionPayment::new("Journal Entry", "JE-0001", 50.0),
+        ],
+        ..Default::default()
+    };
+    let cancelled = BankTransaction {
+        name: Some("BT-0002".to_string()),
+        docstatus: 2,
+        payment_entries: vec![BankTransactionPayment::new(
+            "Payment Entry",
+            "PE-0001",
+            100.0,
+        )],
+        ..Default::default()
+    };
+    let untouched = BankTransaction {
+        name: Some("BT-0003".to_string()),
+        docstatus: 1,
+        payment_entries: vec![BankTransactionPayment::new(
+            "Sales Invoice",
+            "SI-0001",
+            100.0,
+        )],
+        ..Default::default()
+    };
+
+    assert_eq!(
+        remove_from_bank_transaction_plan(
+            "Payment Entry",
+            "PE-0001",
+            &[submitted, cancelled, untouched]
+        ),
+        vec![RemoveFromBankTransactionPlan {
+            bank_transaction_name: "BT-0001".to_string(),
+            removed_entries: vec![BankTransactionPayment::new(
+                "Payment Entry",
+                "PE-0001",
+                100.0
+            )],
+            remaining_entries: vec![BankTransactionPayment::new(
+                "Journal Entry",
+                "JE-0001",
+                50.0
+            )],
+            save: true,
+        }]
     );
 }

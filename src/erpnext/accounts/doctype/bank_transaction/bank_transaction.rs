@@ -102,6 +102,31 @@ pub struct BankGlAllocation {
     pub latest_date: Option<String>,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct RelatedBankGlEntryRow {
+    pub doctype: String,
+    pub docname: String,
+    pub gl_account: String,
+    pub amount: f64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct TotalAllocatedAmountRow {
+    pub payment_document: String,
+    pub payment_entry: String,
+    pub gl_account: String,
+    pub total: f64,
+    pub latest_date: String,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct RemoveFromBankTransactionPlan {
+    pub bank_transaction_name: String,
+    pub removed_entries: Vec<BankTransactionPayment>,
+    pub remaining_entries: Vec<BankTransactionPayment>,
+    pub save: bool,
+}
+
 impl BankTransaction {
     pub const DOCTYPE: &'static str = "Bank Transaction";
     pub const MODULE: &'static str = "Accounts";
@@ -343,6 +368,40 @@ impl BankTransactionPayment {
     }
 }
 
+impl RelatedBankGlEntryRow {
+    pub fn new(
+        doctype: impl Into<String>,
+        docname: impl Into<String>,
+        gl_account: impl Into<String>,
+        amount: f64,
+    ) -> Self {
+        Self {
+            doctype: doctype.into(),
+            docname: docname.into(),
+            gl_account: gl_account.into(),
+            amount,
+        }
+    }
+}
+
+impl TotalAllocatedAmountRow {
+    pub fn new(
+        payment_document: impl Into<String>,
+        payment_entry: impl Into<String>,
+        gl_account: impl Into<String>,
+        total: f64,
+        latest_date: impl Into<String>,
+    ) -> Self {
+        Self {
+            payment_document: payment_document.into(),
+            payment_entry: payment_entry.into(),
+            gl_account: gl_account.into(),
+            total,
+            latest_date: latest_date.into(),
+        }
+    }
+}
+
 impl DocumentController for BankTransaction {
     fn doctype(&self) -> &'static str {
         Self::DOCTYPE
@@ -442,6 +501,80 @@ pub fn get_clearance_details(
         should_clear,
         clearance_date,
     })
+}
+
+pub fn group_related_bank_gl_entries(
+    rows: &[RelatedBankGlEntryRow],
+) -> BTreeMap<(String, String), BTreeMap<String, f64>> {
+    let mut entries = BTreeMap::new();
+
+    for row in rows {
+        entries
+            .entry((row.doctype.clone(), row.docname.clone()))
+            .or_insert_with(BTreeMap::new)
+            .insert(row.gl_account.clone(), row.amount);
+    }
+
+    entries
+}
+
+pub fn group_total_allocated_amount(
+    rows: &[TotalAllocatedAmountRow],
+) -> BTreeMap<(String, String), BTreeMap<String, BankGlAllocation>> {
+    let mut payment_allocation_details = BTreeMap::new();
+
+    for row in rows {
+        payment_allocation_details
+            .entry((row.payment_document.clone(), row.payment_entry.clone()))
+            .or_insert_with(BTreeMap::new)
+            .insert(
+                row.gl_account.clone(),
+                BankGlAllocation {
+                    total: row.total,
+                    latest_date: Some(row.latest_date.clone()),
+                },
+            );
+    }
+
+    payment_allocation_details
+}
+
+pub fn remove_from_bank_transaction_plan(
+    doctype: &str,
+    docname: &str,
+    bank_transactions: &[BankTransaction],
+) -> Vec<RemoveFromBankTransactionPlan> {
+    let mut plans = Vec::new();
+
+    for bank_transaction in bank_transactions {
+        if bank_transaction.docstatus == 2 {
+            continue;
+        }
+
+        let mut modified = false;
+        let mut removed_entries = Vec::new();
+        let mut remaining_entries = Vec::new();
+
+        for payment_entry in &bank_transaction.payment_entries {
+            if payment_entry.payment_document == doctype && payment_entry.payment_entry == docname {
+                removed_entries.push(payment_entry.clone());
+                modified = true;
+            } else {
+                remaining_entries.push(payment_entry.clone());
+            }
+        }
+
+        if modified {
+            plans.push(RemoveFromBankTransactionPlan {
+                bank_transaction_name: bank_transaction.name.clone().unwrap_or_default(),
+                removed_entries,
+                remaining_entries,
+                save: true,
+            });
+        }
+    }
+
+    plans
 }
 
 impl Default for LinkedBankTransaction {
