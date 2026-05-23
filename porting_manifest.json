@@ -1823,17 +1823,17 @@
     {
       "source": "accounts/doctype/process_period_closing_voucher/__init__.py",
       "target": "accounts/doctype/process_period_closing_voucher/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/process_period_closing_voucher/process_period_closing_voucher.py",
       "target": "accounts/doctype/process_period_closing_voucher/process_period_closing_voucher.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/process_period_closing_voucher/test_process_period_closing_voucher.py",
       "target": "accounts/doctype/process_period_closing_voucher/test_process_period_closing_voucher.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/process_period_closing_voucher_detail/__init__.py",

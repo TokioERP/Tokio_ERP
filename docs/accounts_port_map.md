@@ -200,7 +200,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `process_payment_reconciliation` | 7 | 4 | 1 | 2 | parity_tested | Rust covers lifecycle hooks, account-company validation, dashboard/list helpers, progress seed, allocation grouping, reconcile job names, and metadata in `accounts_process_payment_reconciliation`. JSON/JS kept external. |
 | `process_payment_reconciliation_log` | 6 | 3 | 1 | 2 | parity_tested | Python controller is pass/no-op; Rust metadata, progress helper, and list indicator mapping covered by `accounts_process_payment_reconciliation_log`. JSON/JS kept external. |
 | `process_payment_reconciliation_log_allocations` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_process_payment_reconciliation_log_allocations`. JSON kept external. |
-| `process_period_closing_voucher` | 5 | 3 | 1 | 1 | not_started | |
+| `process_period_closing_voucher` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, processing date table generation, lifecycle hooks, client action/progress helpers in `accounts_process_period_closing_voucher`. JSON/JS kept external. |
 | `process_period_closing_voucher_detail` | 3 | 2 | 1 | 0 | not_started | |
 | `process_statement_of_accounts` | 7 | 3 | 1 | 1 | not_started | |
 | `process_statement_of_accounts_cc` | 3 | 2 | 1 | 0 | not_started | |
@@ -1812,3 +1812,48 @@ Target: `src/erpnext/accounts/doctype/process_payment_reconciliation_log_allocat
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `process_payment_reconciliation_log_allocations.py` | `process_payment_reconciliation_log_allocations.rs` | parity_tested | No-op child table controller and metadata represented in Rust. |
 | `process_payment_reconciliation_log_allocations.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `process_period_closing_voucher`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/process_period_closing_voucher`
+Target: `src/erpnext/accounts/doctype/process_period_closing_voucher`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- `on_discard` sets `status` to `Cancelled`.
+- `validate` sets `status` to `Queued` and populates processing tables.
+- `populate_processing_tables` calls normal balance date generation and opening balance date generation.
+- `generate_pcv_dates` creates two queued `normal_balances` rows for each inclusive PCV date: `Profit and Loss` and `Balance Sheet`.
+- `generate_opening_balances_dates` creates queued `z_opening_balances` rows for each inclusive GL posting date when the parent PCV is the first period closing voucher.
+- `on_submit` delegates to `start_pcv_processing(self.name)` in Python; Rust represents this as a deterministic start hook plan.
+- `on_cancel` delegates to `cancel_pcv_processing(self.name)` in Python; Rust represents this as a deterministic cancel hook plan.
+- Client script maps submitted `Queued`, `Running`, and `Paused` documents to `Start`, `Pause`, and `Resume` actions.
+- Client progress is `(completed normal rows + completed opening rows) / total rows * 100`.
+- GL summarization and closing entry posting remain Frappe/DB-owned side effects to port in a later deeper pass.
+- DocType metadata:
+  - `name`: `Process Period Closing Voucher`
+  - `module`: `Accounts`
+  - `autoname`: `format:Process-PCV-{###}`
+  - `grid_page_length`: `50`
+  - `row_format`: `Dynamic`
+  - `index_web_pages_for_search`: enabled
+  - `is_submittable`: enabled
+  - `field_order`: `parent_pcv`, `status`, `p_l_closing_balance`, `normal_balances`, `bs_closing_balance`, `z_opening_balances`, `amended_from`
+  - `parent_pcv`: `Link`, label `PCV`, options `Period Closing Voucher`, required, `in_list_view: 1`
+  - `status`: `Select`, label `Status`, default `Queued`, options `Queued`, `Running`, `Paused`, `Completed`, `Cancelled`, `no_copy: 1`
+  - `p_l_closing_balance`: `JSON`, label `P&L Closing Balance`, `no_copy: 1`
+  - `normal_balances`: `Table`, label `Dates to Process`, options `Process Period Closing Voucher Detail`, `no_copy: 1`
+  - `bs_closing_balance`: `JSON`, label `Balance Sheet Closing Balance`
+  - `z_opening_balances`: `Table`, label `Opening Balances`, options `Process Period Closing Voucher Detail`, `no_copy: 1`
+  - `amended_from`: `Link`, label `Amended From`, options `Process Period Closing Voucher`, `no_copy: 1`, `print_hide: 1`, `read_only: 1`, `search_index: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `process_period_closing_voucher.py` | `process_period_closing_voucher.rs` | parity_tested | Metadata, validation table generation, lifecycle hooks, client action/progress helpers represented in Rust. |
+| `test_process_period_closing_voucher.py` | `tests/accounts_process_period_closing_voucher.rs` | parity_tested | Source test file has no test methods; Rust tests cover deterministic controller and helper behavior. |
+| `process_period_closing_voucher.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+| `process_period_closing_voucher.js` | ERPNext client script retained | external_kept | Button and progress behavior is mirrored by Rust helpers; UI script remains Frappe-owned. |
