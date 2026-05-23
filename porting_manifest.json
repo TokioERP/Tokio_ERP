@@ -2198,67 +2198,67 @@
     {
       "source": "accounts/doctype/share_balance/__init__.py",
       "target": "accounts/doctype/share_balance/mod.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/share_balance/share_balance.py",
       "target": "accounts/doctype/share_balance/share_balance.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/share_transfer/__init__.py",
       "target": "accounts/doctype/share_transfer/mod.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/share_transfer/share_transfer.py",
       "target": "accounts/doctype/share_transfer/share_transfer.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/share_transfer/test_share_transfer.py",
       "target": "accounts/doctype/share_transfer/test_share_transfer.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/share_type/__init__.py",
       "target": "accounts/doctype/share_type/mod.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/share_type/share_type.py",
       "target": "accounts/doctype/share_type/share_type.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/share_type/share_type_dashboard.py",
       "target": "accounts/doctype/share_type/share_type_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/share_type/test_share_type.py",
       "target": "accounts/doctype/share_type/test_share_type.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/shareholder/__init__.py",
       "target": "accounts/doctype/shareholder/mod.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/shareholder/shareholder.py",
       "target": "accounts/doctype/shareholder/shareholder.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/shareholder/shareholder_dashboard.py",
       "target": "accounts/doctype/shareholder/shareholder_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/shareholder/test_shareholder.py",
       "target": "accounts/doctype/shareholder/test_shareholder.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/shipping_rule/__init__.py",

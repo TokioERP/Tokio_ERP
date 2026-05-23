@@ -74,3 +74,7 @@ pub mod sales_invoice_timesheet;
 pub mod sales_partner_item;
 pub mod sales_taxes_and_charges;
 pub mod sales_taxes_and_charges_template;
+pub mod share_balance;
+pub mod share_transfer;
+pub mod share_type;
+pub mod shareholder;
