@@ -36,7 +36,7 @@ This is not an MVP list. Every source folder and file is tracked. A row is close
 | `dashboard_chart` | 8 | 7 | 0 | 7 | 0 | not_started | |
 | `dashboard_chart_source` | 2 | 5 | 3 | 1 | 1 | not_started | |
 | `doctype` | 191 | 923 | 504 | 282 | 111 | mapped | `bank_account_subtype` parity-tested; remaining doctypes pending. |
-| `financial_report_template` | 7 | 14 | 7 | 7 | 0 | not_started | |
+| `financial_report_template` | 7 | 14 | 7 | 7 | 0 | parity_tested | Python init files are empty/no-op; Rust preserves template registry names, modules, report types, row counts, and exact source folder paths where needed in `accounts_financial_report_template`. JSON kept external. |
 | `letterhead` | 1 | 2 | 0 | 0 | 0 | not_started | |
 | `module_onboarding` | 2 | 1 | 0 | 1 | 0 | not_started | |
 | `notification` | 2 | 5 | 3 | 1 | 0 | parity_tested | `notification_for_new_fiscal_year.py` is no-op context; Rust preserves notification metadata/template constants and context behavior in `accounts_notification_for_new_fiscal_year`. JSON/HTML kept external. |

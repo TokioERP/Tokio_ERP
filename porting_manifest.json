@@ -2558,37 +2558,37 @@
     {
       "source": "accounts/financial_report_template/__init__.py",
       "target": "accounts/financial_report_template/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/financial_report_template/financial_ratios_analysis/__init__.py",
       "target": "accounts/financial_report_template/financial_ratios_analysis/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/financial_report_template/horizontal_balance_sheet_(columnar)/__init__.py",
       "target": "accounts/financial_report_template/horizontal_balance_sheet_(columnar)/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/financial_report_template/horizontal_profit_and_loss_(columnar)/__init__.py",
       "target": "accounts/financial_report_template/horizontal_profit_and_loss_(columnar)/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/financial_report_template/standard_balance_sheet_(ifrs)/__init__.py",
       "target": "accounts/financial_report_template/standard_balance_sheet_(ifrs)/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/financial_report_template/standard_cash_flow_statement_(ifrs)/__init__.py",
       "target": "accounts/financial_report_template/standard_cash_flow_statement_(ifrs)/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/financial_report_template/standard_profit_and_loss_(ifrs)/__init__.py",
       "target": "accounts/financial_report_template/standard_profit_and_loss_(ifrs)/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/general_ledger.py",
