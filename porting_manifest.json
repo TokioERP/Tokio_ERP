@@ -393,7 +393,7 @@
     {
       "source": "accounts/doctype/bank_transaction/bank_transaction_upload.py",
       "target": "accounts/doctype/bank_transaction/bank_transaction_upload.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/bank_transaction/test_auto_match_party.py",
