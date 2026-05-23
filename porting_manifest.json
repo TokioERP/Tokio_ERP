@@ -2428,17 +2428,17 @@
     {
       "source": "accounts/doctype/tax_rule/__init__.py",
       "target": "accounts/doctype/tax_rule/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/tax_rule/tax_rule.py",
       "target": "accounts/doctype/tax_rule/tax_rule.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/tax_rule/test_tax_rule.py",
       "target": "accounts/doctype/tax_rule/test_tax_rule.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/tax_withholding_account/__init__.py",

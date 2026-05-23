@@ -85,4 +85,5 @@ pub mod south_africa_vat_account;
 pub mod supplier_group_item;
 pub mod supplier_item;
 pub mod tax_category;
+pub mod tax_rule;
 pub mod tax_withholding_account;
