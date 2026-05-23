@@ -143,12 +143,19 @@ pub enum BankTransactionAllocationAction {
     ClearLinkedPaymentEntry {
         payment_document: String,
         payment_entry: String,
+        target: ClearanceDateTarget,
         clearance_date: Option<String>,
     },
     UpdateLinkedBankTransaction {
         bank_transaction_name: String,
         allocated_amount: Option<f64>,
     },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ClearanceDateTarget {
+    Document { doctype: String, name: String },
+    SalesInvoicePayment { parenttype: String, parent: String },
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -768,8 +775,23 @@ fn append_clear_linked_payment_entry_action(
     actions.push(BankTransactionAllocationAction::ClearLinkedPaymentEntry {
         payment_document: payment_entry.payment_document.clone(),
         payment_entry: payment_entry.payment_entry.clone(),
+        target: clearance_date_target(payment_entry),
         clearance_date,
     });
+}
+
+fn clearance_date_target(payment_entry: &BankTransactionPayment) -> ClearanceDateTarget {
+    if payment_entry.payment_document == "Sales Invoice" {
+        return ClearanceDateTarget::SalesInvoicePayment {
+            parenttype: payment_entry.payment_document.clone(),
+            parent: payment_entry.payment_entry.clone(),
+        };
+    }
+
+    ClearanceDateTarget::Document {
+        doctype: payment_entry.payment_document.clone(),
+        name: payment_entry.payment_entry.clone(),
+    }
 }
 
 fn append_delink_payment_entry_action(

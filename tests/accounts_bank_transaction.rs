@@ -5,10 +5,27 @@ use tokio_erp::erpnext::accounts::doctype::bank_transaction::bank_transaction::{
     get_clearance_details, get_payment_doctypes, group_related_bank_gl_entries,
     group_total_allocated_amount, remove_from_bank_transaction_plan, BankGlAllocation,
     BankTransaction, BankTransactionAllocationAction, BankTransactionError, BankTransactionPayment,
-    BankTransactionRuntimeContext, BankTransactionStatus, ClearanceDetails, LinkedBankTransaction,
-    RelatedBankGlEntryRow, RemoveFromBankTransactionPlan, TotalAllocatedAmountRow,
+    BankTransactionRuntimeContext, BankTransactionStatus, ClearanceDateTarget, ClearanceDetails,
+    LinkedBankTransaction, RelatedBankGlEntryRow, RemoveFromBankTransactionPlan,
+    TotalAllocatedAmountRow,
 };
 use tokio_erp::erpnext::{DocumentController, FieldSpec};
+
+fn clear_document_action(
+    payment_document: &str,
+    payment_entry: &str,
+    clearance_date: Option<&str>,
+) -> BankTransactionAllocationAction {
+    BankTransactionAllocationAction::ClearLinkedPaymentEntry {
+        payment_document: payment_document.to_string(),
+        payment_entry: payment_entry.to_string(),
+        target: ClearanceDateTarget::Document {
+            doctype: payment_document.to_string(),
+            name: payment_entry.to_string(),
+        },
+        clearance_date: clearance_date.map(str::to_string),
+    }
+}
 
 #[test]
 fn bank_transaction_matches_erpnext_metadata_and_client_payment_doctypes() {
@@ -646,11 +663,11 @@ fn bank_transaction_allocate_payment_entries_matches_erpnext_zero_allocation_flo
     assert_eq!(transaction.unallocated_amount, 25.0);
     assert_eq!(
         actions,
-        vec![BankTransactionAllocationAction::ClearLinkedPaymentEntry {
-            payment_document: "Payment Entry".to_string(),
-            payment_entry: "PE-0001".to_string(),
-            clearance_date: Some("2026-05-20".to_string()),
-        }]
+        vec![clear_document_action(
+            "Payment Entry",
+            "PE-0001",
+            Some("2026-05-20")
+        )]
     );
 }
 
@@ -714,16 +731,8 @@ fn bank_transaction_allocate_payment_entries_removes_cleared_and_excess_rows_lik
     assert_eq!(
         actions,
         vec![
-            BankTransactionAllocationAction::ClearLinkedPaymentEntry {
-                payment_document: "Payment Entry".to_string(),
-                payment_entry: "PE-CLEARED".to_string(),
-                clearance_date: Some("2026-05-21".to_string()),
-            },
-            BankTransactionAllocationAction::ClearLinkedPaymentEntry {
-                payment_document: "Payment Entry".to_string(),
-                payment_entry: "PE-ALLOC".to_string(),
-                clearance_date: Some("2026-05-20".to_string()),
-            },
+            clear_document_action("Payment Entry", "PE-CLEARED", Some("2026-05-21")),
+            clear_document_action("Payment Entry", "PE-ALLOC", Some("2026-05-20")),
         ]
     );
 }
@@ -802,11 +811,7 @@ fn bank_transaction_remove_payment_entries_delinks_and_clears_like_erpnext() {
                 bank_transaction_name: "BT-REFUND".to_string(),
                 allocated_amount: None,
             },
-            BankTransactionAllocationAction::ClearLinkedPaymentEntry {
-                payment_document: "Payment Entry".to_string(),
-                payment_entry: "PE-0001".to_string(),
-                clearance_date: None,
-            },
+            clear_document_action("Payment Entry", "PE-0001", None),
         ]
     );
 }
@@ -840,11 +845,7 @@ fn bank_transaction_remove_payment_entry_delinks_single_row_like_erpnext() {
     assert_eq!(transaction.unallocated_amount, 35.0);
     assert_eq!(
         actions,
-        vec![BankTransactionAllocationAction::ClearLinkedPaymentEntry {
-            payment_document: "Payment Entry".to_string(),
-            payment_entry: "PE-0001".to_string(),
-            clearance_date: None,
-        }]
+        vec![clear_document_action("Payment Entry", "PE-0001", None)]
     );
 }
 
@@ -908,11 +909,7 @@ fn bank_transaction_on_discard_and_on_cancel_match_erpnext_status_and_delink_flo
                 bank_transaction_name: "BT-REFUND".to_string(),
                 allocated_amount: None,
             },
-            BankTransactionAllocationAction::ClearLinkedPaymentEntry {
-                payment_document: "Payment Entry".to_string(),
-                payment_entry: "PE-0001".to_string(),
-                clearance_date: None,
-            },
+            clear_document_action("Payment Entry", "PE-0001", None),
         ]
     );
 }
@@ -942,11 +939,7 @@ fn bank_transaction_delink_old_payment_entries_matches_erpnext_removed_child_nam
                 bank_transaction_name: "BT-OLD".to_string(),
                 allocated_amount: None,
             },
-            BankTransactionAllocationAction::ClearLinkedPaymentEntry {
-                payment_document: "Payment Entry".to_string(),
-                payment_entry: "PE-OLD".to_string(),
-                clearance_date: None,
-            },
+            clear_document_action("Payment Entry", "PE-OLD", None),
         ]
     );
     assert_eq!(
@@ -1006,11 +999,11 @@ fn bank_transaction_before_submit_matches_erpnext_allocate_status_and_party_sequ
     assert_eq!(transaction.party, Some("CUST-0001".to_string()));
     assert_eq!(
         actions,
-        vec![BankTransactionAllocationAction::ClearLinkedPaymentEntry {
-            payment_document: "Payment Entry".to_string(),
-            payment_entry: "PE-0001".to_string(),
-            clearance_date: Some("2026-05-22".to_string()),
-        }]
+        vec![clear_document_action(
+            "Payment Entry",
+            "PE-0001",
+            Some("2026-05-22")
+        )]
     );
 }
 
@@ -1057,11 +1050,33 @@ fn bank_transaction_before_update_after_submit_matches_erpnext_validate_delink_a
                 bank_transaction_name: "BT-OLD".to_string(),
                 allocated_amount: None,
             },
-            BankTransactionAllocationAction::ClearLinkedPaymentEntry {
-                payment_document: "Payment Entry".to_string(),
-                payment_entry: "PE-NEW".to_string(),
-                clearance_date: Some("2026-05-22".to_string()),
-            },
+            clear_document_action("Payment Entry", "PE-NEW", Some("2026-05-22")),
         ]
+    );
+}
+
+#[test]
+fn bank_transaction_clear_linked_payment_entry_targets_sales_invoice_child_table_like_erpnext() {
+    let mut transaction = BankTransaction {
+        withdrawal: 100.0,
+        payment_entries: vec![BankTransactionPayment::new(
+            "Sales Invoice",
+            "SI-0001",
+            100.0,
+        )],
+        ..Default::default()
+    };
+
+    assert_eq!(
+        transaction.remove_payment_entries(),
+        vec![BankTransactionAllocationAction::ClearLinkedPaymentEntry {
+            payment_document: "Sales Invoice".to_string(),
+            payment_entry: "SI-0001".to_string(),
+            target: ClearanceDateTarget::SalesInvoicePayment {
+                parenttype: "Sales Invoice".to_string(),
+                parent: "SI-0001".to_string(),
+            },
+            clearance_date: None,
+        }]
     );
 }
