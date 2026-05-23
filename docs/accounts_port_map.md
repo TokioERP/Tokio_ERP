@@ -214,8 +214,8 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `purchase_invoice` | 9 | 4 | 2 | 2 | not_started | |
 | `purchase_invoice_advance` | 4 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_purchase_invoice_advance`. JSON kept external. |
 | `purchase_invoice_item` | 4 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust field order, key metadata, and controller behavior covered by `accounts_purchase_invoice_item`. Full JSON kept external. |
-| `purchase_taxes_and_charges` | 4 | 2 | 1 | 0 | not_started | |
-| `purchase_taxes_and_charges_template` | 6 | 4 | 1 | 1 | not_started | |
+| `purchase_taxes_and_charges` | 4 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust field order, key metadata, and controller behavior covered by `accounts_purchase_taxes_and_charges`. JSON kept external. |
+| `purchase_taxes_and_charges_template` | 6 | 4 | 1 | 1 | parity_tested | Rust covers metadata, validate delegation, autoname behavior, and hooks in `accounts_purchase_taxes_and_charges_template`. JSON/JS kept external. |
 | `repost_accounting_ledger` | 6 | 3 | 1 | 1 | not_started | |
 | `repost_accounting_ledger_items` | 3 | 2 | 1 | 0 | not_started | |
 | `repost_allowed_types` | 3 | 2 | 1 | 0 | not_started | |
@@ -2221,3 +2221,60 @@ Target: `src/erpnext/accounts/doctype/purchase_invoice_item`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `purchase_invoice_item.py` | `purchase_invoice_item.rs` | parity_tested | No-op child table controller, full field order, key metadata, and controller behavior represented in Rust. |
 | `purchase_invoice_item.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `purchase_taxes_and_charges`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/purchase_taxes_and_charges`
+Target: `src/erpnext/accounts/doctype/purchase_taxes_and_charges`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- DocType metadata:
+  - `name`: `Purchase Taxes and Charges`
+  - `module`: `Accounts`
+  - `editable_grid`: enabled
+  - `istable`: enabled
+  - `field_order`: 29 fields from `category` through `dont_recompute_tax`
+  - `category`: `Select`, required, default `Total`, options `Valuation and Total`, `Valuation`, `Total`
+  - `charge_type`: `Select`, required, default `On Net Total`, options blank, `Actual`, `On Net Total`, `On Previous Row Amount`, `On Previous Row Total`, `On Item Quantity`
+  - `account_head`: `Link`, options `Account`, required, `in_list_view: 1`, `columns: 2`
+  - `tax_amount`: `Currency`, options `currency`, `in_list_view: 1`, `columns: 2`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `purchase_taxes_and_charges.py` | `purchase_taxes_and_charges.rs` | parity_tested | No-op child table controller, field order, key metadata, and controller behavior represented in Rust. |
+| `purchase_taxes_and_charges.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `purchase_taxes_and_charges_template`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/purchase_taxes_and_charges_template`
+Target: `src/erpnext/accounts/doctype/purchase_taxes_and_charges_template`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- `validate` delegates to shared `valdiate_taxes_and_charges_template`.
+- `autoname` sets `name` to `{title} - {company_abbr}` when both company and title exist.
+- DocType metadata:
+  - `name`: `Purchase Taxes and Charges Template`
+  - `module`: `Accounts`
+  - `allow_rename`: enabled
+  - `field_order`: `title`, `is_default`, `disabled`, `column_break4`, `company`, `tax_category`, `section_break6`, `taxes`
+  - `title`: `Data`, required, no-copy
+  - `company`: `Link`, options `Company`, required, `in_list_view: 1`
+  - `taxes`: `Table`, options `Purchase Taxes and Charges`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `purchase_taxes_and_charges_template.py` | `purchase_taxes_and_charges_template.rs` | parity_tested | Validate delegation, autoname behavior, hooks, and metadata represented in Rust. |
+| `test_purchase_taxes_and_charges_template.py` | `tests/accounts_purchase_taxes_and_charges_template.rs` | parity_tested | Source test class is empty; Rust tests cover deterministic controller behavior. |
+| `purchase_taxes_and_charges_template.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+| `purchase_taxes_and_charges_template.js` | ERPNext client script retained | external_kept | Client/UI behavior remains Frappe-owned. |

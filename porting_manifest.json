@@ -1998,22 +1998,22 @@
     {
       "source": "accounts/doctype/purchase_taxes_and_charges/__init__.py",
       "target": "accounts/doctype/purchase_taxes_and_charges/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/purchase_taxes_and_charges/purchase_taxes_and_charges.py",
       "target": "accounts/doctype/purchase_taxes_and_charges/purchase_taxes_and_charges.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/purchase_taxes_and_charges_template/__init__.py",
       "target": "accounts/doctype/purchase_taxes_and_charges_template/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/purchase_taxes_and_charges_template/purchase_taxes_and_charges_template.py",
       "target": "accounts/doctype/purchase_taxes_and_charges_template/purchase_taxes_and_charges_template.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/purchase_taxes_and_charges_template/purchase_taxes_and_charges_template_dashboard.py",
@@ -2023,7 +2023,7 @@
     {
       "source": "accounts/doctype/purchase_taxes_and_charges_template/test_purchase_taxes_and_charges_template.py",
       "target": "accounts/doctype/purchase_taxes_and_charges_template/test_purchase_taxes_and_charges_template.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/repost_accounting_ledger/__init__.py",

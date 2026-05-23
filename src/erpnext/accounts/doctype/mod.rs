@@ -60,3 +60,5 @@ pub mod psoa_cost_center;
 pub mod psoa_project;
 pub mod purchase_invoice_advance;
 pub mod purchase_invoice_item;
+pub mod purchase_taxes_and_charges;
+pub mod purchase_taxes_and_charges_template;
