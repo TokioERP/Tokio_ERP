@@ -2408,22 +2408,22 @@
     {
       "source": "accounts/doctype/tax_category/__init__.py",
       "target": "accounts/doctype/tax_category/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/tax_category/tax_category.py",
       "target": "accounts/doctype/tax_category/tax_category.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/tax_category/tax_category_dashboard.py",
       "target": "accounts/doctype/tax_category/tax_category_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/tax_category/test_tax_category.py",
       "target": "accounts/doctype/tax_category/test_tax_category.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/tax_rule/__init__.py",
@@ -2443,12 +2443,12 @@
     {
       "source": "accounts/doctype/tax_withholding_account/__init__.py",
       "target": "accounts/doctype/tax_withholding_account/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/tax_withholding_account/tax_withholding_account.py",
       "target": "accounts/doctype/tax_withholding_account/tax_withholding_account.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/tax_withholding_category/__init__.py",
