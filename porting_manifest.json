@@ -243,7 +243,7 @@
     {
       "source": "accounts/doctype/bank/__init__.py",
       "target": "accounts/doctype/bank/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank/bank.py",
@@ -253,7 +253,7 @@
     {
       "source": "accounts/doctype/bank/bank_dashboard.py",
       "target": "accounts/doctype/bank/bank_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank/test_bank.py",
@@ -573,7 +573,7 @@
     {
       "source": "accounts/doctype/cost_center/__init__.py",
       "target": "accounts/doctype/cost_center/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/cost_center/cost_center.py",
@@ -583,7 +583,7 @@
     {
       "source": "accounts/doctype/cost_center/cost_center_dashboard.py",
       "target": "accounts/doctype/cost_center/cost_center_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/cost_center/test_cost_center.py",
@@ -738,7 +738,7 @@
     {
       "source": "accounts/doctype/exchange_rate_revaluation/__init__.py",
       "target": "accounts/doctype/exchange_rate_revaluation/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/exchange_rate_revaluation/exchange_rate_revaluation.py",
@@ -748,7 +748,7 @@
     {
       "source": "accounts/doctype/exchange_rate_revaluation/exchange_rate_revaluation_dashboard.py",
       "target": "accounts/doctype/exchange_rate_revaluation/exchange_rate_revaluation_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/exchange_rate_revaluation/test_exchange_rate_revaluation.py",
@@ -1073,7 +1073,7 @@
     {
       "source": "accounts/doctype/loyalty_program/__init__.py",
       "target": "accounts/doctype/loyalty_program/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/loyalty_program/loyalty_program.py",
@@ -1083,7 +1083,7 @@
     {
       "source": "accounts/doctype/loyalty_program/loyalty_program_dashboard.py",
       "target": "accounts/doctype/loyalty_program/loyalty_program_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/loyalty_program/test_loyalty_program.py",
@@ -1253,7 +1253,7 @@
     {
       "source": "accounts/doctype/payment_gateway_account/__init__.py",
       "target": "accounts/doctype/payment_gateway_account/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_gateway_account/payment_gateway_account.py",
@@ -1263,7 +1263,7 @@
     {
       "source": "accounts/doctype/payment_gateway_account/payment_gateway_account_dashboard.py",
       "target": "accounts/doctype/payment_gateway_account/payment_gateway_account_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_gateway_account/test_payment_gateway_account.py",
@@ -1288,7 +1288,7 @@
     {
       "source": "accounts/doctype/payment_order/__init__.py",
       "target": "accounts/doctype/payment_order/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_order/payment_order.py",
@@ -1298,7 +1298,7 @@
     {
       "source": "accounts/doctype/payment_order/payment_order_dashboard.py",
       "target": "accounts/doctype/payment_order/payment_order_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_order/test_payment_order.py",
