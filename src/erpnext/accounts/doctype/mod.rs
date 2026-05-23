@@ -87,3 +87,5 @@ pub mod supplier_item;
 pub mod tax_category;
 pub mod tax_rule;
 pub mod tax_withholding_account;
+pub mod tax_withholding_category;
+pub mod tax_withholding_rate;

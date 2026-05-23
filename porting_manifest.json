@@ -2453,22 +2453,22 @@
     {
       "source": "accounts/doctype/tax_withholding_category/__init__.py",
       "target": "accounts/doctype/tax_withholding_category/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/tax_withholding_category/tax_withholding_category.py",
       "target": "accounts/doctype/tax_withholding_category/tax_withholding_category.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/tax_withholding_category/tax_withholding_category_dashboard.py",
       "target": "accounts/doctype/tax_withholding_category/tax_withholding_category_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/tax_withholding_category/test_tax_withholding_category.py",
       "target": "accounts/doctype/tax_withholding_category/test_tax_withholding_category.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/tax_withholding_entry/__init__.py",
@@ -2503,12 +2503,12 @@
     {
       "source": "accounts/doctype/tax_withholding_rate/__init__.py",
       "target": "accounts/doctype/tax_withholding_rate/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/tax_withholding_rate/tax_withholding_rate.py",
       "target": "accounts/doctype/tax_withholding_rate/tax_withholding_rate.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/territory_item/__init__.py",

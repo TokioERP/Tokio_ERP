@@ -245,13 +245,13 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `subscription_settings` | 5 | 3 | 1 | 1 | not_started | |
 | `supplier_group_item` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_supplier_static_items`. JSON kept external. |
 | `supplier_item` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_supplier_static_items`. JSON kept external. |
-| `tax_category` | 6 | 4 | 1 | 1 | not_started | |
-| `tax_rule` | 5 | 3 | 1 | 1 | not_started | |
-| `tax_withholding_account` | 3 | 2 | 1 | 0 | not_started | |
-| `tax_withholding_category` | 6 | 4 | 1 | 1 | not_started | |
+| `tax_category` | 6 | 4 | 1 | 1 | parity_tested | Python controller is pass/no-op; Rust metadata, dashboard constants, and controller behavior covered by `accounts_tax_category_static`. JSON/JS kept external. |
+| `tax_rule` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, template clearing/mandatory validation, conflict detection by exact filters and date overlap, tax-template lookup specificity/priority/category/customer-group behavior, JS hook constants, and controller hooks in `accounts_tax_rule`. JSON/JS kept external. |
+| `tax_withholding_account` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_tax_category_static`. JSON kept external. |
+| `tax_withholding_category` | 6 | 4 | 1 | 1 | parity_tested | Rust covers metadata, date overlap validation, duplicate company/account validation, threshold validation, applicable tax row lookup, company account lookup, dashboard constants, and controller hooks in `accounts_tax_withholding_category`. JSON/JS kept external. |
 | `tax_withholding_entry` | 4 | 3 | 1 | 0 | not_started | |
 | `tax_withholding_group` | 5 | 3 | 1 | 1 | not_started | |
-| `tax_withholding_rate` | 3 | 2 | 1 | 0 | not_started | |
+| `tax_withholding_rate` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_tax_withholding_category`. JSON kept external. |
 | `territory_item` | 3 | 2 | 1 | 0 | not_started | |
 | `transaction_deletion_record_details` | 3 | 2 | 1 | 0 | not_started | |
 | `unreconcile_payment` | 5 | 3 | 1 | 1 | not_started | |
