@@ -48,6 +48,7 @@ pub struct BankTransaction {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct BankTransactionPayment {
+    pub name: Option<String>,
     pub payment_document: String,
     pub payment_entry: String,
     pub allocated_amount: f64,
@@ -294,6 +295,23 @@ impl BankTransaction {
         Ok(())
     }
 
+    pub fn before_validate(&mut self) -> Result<(), BankTransactionError> {
+        self.handle_excluded_fee()?;
+        self.update_allocated_amount();
+
+        Ok(())
+    }
+
+    pub fn validate(
+        &self,
+        bank_account_gl_account: Option<&str>,
+        account_currency: Option<&str>,
+    ) -> Result<(), BankTransactionError> {
+        self.validate_included_fee()?;
+        self.validate_duplicate_references()?;
+        self.validate_currency(bank_account_gl_account, account_currency)
+    }
+
     pub fn validate_currency(
         &self,
         bank_account_gl_account: Option<&str>,
@@ -489,6 +507,53 @@ impl BankTransaction {
         actions
     }
 
+    pub fn delink_old_payment_entries(
+        &self,
+        old_doc: &BankTransaction,
+        updating_linked_bank_transaction: bool,
+    ) -> Vec<BankTransactionAllocationAction> {
+        if updating_linked_bank_transaction {
+            return Vec::new();
+        }
+
+        let payment_entry_names: HashSet<&str> = self
+            .payment_entries
+            .iter()
+            .filter_map(|payment_entry| payment_entry.name.as_deref())
+            .collect();
+        let mut actions = Vec::new();
+
+        for old_payment_entry in &old_doc.payment_entries {
+            if old_payment_entry
+                .name
+                .as_deref()
+                .is_some_and(|name| payment_entry_names.contains(name))
+            {
+                continue;
+            }
+
+            append_delink_payment_entry_action(&mut actions, old_payment_entry);
+        }
+
+        actions
+    }
+
+    pub fn on_discard(&mut self) {
+        self.status = BankTransactionStatus::Cancelled;
+    }
+
+    pub fn on_cancel(&mut self) -> Vec<BankTransactionAllocationAction> {
+        let mut actions = Vec::new();
+
+        for payment_entry in &self.payment_entries {
+            append_delink_payment_entry_action(&mut actions, payment_entry);
+        }
+
+        self.set_status();
+
+        actions
+    }
+
     pub fn validate_included_fee(&self) -> Result<(), BankTransactionError> {
         if self.included_fee != 0.0 && self.withdrawal != 0.0 && self.included_fee > self.withdrawal
         {
@@ -532,6 +597,21 @@ impl BankTransactionPayment {
         allocated_amount: f64,
     ) -> Self {
         Self {
+            name: None,
+            payment_document: payment_document.into(),
+            payment_entry: payment_entry.into(),
+            allocated_amount,
+        }
+    }
+
+    pub fn with_name(
+        name: impl Into<String>,
+        payment_document: impl Into<String>,
+        payment_entry: impl Into<String>,
+        allocated_amount: f64,
+    ) -> Self {
+        Self {
+            name: Some(name.into()),
             payment_document: payment_document.into(),
             payment_entry: payment_entry.into(),
             allocated_amount,

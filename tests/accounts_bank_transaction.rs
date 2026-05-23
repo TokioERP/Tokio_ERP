@@ -846,3 +846,110 @@ fn bank_transaction_remove_payment_entry_delinks_single_row_like_erpnext() {
         }]
     );
 }
+
+#[test]
+fn bank_transaction_before_validate_and_validate_match_erpnext_lifecycle_guards() {
+    let mut transaction = BankTransaction {
+        deposit: 100.0,
+        excluded_fee: 5.0,
+        currency: Some("USD".to_string()),
+        bank_account: Some("Checking - TC".to_string()),
+        payment_entries: vec![BankTransactionPayment::new(
+            "Payment Entry",
+            "PE-0001",
+            10.0,
+        )],
+        ..Default::default()
+    };
+
+    transaction.before_validate().unwrap();
+
+    assert_eq!(transaction.deposit, 95.0);
+    assert_eq!(transaction.included_fee, 5.0);
+    assert_eq!(transaction.excluded_fee, 0.0);
+    assert_eq!(transaction.allocated_amount, 10.0);
+    assert_eq!(transaction.unallocated_amount, 85.0);
+
+    assert_eq!(transaction.validate(Some("Bank - TC"), Some("USD")), Ok(()));
+    assert_eq!(
+        transaction.validate(Some("Bank - TC"), Some("UZS")),
+        Err(BankTransactionError::CurrencyMismatch {
+            transaction_currency: "USD".to_string(),
+            bank_account: "Checking - TC".to_string(),
+            account_currency: "UZS".to_string(),
+        })
+    );
+}
+
+#[test]
+fn bank_transaction_on_discard_and_on_cancel_match_erpnext_status_and_delink_flow() {
+    let mut discarded = BankTransaction::default();
+    discarded.on_discard();
+    assert_eq!(discarded.status, BankTransactionStatus::Cancelled);
+
+    let mut transaction = BankTransaction {
+        docstatus: 2,
+        withdrawal: 50.0,
+        payment_entries: vec![
+            BankTransactionPayment::new("Bank Transaction", "BT-REFUND", 20.0),
+            BankTransactionPayment::new("Payment Entry", "PE-0001", 10.0),
+        ],
+        ..Default::default()
+    };
+
+    let actions = transaction.on_cancel();
+
+    assert_eq!(transaction.status, BankTransactionStatus::Cancelled);
+    assert_eq!(
+        actions,
+        vec![
+            BankTransactionAllocationAction::UpdateLinkedBankTransaction {
+                bank_transaction_name: "BT-REFUND".to_string(),
+                allocated_amount: None,
+            },
+            BankTransactionAllocationAction::ClearLinkedPaymentEntry {
+                payment_document: "Payment Entry".to_string(),
+                payment_entry: "PE-0001".to_string(),
+                clearance_date: None,
+            },
+        ]
+    );
+}
+
+#[test]
+fn bank_transaction_delink_old_payment_entries_matches_erpnext_removed_child_names() {
+    let transaction = BankTransaction {
+        payment_entries: vec![
+            BankTransactionPayment::with_name("ROW-KEPT", "Payment Entry", "PE-KEEP", 10.0),
+            BankTransactionPayment::with_name("ROW-NEW", "Payment Entry", "PE-NEW", 5.0),
+        ],
+        ..Default::default()
+    };
+    let old_doc = BankTransaction {
+        payment_entries: vec![
+            BankTransactionPayment::with_name("ROW-KEPT", "Payment Entry", "PE-KEEP", 10.0),
+            BankTransactionPayment::with_name("ROW-REMOVED", "Bank Transaction", "BT-OLD", 20.0),
+            BankTransactionPayment::with_name("ROW-REMOVED-2", "Payment Entry", "PE-OLD", 15.0),
+        ],
+        ..Default::default()
+    };
+
+    assert_eq!(
+        transaction.delink_old_payment_entries(&old_doc, false),
+        vec![
+            BankTransactionAllocationAction::UpdateLinkedBankTransaction {
+                bank_transaction_name: "BT-OLD".to_string(),
+                allocated_amount: None,
+            },
+            BankTransactionAllocationAction::ClearLinkedPaymentEntry {
+                payment_document: "Payment Entry".to_string(),
+                payment_entry: "PE-OLD".to_string(),
+                clearance_date: None,
+            },
+        ]
+    );
+    assert_eq!(
+        transaction.delink_old_payment_entries(&old_doc, true),
+        Vec::new()
+    );
+}
