@@ -249,13 +249,13 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `tax_rule` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, template clearing/mandatory validation, conflict detection by exact filters and date overlap, tax-template lookup specificity/priority/category/customer-group behavior, JS hook constants, and controller hooks in `accounts_tax_rule`. JSON/JS kept external. |
 | `tax_withholding_account` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_tax_category_static`. JSON kept external. |
 | `tax_withholding_category` | 6 | 4 | 1 | 1 | parity_tested | Rust covers metadata, date overlap validation, duplicate company/account validation, threshold validation, applicable tax row lookup, company account lookup, dashboard constants, and controller hooks in `accounts_tax_withholding_category`. JSON/JS kept external. |
-| `tax_withholding_entry` | 4 | 3 | 1 | 0 | not_started | |
-| `tax_withholding_group` | 5 | 3 | 1 | 1 | not_started | |
+| `tax_withholding_entry` | 4 | 3 | 1 | 0 | ported | Rust covers metadata, status/link difference helpers, withholding amount calculation, adjustment validations, update value helpers, and controller hooks in `accounts_tax_withholding_entry`. Full DB-backed submission flow remains external. |
+| `tax_withholding_group` | 5 | 3 | 1 | 1 | parity_tested | Python controller/test are pass/no-op; Rust metadata and controller behavior covered by `accounts_static_tail_items`. JSON/JS kept external. |
 | `tax_withholding_rate` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_tax_withholding_category`. JSON kept external. |
-| `territory_item` | 3 | 2 | 1 | 0 | not_started | |
-| `transaction_deletion_record_details` | 3 | 2 | 1 | 0 | not_started | |
-| `unreconcile_payment` | 5 | 3 | 1 | 1 | not_started | |
-| `unreconcile_payment_entries` | 3 | 2 | 1 | 0 | not_started | |
+| `territory_item` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_static_tail_items`. JSON kept external. |
+| `transaction_deletion_record_details` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_static_tail_items`. JSON kept external. |
+| `unreconcile_payment` | 5 | 3 | 1 | 1 | ported | Rust covers metadata, supported-type validation, linked payment/advance grouping, selection filtering, submit action planning, and JS query constants in `accounts_unreconcile_payment`. Frappe DB side effects remain represented as actions. |
+| `unreconcile_payment_entries` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_unreconcile_payment`. JSON kept external. |
 
 ## Doctype Detail: `bank_account_subtype`
 

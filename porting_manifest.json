@@ -2533,27 +2533,27 @@
     {
       "source": "accounts/doctype/unreconcile_payment/__init__.py",
       "target": "accounts/doctype/unreconcile_payment/mod.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/unreconcile_payment/test_unreconcile_payment.py",
       "target": "accounts/doctype/unreconcile_payment/test_unreconcile_payment.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/unreconcile_payment/unreconcile_payment.py",
       "target": "accounts/doctype/unreconcile_payment/unreconcile_payment.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/unreconcile_payment_entries/__init__.py",
       "target": "accounts/doctype/unreconcile_payment_entries/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/unreconcile_payment_entries/unreconcile_payment_entries.py",
       "target": "accounts/doctype/unreconcile_payment_entries/unreconcile_payment_entries.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/financial_report_template/__init__.py",

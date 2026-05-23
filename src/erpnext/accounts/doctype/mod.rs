@@ -93,3 +93,5 @@ pub mod tax_withholding_group;
 pub mod tax_withholding_rate;
 pub mod territory_item;
 pub mod transaction_deletion_record_details;
+pub mod unreconcile_payment;
+pub mod unreconcile_payment_entries;
