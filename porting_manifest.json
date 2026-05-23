@@ -103,17 +103,17 @@
     {
       "source": "accounts/doctype/account_closing_balance/__init__.py",
       "target": "accounts/doctype/account_closing_balance/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/account_closing_balance/account_closing_balance.py",
       "target": "accounts/doctype/account_closing_balance/account_closing_balance.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/account_closing_balance/test_account_closing_balance.py",
       "target": "accounts/doctype/account_closing_balance/test_account_closing_balance.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/accounting_dimension/__init__.py",
