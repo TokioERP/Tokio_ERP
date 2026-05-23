@@ -65,6 +65,11 @@ pub enum BankTransactionError {
     IncludedFeeBiggerThanWithdrawal,
     ExcludedFeeBiggerThanDeposit,
     DepositAndWithdrawalWithExcludedFee,
+    CurrencyMismatch {
+        transaction_currency: String,
+        bank_account: String,
+        account_currency: String,
+    },
     LinkedBankAccountMismatch {
         linked_bank_account: String,
         payment_entry: String,
@@ -268,6 +273,36 @@ impl BankTransaction {
                     payment_entry: row.payment_entry.clone(),
                 });
             }
+        }
+
+        Ok(())
+    }
+
+    pub fn validate_currency(
+        &self,
+        bank_account_gl_account: Option<&str>,
+        account_currency: Option<&str>,
+    ) -> Result<(), BankTransactionError> {
+        let (Some(transaction_currency), Some(bank_account)) =
+            (self.currency.as_deref(), self.bank_account.as_deref())
+        else {
+            return Ok(());
+        };
+
+        if bank_account_gl_account.is_none() {
+            return Ok(());
+        }
+
+        let Some(account_currency) = account_currency else {
+            return Ok(());
+        };
+
+        if transaction_currency != account_currency {
+            return Err(BankTransactionError::CurrencyMismatch {
+                transaction_currency: transaction_currency.to_string(),
+                bank_account: bank_account.to_string(),
+                account_currency: account_currency.to_string(),
+            });
         }
 
         Ok(())

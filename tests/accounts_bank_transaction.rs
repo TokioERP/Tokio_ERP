@@ -557,3 +557,48 @@ fn bank_transaction_remove_from_bank_transaction_plan_matches_erpnext_cancel_ski
         }]
     );
 }
+
+#[test]
+fn bank_transaction_validate_currency_matches_erpnext_bank_account_guard() {
+    let transaction = BankTransaction {
+        currency: Some("USD".to_string()),
+        bank_account: Some("Checking - TC".to_string()),
+        ..Default::default()
+    };
+
+    assert_eq!(transaction.validate_currency(None, None), Ok(()));
+    assert_eq!(
+        transaction.validate_currency(Some("Bank - TC"), None),
+        Ok(())
+    );
+    assert_eq!(
+        transaction.validate_currency(Some("Bank - TC"), Some("USD")),
+        Ok(())
+    );
+    assert_eq!(
+        transaction.validate_currency(Some("Bank - TC"), Some("UZS")),
+        Err(BankTransactionError::CurrencyMismatch {
+            transaction_currency: "USD".to_string(),
+            bank_account: "Checking - TC".to_string(),
+            account_currency: "UZS".to_string(),
+        })
+    );
+
+    let missing_currency = BankTransaction {
+        bank_account: Some("Checking - TC".to_string()),
+        ..Default::default()
+    };
+    assert_eq!(
+        missing_currency.validate_currency(Some("Bank - TC"), Some("UZS")),
+        Ok(())
+    );
+
+    let missing_bank_account = BankTransaction {
+        currency: Some("USD".to_string()),
+        ..Default::default()
+    };
+    assert_eq!(
+        missing_bank_account.validate_currency(Some("Bank - TC"), Some("UZS")),
+        Ok(())
+    );
+}
