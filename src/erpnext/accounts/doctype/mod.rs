@@ -89,4 +89,7 @@ pub mod tax_rule;
 pub mod tax_withholding_account;
 pub mod tax_withholding_category;
 pub mod tax_withholding_entry;
+pub mod tax_withholding_group;
 pub mod tax_withholding_rate;
+pub mod territory_item;
+pub mod transaction_deletion_record_details;

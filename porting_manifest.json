@@ -2488,17 +2488,17 @@
     {
       "source": "accounts/doctype/tax_withholding_group/__init__.py",
       "target": "accounts/doctype/tax_withholding_group/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/tax_withholding_group/tax_withholding_group.py",
       "target": "accounts/doctype/tax_withholding_group/tax_withholding_group.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/tax_withholding_group/test_tax_withholding_group.py",
       "target": "accounts/doctype/tax_withholding_group/test_tax_withholding_group.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/tax_withholding_rate/__init__.py",
@@ -2513,22 +2513,22 @@
     {
       "source": "accounts/doctype/territory_item/__init__.py",
       "target": "accounts/doctype/territory_item/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/territory_item/territory_item.py",
       "target": "accounts/doctype/territory_item/territory_item.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/transaction_deletion_record_details/__init__.py",
       "target": "accounts/doctype/transaction_deletion_record_details/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/transaction_deletion_record_details/transaction_deletion_record_details.py",
       "target": "accounts/doctype/transaction_deletion_record_details/transaction_deletion_record_details.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/unreconcile_payment/__init__.py",
