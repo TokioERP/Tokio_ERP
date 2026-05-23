@@ -8,6 +8,7 @@ pub mod bank;
 pub mod bank_account;
 pub mod bank_account_subtype;
 pub mod bank_account_type;
+pub mod bank_clearance;
 pub mod bank_clearance_detail;
 pub mod bank_transaction_mapping;
 pub mod bank_transaction_payments;

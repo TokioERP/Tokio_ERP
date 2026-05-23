@@ -34,6 +34,7 @@ pub struct FieldSpec {
     pub report_hide: bool,
     pub required: bool,
     pub unique: bool,
+    pub allow_bulk_edit: bool,
 }
 
 impl FieldSpec {
@@ -71,6 +72,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -108,6 +110,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -145,6 +148,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -182,6 +186,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -219,6 +224,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -256,6 +262,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -293,6 +300,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -330,6 +338,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -367,6 +376,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -404,6 +414,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -441,6 +452,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -478,6 +490,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -515,6 +528,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -552,6 +566,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -589,6 +604,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -626,6 +642,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -663,6 +680,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -700,6 +718,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -737,6 +756,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -774,6 +794,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -811,6 +832,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -848,6 +870,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -885,6 +908,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -922,6 +946,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -959,6 +984,7 @@ impl FieldSpec {
             report_hide: false,
             required: false,
             unique: false,
+            allow_bulk_edit: false,
         }
     }
 
@@ -1109,6 +1135,11 @@ impl FieldSpec {
 
     pub const fn unique(mut self) -> Self {
         self.unique = true;
+        self
+    }
+
+    pub const fn allow_bulk_edit(mut self) -> Self {
+        self.allow_bulk_edit = true;
         self
     }
 }

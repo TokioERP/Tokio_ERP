@@ -308,17 +308,17 @@
     {
       "source": "accounts/doctype/bank_clearance/__init__.py",
       "target": "accounts/doctype/bank_clearance/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_clearance/bank_clearance.py",
       "target": "accounts/doctype/bank_clearance/bank_clearance.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/bank_clearance/test_bank_clearance.py",
       "target": "accounts/doctype/bank_clearance/test_bank_clearance.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_clearance_detail/__init__.py",
