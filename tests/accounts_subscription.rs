@@ -165,6 +165,37 @@ fn subscription_status_and_invoice_generation_gates_match_erpnext() {
 }
 
 #[test]
+fn subscription_current_invoice_generated_matches_posting_date_period_check() {
+    let mut subscription = Subscription::new("Customer", "_Test Customer", "2018-01-01");
+    subscription.current_invoice_start = Some("2018-01-01".to_string());
+    subscription.current_invoice_end = Some("2018-01-31".to_string());
+    subscription.billing_cycle = Some(BillingCycle::new("Month", 1));
+    subscription.current_invoice = Some(GeneratedInvoiceState::with_posting_date(
+        "2018-01-10",
+        "Unpaid",
+        "2018-01-15",
+    ));
+
+    assert!(subscription.is_current_invoice_generated(
+        Some("2018-01-01"),
+        Some("2018-01-31"),
+        "2018-01-31"
+    ));
+    assert!(!subscription.is_current_invoice_generated(
+        Some("2018-02-01"),
+        Some("2018-02-28"),
+        "2018-01-31"
+    ));
+
+    subscription.current_invoice = Some(GeneratedInvoiceState::with_posting_date(
+        "2018-02-10",
+        "Unpaid",
+        "2018-02-01",
+    ));
+    assert!(subscription.is_current_invoice_generated(None, None, "2018-01-31"));
+}
+
+#[test]
 fn subscription_validation_helpers_match_erpnext_errors() {
     let mut subscription = Subscription::new("Customer", "_Test Customer", "2018-01-01");
     subscription.trial_period_start = Some("2018-01-10".to_string());

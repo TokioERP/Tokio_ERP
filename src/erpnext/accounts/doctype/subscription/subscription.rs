@@ -168,6 +168,7 @@ pub struct InvoicePlan {
 pub struct GeneratedInvoiceState {
     pub due_date: String,
     pub status: String,
+    pub posting_date: Option<String>,
 }
 
 impl GeneratedInvoiceState {
@@ -175,6 +176,19 @@ impl GeneratedInvoiceState {
         Self {
             due_date: due_date.into(),
             status: status.into(),
+            posting_date: None,
+        }
+    }
+
+    pub fn with_posting_date(
+        due_date: impl Into<String>,
+        status: impl Into<String>,
+        posting_date: impl Into<String>,
+    ) -> Self {
+        Self {
+            due_date: due_date.into(),
+            status: status.into(),
+            posting_date: Some(posting_date.into()),
         }
     }
 
@@ -814,6 +828,34 @@ impl Subscription {
                 parse_date(posting_date) == parse_date(current_end)
             }
         }
+    }
+
+    pub fn is_current_invoice_generated(
+        &self,
+        current_start_date: Option<&str>,
+        current_end_date: Option<&str>,
+        now_date: &str,
+    ) -> bool {
+        let (start, end) = match (current_start_date, current_end_date) {
+            (Some(start), Some(end)) => (start.to_string(), end.to_string()),
+            _ => {
+                let next_start = self
+                    .current_invoice_end
+                    .as_deref()
+                    .map(|end| add_days(end, 1));
+                let start = self.get_current_invoice_start(next_start.as_deref(), now_date);
+                let end = self.get_current_invoice_end(&start, now_date);
+                (start, end)
+            }
+        };
+
+        self.current_invoice
+            .as_ref()
+            .and_then(|invoice| invoice.posting_date.as_deref())
+            .is_some_and(|posting_date| {
+                parse_date(&start) <= parse_date(posting_date)
+                    && parse_date(posting_date) <= parse_date(&end)
+            })
     }
 }
 
