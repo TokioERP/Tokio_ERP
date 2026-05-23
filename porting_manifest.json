@@ -2473,17 +2473,17 @@
     {
       "source": "accounts/doctype/tax_withholding_entry/__init__.py",
       "target": "accounts/doctype/tax_withholding_entry/mod.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/tax_withholding_entry/tax_withholding_entry.py",
       "target": "accounts/doctype/tax_withholding_entry/tax_withholding_entry.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/tax_withholding_entry/test_tax_withholding_entry.py",
       "target": "accounts/doctype/tax_withholding_entry/test_tax_withholding_entry.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/tax_withholding_group/__init__.py",

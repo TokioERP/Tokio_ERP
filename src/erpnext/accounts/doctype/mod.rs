@@ -88,4 +88,5 @@ pub mod tax_category;
 pub mod tax_rule;
 pub mod tax_withholding_account;
 pub mod tax_withholding_category;
+pub mod tax_withholding_entry;
 pub mod tax_withholding_rate;
