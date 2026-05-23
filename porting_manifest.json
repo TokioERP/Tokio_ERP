@@ -1863,12 +1863,12 @@
     {
       "source": "accounts/doctype/process_statement_of_accounts_cc/__init__.py",
       "target": "accounts/doctype/process_statement_of_accounts_cc/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/process_statement_of_accounts_cc/process_statement_of_accounts_cc.py",
       "target": "accounts/doctype/process_statement_of_accounts_cc/process_statement_of_accounts_cc.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/process_statement_of_accounts_customer/__init__.py",

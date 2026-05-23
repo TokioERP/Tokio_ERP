@@ -203,7 +203,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `process_period_closing_voucher` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, processing date table generation, lifecycle hooks, client action/progress helpers in `accounts_process_period_closing_voucher`. JSON/JS kept external. |
 | `process_period_closing_voucher_detail` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_process_period_closing_voucher_detail`. JSON kept external. |
 | `process_statement_of_accounts` | 7 | 3 | 1 | 1 | parity_tested | Rust controller mirrors validation defaults/errors, auto-email dates, GL/AR filter builders, recipients/CC, and behavior-relevant metadata. JSON/JS/HTML kept external. |
-| `process_statement_of_accounts_cc` | 3 | 2 | 1 | 0 | not_started | |
+| `process_statement_of_accounts_cc` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_process_statement_of_accounts_cc`. JSON kept external. |
 | `process_statement_of_accounts_customer` | 3 | 2 | 1 | 0 | not_started | |
 | `process_subscription` | 5 | 3 | 1 | 1 | not_started | |
 | `promotional_scheme` | 6 | 4 | 1 | 1 | not_started | |
@@ -1929,3 +1929,31 @@ Target: `src/erpnext/accounts/doctype/process_statement_of_accounts`
 | `process_statement_of_accounts.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
 | `process_statement_of_accounts.js` | ERPNext client script retained | external_kept | UI actions and form scripting remain Frappe-owned. |
 | `process_statement_of_accounts.html` | ERPNext template retained | external_kept | Print/email HTML template remains Frappe-owned. |
+
+## Doctype Detail: `process_statement_of_accounts_cc`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/process_statement_of_accounts_cc`
+Target: `src/erpnext/accounts/doctype/process_statement_of_accounts_cc`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes `cc` as a nullable Link.
+- DocType metadata:
+  - `name`: `Process Statement Of Accounts CC`
+  - `module`: `Accounts`
+  - `allow_rename`: enabled
+  - `editable_grid`: enabled
+  - `index_web_pages_for_search`: enabled
+  - `istable`: enabled
+  - `field_order`: `cc`
+  - `cc`: `Link`, label `CC`, options `User`, `in_list_view: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `process_statement_of_accounts_cc.py` | `process_statement_of_accounts_cc.rs` | parity_tested | No-op child table controller and metadata represented in Rust. |
+| `process_statement_of_accounts_cc.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
