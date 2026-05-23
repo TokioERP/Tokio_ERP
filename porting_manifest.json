@@ -248,7 +248,7 @@
     {
       "source": "accounts/doctype/bank/bank.py",
       "target": "accounts/doctype/bank/bank.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/bank/bank_dashboard.py",
@@ -258,7 +258,7 @@
     {
       "source": "accounts/doctype/bank/test_bank.py",
       "target": "accounts/doctype/bank/test_bank.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_account/__init__.py",
