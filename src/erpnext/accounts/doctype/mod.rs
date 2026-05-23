@@ -97,6 +97,7 @@ pub mod shipping_rule;
 pub mod shipping_rule_condition;
 pub mod shipping_rule_country;
 pub mod south_africa_vat_account;
+pub mod subscription_invoice;
 pub mod subscription_plan_detail;
 pub mod subscription_settings;
 pub mod supplier_group_item;
