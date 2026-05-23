@@ -51,3 +51,4 @@ pub mod process_period_closing_voucher;
 pub mod process_period_closing_voucher_detail;
 pub mod process_statement_of_accounts;
 pub mod process_statement_of_accounts_cc;
+pub mod process_statement_of_accounts_customer;

@@ -1873,12 +1873,12 @@
     {
       "source": "accounts/doctype/process_statement_of_accounts_customer/__init__.py",
       "target": "accounts/doctype/process_statement_of_accounts_customer/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/process_statement_of_accounts_customer/process_statement_of_accounts_customer.py",
       "target": "accounts/doctype/process_statement_of_accounts_customer/process_statement_of_accounts_customer.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/process_subscription/__init__.py",
