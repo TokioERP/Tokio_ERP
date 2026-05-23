@@ -12,6 +12,7 @@ pub mod bank_clearance;
 pub mod bank_clearance_detail;
 pub mod bank_guarantee;
 pub mod bank_reconciliation_tool;
+pub mod bank_statement_import;
 pub mod bank_transaction_mapping;
 pub mod bank_transaction_payments;
 pub mod campaign_item;

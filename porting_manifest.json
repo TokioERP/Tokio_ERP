@@ -363,17 +363,17 @@
     {
       "source": "accounts/doctype/bank_statement_import/__init__.py",
       "target": "accounts/doctype/bank_statement_import/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_statement_import/bank_statement_import.py",
       "target": "accounts/doctype/bank_statement_import/bank_statement_import.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/bank_statement_import/test_bank_statement_import.py",
       "target": "accounts/doctype/bank_statement_import/test_bank_statement_import.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_transaction/__init__.py",

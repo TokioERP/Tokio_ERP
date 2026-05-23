@@ -950,6 +950,44 @@ impl FieldSpec {
         }
     }
 
+    pub const fn attach(fieldname: &'static str, label: &'static str) -> Self {
+        Self {
+            fieldname,
+            fieldtype: "Attach",
+            label: Some(label),
+            options: None,
+            default: None,
+            description: None,
+            documentation_url: None,
+            columns: None,
+            depends_on: None,
+            mandatory_depends_on: None,
+            oldfieldname: None,
+            oldfieldtype: None,
+            width: None,
+            fetch_from: None,
+            precision: None,
+            length: None,
+            read_only: false,
+            fetch_if_empty: false,
+            in_filter: false,
+            in_list_view: false,
+            in_standard_filter: false,
+            in_global_search: false,
+            ignore_user_permissions: false,
+            search_index: false,
+            allow_on_submit: false,
+            collapsible: false,
+            hidden: false,
+            no_copy: false,
+            print_hide: false,
+            report_hide: false,
+            required: false,
+            unique: false,
+            allow_bulk_edit: false,
+        }
+    }
+
     pub const fn json(fieldname: &'static str, label: &'static str) -> Self {
         Self {
             fieldname,
