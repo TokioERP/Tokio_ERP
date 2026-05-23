@@ -776,3 +776,73 @@ fn bank_transaction_allocate_payment_entries_updates_linked_bank_transaction_lik
         ]
     );
 }
+
+#[test]
+fn bank_transaction_remove_payment_entries_delinks_and_clears_like_erpnext() {
+    let mut transaction = BankTransaction {
+        withdrawal: 50.0,
+        payment_entries: vec![
+            BankTransactionPayment::new("Bank Transaction", "BT-REFUND", 20.0),
+            BankTransactionPayment::new("Payment Entry", "PE-0001", 10.0),
+            BankTransactionPayment::new("Unknown Voucher", "UV-0001", 5.0),
+        ],
+        ..Default::default()
+    };
+
+    let actions = transaction.remove_payment_entries();
+
+    assert_eq!(transaction.payment_entries, Vec::new());
+    assert_eq!(transaction.allocated_amount, 0.0);
+    assert_eq!(transaction.unallocated_amount, 50.0);
+    assert_eq!(
+        actions,
+        vec![
+            BankTransactionAllocationAction::UpdateLinkedBankTransaction {
+                bank_transaction_name: "BT-REFUND".to_string(),
+                allocated_amount: None,
+            },
+            BankTransactionAllocationAction::ClearLinkedPaymentEntry {
+                payment_document: "Payment Entry".to_string(),
+                payment_entry: "PE-0001".to_string(),
+                clearance_date: None,
+            },
+        ]
+    );
+}
+
+#[test]
+fn bank_transaction_remove_payment_entry_delinks_single_row_like_erpnext() {
+    let mut transaction = BankTransaction {
+        withdrawal: 50.0,
+        payment_entries: vec![
+            BankTransactionPayment::new("Payment Entry", "PE-0001", 10.0),
+            BankTransactionPayment::new("Payment Entry", "PE-0002", 15.0),
+        ],
+        ..Default::default()
+    };
+
+    let actions = transaction.remove_payment_entry(&BankTransactionPayment::new(
+        "Payment Entry",
+        "PE-0001",
+        10.0,
+    ));
+
+    assert_eq!(
+        transaction.payment_entries,
+        vec![BankTransactionPayment::new(
+            "Payment Entry",
+            "PE-0002",
+            15.0
+        )]
+    );
+    assert_eq!(transaction.allocated_amount, 15.0);
+    assert_eq!(transaction.unallocated_amount, 35.0);
+    assert_eq!(
+        actions,
+        vec![BankTransactionAllocationAction::ClearLinkedPaymentEntry {
+            payment_document: "Payment Entry".to_string(),
+            payment_entry: "PE-0001".to_string(),
+            clearance_date: None,
+        }]
+    );
+}

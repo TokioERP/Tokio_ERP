@@ -456,6 +456,39 @@ impl BankTransaction {
         Ok(actions)
     }
 
+    pub fn remove_payment_entries(&mut self) -> Vec<BankTransactionAllocationAction> {
+        let mut actions = Vec::new();
+        let payment_entries = std::mem::take(&mut self.payment_entries);
+
+        for payment_entry in payment_entries {
+            append_delink_payment_entry_action(&mut actions, &payment_entry);
+        }
+
+        self.update_allocated_amount();
+
+        actions
+    }
+
+    pub fn remove_payment_entry(
+        &mut self,
+        payment_entry: &BankTransactionPayment,
+    ) -> Vec<BankTransactionAllocationAction> {
+        let mut actions = Vec::new();
+        append_delink_payment_entry_action(&mut actions, payment_entry);
+
+        if let Some(position) = self
+            .payment_entries
+            .iter()
+            .position(|entry| entry == payment_entry)
+        {
+            self.payment_entries.remove(position);
+        }
+
+        self.update_allocated_amount();
+
+        actions
+    }
+
     pub fn validate_included_fee(&self) -> Result<(), BankTransactionError> {
         if self.included_fee != 0.0 && self.withdrawal != 0.0 && self.included_fee > self.withdrawal
         {
@@ -587,6 +620,23 @@ fn append_clear_linked_payment_entry_action(
         payment_entry: payment_entry.payment_entry.clone(),
         clearance_date,
     });
+}
+
+fn append_delink_payment_entry_action(
+    actions: &mut Vec<BankTransactionAllocationAction>,
+    payment_entry: &BankTransactionPayment,
+) {
+    if payment_entry.payment_document == BankTransaction::DOCTYPE {
+        actions.push(
+            BankTransactionAllocationAction::UpdateLinkedBankTransaction {
+                bank_transaction_name: payment_entry.payment_entry.clone(),
+                allocated_amount: None,
+            },
+        );
+        return;
+    }
+
+    append_clear_linked_payment_entry_action(actions, payment_entry, None);
 }
 
 pub fn get_clearance_details(
