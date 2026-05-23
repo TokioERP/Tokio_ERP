@@ -1838,12 +1838,12 @@
     {
       "source": "accounts/doctype/process_period_closing_voucher_detail/__init__.py",
       "target": "accounts/doctype/process_period_closing_voucher_detail/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/process_period_closing_voucher_detail/process_period_closing_voucher_detail.py",
       "target": "accounts/doctype/process_period_closing_voucher_detail/process_period_closing_voucher_detail.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/process_statement_of_accounts/__init__.py",

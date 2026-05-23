@@ -201,7 +201,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `process_payment_reconciliation_log` | 6 | 3 | 1 | 2 | parity_tested | Python controller is pass/no-op; Rust metadata, progress helper, and list indicator mapping covered by `accounts_process_payment_reconciliation_log`. JSON/JS kept external. |
 | `process_payment_reconciliation_log_allocations` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_process_payment_reconciliation_log_allocations`. JSON kept external. |
 | `process_period_closing_voucher` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, processing date table generation, lifecycle hooks, client action/progress helpers in `accounts_process_period_closing_voucher`. JSON/JS kept external. |
-| `process_period_closing_voucher_detail` | 3 | 2 | 1 | 0 | not_started | |
+| `process_period_closing_voucher_detail` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_process_period_closing_voucher_detail`. JSON kept external. |
 | `process_statement_of_accounts` | 7 | 3 | 1 | 1 | not_started | |
 | `process_statement_of_accounts_cc` | 3 | 2 | 1 | 0 | not_started | |
 | `process_statement_of_accounts_customer` | 3 | 2 | 1 | 0 | not_started | |
@@ -1857,3 +1857,36 @@ Target: `src/erpnext/accounts/doctype/process_period_closing_voucher`
 | `test_process_period_closing_voucher.py` | `tests/accounts_process_period_closing_voucher.rs` | parity_tested | Source test file has no test methods; Rust tests cover deterministic controller and helper behavior. |
 | `process_period_closing_voucher.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
 | `process_period_closing_voucher.js` | ERPNext client script retained | external_kept | Button and progress behavior is mirrored by Rust helpers; UI script remains Frappe-owned. |
+
+## Doctype Detail: `process_period_closing_voucher_detail`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/process_period_closing_voucher_detail`
+Target: `src/erpnext/accounts/doctype/process_period_closing_voucher_detail`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Auto-generated type block exposes processing date, report type, status, and closing balance.
+- DocType metadata:
+  - `name`: `Process Period Closing Voucher Detail`
+  - `module`: `Accounts`
+  - `allow_rename`: enabled
+  - `index_web_pages_for_search`: enabled
+  - `istable`: enabled
+  - `grid_page_length`: `50`
+  - `row_format`: `Dynamic`
+  - `rows_threshold_for_grid_search`: `20`
+  - `field_order`: `processing_date`, `report_type`, `status`, `closing_balance`
+  - `processing_date`: `Date`, label `Processing Date`, `in_list_view: 1`
+  - `report_type`: `Select`, label `Report Type`, options `Profit and Loss`, `Balance Sheet`, default `Profit and Loss`, `in_list_view: 1`
+  - `status`: `Select`, label `Status`, options `Queued`, `Running`, `Paused`, `Completed`, `Cancelled`, default `Queued`, `in_list_view: 1`
+  - `closing_balance`: `JSON`, label `Closing Balance`, `in_list_view: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `process_period_closing_voucher_detail.py` | `process_period_closing_voucher_detail.rs` | parity_tested | No-op child table controller and metadata represented in Rust. |
+| `process_period_closing_voucher_detail.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

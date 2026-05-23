@@ -48,3 +48,4 @@ pub mod process_payment_reconciliation;
 pub mod process_payment_reconciliation_log;
 pub mod process_payment_reconciliation_log_allocations;
 pub mod process_period_closing_voucher;
+pub mod process_period_closing_voucher_detail;
