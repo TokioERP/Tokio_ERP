@@ -1,6 +1,9 @@
+use std::collections::BTreeMap;
+
 use tokio_erp::erpnext::accounts::doctype::subscription::subscription::{
     get_prorata_factor_at, BillingCycle, BillingCycleDelta, GenerateInvoiceAt,
-    GeneratedInvoiceState, Subscription, SubscriptionError, SubscriptionStatus,
+    GeneratedInvoiceState, InvoiceItemPlan, InvoicePaymentSchedulePlan, InvoicePlan,
+    PlanRateSource, Subscription, SubscriptionError, SubscriptionPlanSnapshot, SubscriptionStatus,
 };
 use tokio_erp::erpnext::accounts::doctype::subscription_plan_detail::subscription_plan_detail::SubscriptionPlanDetail;
 use tokio_erp::erpnext::{DocumentController, FieldSpec};
@@ -273,6 +276,164 @@ fn subscription_prorata_factor_matches_erpnext_formula() {
         get_prorata_factor_at("2018-01-31", "2018-01-01", Some(0), "2018-01-15"),
         15.0 / 31.0,
     );
+}
+
+#[test]
+fn subscription_get_items_from_plans_matches_erpnext_prorate_deferred_and_dimensions() {
+    let mut subscription = Subscription::new("Customer", "_Test Customer", "2018-01-01");
+    subscription.party_type = Some("Customer".to_string());
+    subscription.current_invoice_start = Some("2018-01-01".to_string());
+    subscription.current_invoice_end = Some("2018-01-31".to_string());
+    subscription.plans = vec![SubscriptionPlanDetail::new("_Test Plan", 2)];
+
+    let mut dimensions = BTreeMap::new();
+    dimensions.insert("project".to_string(), "PROJ-001".to_string());
+
+    let plan = SubscriptionPlanSnapshot {
+        name: "_Test Plan".to_string(),
+        item: "Service Item".to_string(),
+        currency: "USD".to_string(),
+        cost_center: Some("Main - TC".to_string()),
+        rate_source: PlanRateSource::FixedRate { cost: 900.0 },
+        enable_deferred_revenue: true,
+        enable_deferred_expense: true,
+        dimensions: dimensions.clone(),
+    };
+
+    assert_eq!(
+        subscription.get_items_from_plans(&[plan], true, "2018-01-15"),
+        vec![InvoiceItemPlan {
+            item_code: "Service Item".to_string(),
+            qty: 2,
+            rate: 900.0 * (15.0 / 31.0),
+            cost_center: Some("Main - TC".to_string()),
+            enable_deferred_revenue: false,
+            enable_deferred_expense: true,
+            service_start_date: Some("2018-01-01".to_string()),
+            service_end_date: Some("2018-01-31".to_string()),
+            dimensions,
+        }]
+    );
+}
+
+#[test]
+fn subscription_create_invoice_plan_matches_erpnext_invoice_fields() {
+    let mut subscription = Subscription::new("Customer", "_Test Customer", "2018-01-01");
+    subscription.name = Some("ACC-SUB-0001".to_string());
+    subscription.company = Some("_Test Company".to_string());
+    subscription.current_invoice_start = Some("2018-01-01".to_string());
+    subscription.current_invoice_end = Some("2018-01-31".to_string());
+    subscription.days_until_due = 10;
+    subscription.generate_invoice_at = GenerateInvoiceAt::BeginningOfCurrentPeriod;
+    subscription.cost_center = Some("Main - TC".to_string());
+    subscription.sales_tax_template = Some("_Test Sales Taxes".to_string());
+    subscription.additional_discount_percentage = 10.0;
+    subscription.plans = vec![SubscriptionPlanDetail::new("_Test Plan", 1)];
+
+    let plan = SubscriptionPlanSnapshot {
+        name: "_Test Plan".to_string(),
+        item: "Service Item".to_string(),
+        currency: "USD".to_string(),
+        cost_center: Some("Main - TC".to_string()),
+        rate_source: PlanRateSource::FixedRate { cost: 900.0 },
+        enable_deferred_revenue: false,
+        enable_deferred_expense: false,
+        dimensions: BTreeMap::new(),
+    };
+
+    assert_eq!(
+        subscription.create_invoice_plan(
+            &[plan],
+            false,
+            "2018-01-15",
+            Some("_Default Company"),
+            false
+        ),
+        Ok(InvoicePlan {
+            document_type: "Sales Invoice".to_string(),
+            company: "_Test Company".to_string(),
+            set_posting_time: true,
+            posting_date: "2018-01-01".to_string(),
+            cost_center: Some("Main - TC".to_string()),
+            customer: Some("_Test Customer".to_string()),
+            supplier: None,
+            apply_tds: false,
+            currency: "USD".to_string(),
+            items: vec![InvoiceItemPlan {
+                item_code: "Service Item".to_string(),
+                qty: 1,
+                rate: 900.0,
+                cost_center: Some("Main - TC".to_string()),
+                enable_deferred_revenue: false,
+                enable_deferred_expense: false,
+                service_start_date: None,
+                service_end_date: None,
+                dimensions: BTreeMap::new(),
+            }],
+            taxes_and_charges: Some("_Test Sales Taxes".to_string()),
+            payment_schedule: vec![InvoicePaymentSchedulePlan {
+                due_date: "2018-01-11".to_string(),
+                invoice_portion: 100,
+            }],
+            additional_discount_percentage: 10.0,
+            discount_amount: 0.0,
+            apply_discount_on: Some("Grand Total".to_string()),
+            subscription: Some("ACC-SUB-0001".to_string()),
+            from_date: "2018-01-01".to_string(),
+            to_date: "2018-01-31".to_string(),
+            ignore_mandatory: true,
+            submit: true,
+        })
+    );
+}
+
+#[test]
+fn subscription_create_invoice_plan_matches_supplier_tds_and_trial_discount() {
+    let mut subscription = Subscription::new("Supplier", "_Test Supplier", "2018-01-01");
+    subscription.company = None;
+    subscription.current_invoice_start = Some("2018-01-01".to_string());
+    subscription.current_invoice_end = Some("2018-01-31".to_string());
+    subscription.purchase_tax_template = Some("_Test Purchase Taxes".to_string());
+    subscription.trial_period_end = Some("2018-01-31".to_string());
+    subscription.plans = vec![SubscriptionPlanDetail::new("_Test Plan", 1)];
+
+    let plan = SubscriptionPlanSnapshot {
+        name: "_Test Plan".to_string(),
+        item: "Service Item".to_string(),
+        currency: "INR".to_string(),
+        cost_center: None,
+        rate_source: PlanRateSource::FixedRate { cost: 100.0 },
+        enable_deferred_revenue: false,
+        enable_deferred_expense: true,
+        dimensions: BTreeMap::new(),
+    };
+
+    let invoice = subscription
+        .create_invoice_plan(
+            &[plan.clone()],
+            false,
+            "2018-01-10",
+            Some("_Default Company"),
+            true,
+        )
+        .expect("invoice plan");
+    let invoice_without_tds = subscription
+        .create_invoice_plan(&[plan], true, "2018-01-10", Some("_Default Company"), false)
+        .expect("invoice plan without tds");
+
+    assert_eq!(invoice.document_type, "Purchase Invoice");
+    assert_eq!(invoice.company, "_Default Company");
+    assert_eq!(invoice.supplier.as_deref(), Some("_Test Supplier"));
+    assert_eq!(invoice.customer, None);
+    assert!(invoice.apply_tds);
+    assert!(!invoice_without_tds.apply_tds);
+    assert_eq!(
+        invoice.taxes_and_charges.as_deref(),
+        Some("_Test Purchase Taxes")
+    );
+    assert_eq!(invoice.additional_discount_percentage, 100.0);
+    assert_eq!(invoice.apply_discount_on, None);
+    assert_eq!(invoice.items[0].enable_deferred_expense, true);
 }
 
 #[test]

@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use crate::erpnext::accounts::doctype::subscription_plan_detail::subscription_plan_detail::SubscriptionPlanDetail;
 use crate::erpnext::{DocumentController, FieldSpec};
 
@@ -87,6 +89,79 @@ pub enum SubscriptionError {
     EndDateNotAfterBillingCycle { minimum_end_date: String },
     CalendarMonthsRequireEndDate,
     CalendarMonthsRequireMonthlyBilling,
+    CompanyRequired,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum PlanRateSource {
+    FixedRate { cost: f64 },
+    PriceList { price_list_rate: Option<f64> },
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct SubscriptionPlanSnapshot {
+    pub name: String,
+    pub item: String,
+    pub currency: String,
+    pub cost_center: Option<String>,
+    pub rate_source: PlanRateSource,
+    pub enable_deferred_revenue: bool,
+    pub enable_deferred_expense: bool,
+    pub dimensions: BTreeMap<String, String>,
+}
+
+impl SubscriptionPlanSnapshot {
+    fn rate(&self, prorate_factor: f64) -> f64 {
+        match self.rate_source {
+            PlanRateSource::FixedRate { cost } => cost * prorate_factor,
+            PlanRateSource::PriceList { price_list_rate } => {
+                price_list_rate.unwrap_or(0.0) * prorate_factor
+            }
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct InvoiceItemPlan {
+    pub item_code: String,
+    pub qty: i32,
+    pub rate: f64,
+    pub cost_center: Option<String>,
+    pub enable_deferred_revenue: bool,
+    pub enable_deferred_expense: bool,
+    pub service_start_date: Option<String>,
+    pub service_end_date: Option<String>,
+    pub dimensions: BTreeMap<String, String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct InvoicePaymentSchedulePlan {
+    pub due_date: String,
+    pub invoice_portion: i32,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct InvoicePlan {
+    pub document_type: String,
+    pub company: String,
+    pub set_posting_time: bool,
+    pub posting_date: String,
+    pub cost_center: Option<String>,
+    pub customer: Option<String>,
+    pub supplier: Option<String>,
+    pub apply_tds: bool,
+    pub currency: String,
+    pub items: Vec<InvoiceItemPlan>,
+    pub taxes_and_charges: Option<String>,
+    pub payment_schedule: Vec<InvoicePaymentSchedulePlan>,
+    pub additional_discount_percentage: f64,
+    pub discount_amount: f64,
+    pub apply_discount_on: Option<String>,
+    pub subscription: Option<String>,
+    pub from_date: String,
+    pub to_date: String,
+    pub ignore_mandatory: bool,
+    pub submit: bool,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -110,6 +185,7 @@ impl GeneratedInvoiceState {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Subscription {
+    pub name: Option<String>,
     pub party_type: Option<String>,
     pub party: Option<String>,
     pub company: Option<String>,
@@ -143,6 +219,7 @@ impl Default for Subscription {
     fn default() -> Self {
         Self {
             party_type: None,
+            name: None,
             party: None,
             company: None,
             status: SubscriptionStatus::Blank,
@@ -228,6 +305,14 @@ impl Subscription {
             party: Some(party.into()),
             start_date: Some(start_date.into()),
             ..Self::default()
+        }
+    }
+
+    pub fn invoice_document_type(&self) -> &'static str {
+        if self.party_type.as_deref() == Some("Customer") {
+            "Sales Invoice"
+        } else {
+            "Purchase Invoice"
         }
     }
 
@@ -564,6 +649,141 @@ impl Subscription {
         }
 
         Ok(())
+    }
+
+    pub fn create_invoice_plan(
+        &self,
+        plan_snapshots: &[SubscriptionPlanSnapshot],
+        prorate: bool,
+        now_date: &str,
+        default_company: Option<&str>,
+        supplier_has_tax_withholding: bool,
+    ) -> Result<InvoicePlan, SubscriptionError> {
+        let company = self
+            .company
+            .as_deref()
+            .or(default_company)
+            .ok_or(SubscriptionError::CompanyRequired)?
+            .to_string();
+        let document_type = self.invoice_document_type().to_string();
+        let current_start = self.current_invoice_start.as_deref().unwrap_or("");
+        let current_end = self.current_invoice_end.as_deref().unwrap_or("");
+        let posting_date = match self.generate_invoice_at {
+            GenerateInvoiceAt::BeginningOfCurrentPeriod => current_start.to_string(),
+            GenerateInvoiceAt::DaysBeforeCurrentPeriod => now_date.to_string(),
+            GenerateInvoiceAt::EndOfCurrentPeriod => current_end.to_string(),
+        };
+        let is_sales_invoice = document_type == "Sales Invoice";
+        let first_plan_currency = self
+            .plans
+            .first()
+            .and_then(|plan| plan.plan.as_deref())
+            .and_then(|plan_name| {
+                plan_snapshots
+                    .iter()
+                    .find(|snapshot| snapshot.name == plan_name)
+                    .map(|snapshot| snapshot.currency.clone())
+            })
+            .unwrap_or_default();
+        let taxes_and_charges = if is_sales_invoice {
+            self.sales_tax_template.clone()
+        } else {
+            self.purchase_tax_template.clone()
+        };
+        let payment_schedule = if self.days_until_due != 0 {
+            vec![InvoicePaymentSchedulePlan {
+                due_date: add_days(&posting_date, self.days_until_due),
+                invoice_portion: 100,
+            }]
+        } else {
+            Vec::new()
+        };
+        let (additional_discount_percentage, discount_amount, apply_discount_on) =
+            if self.is_trialling(now_date) {
+                (100.0, 0.0, None)
+            } else {
+                let has_discount = self.additional_discount_percentage != 0.0
+                    || self.additional_discount_amount != 0.0;
+                (
+                    self.additional_discount_percentage,
+                    self.additional_discount_amount,
+                    has_discount.then(|| {
+                        self.apply_additional_discount
+                            .clone()
+                            .unwrap_or_else(|| "Grand Total".to_string())
+                    }),
+                )
+            };
+
+        Ok(InvoicePlan {
+            document_type,
+            company,
+            set_posting_time: true,
+            posting_date,
+            cost_center: self.cost_center.clone(),
+            customer: is_sales_invoice.then(|| self.party.clone()).flatten(),
+            supplier: (!is_sales_invoice).then(|| self.party.clone()).flatten(),
+            apply_tds: !is_sales_invoice && supplier_has_tax_withholding,
+            currency: first_plan_currency,
+            items: self.get_items_from_plans(plan_snapshots, prorate, now_date),
+            taxes_and_charges,
+            payment_schedule,
+            additional_discount_percentage,
+            discount_amount,
+            apply_discount_on,
+            subscription: self.name.clone(),
+            from_date: current_start.to_string(),
+            to_date: current_end.to_string(),
+            ignore_mandatory: true,
+            submit: self.submit_invoice,
+        })
+    }
+
+    pub fn get_items_from_plans(
+        &self,
+        plan_snapshots: &[SubscriptionPlanSnapshot],
+        prorate: bool,
+        now_date: &str,
+    ) -> Vec<InvoiceItemPlan> {
+        let current_start = self.current_invoice_start.as_deref().unwrap_or("");
+        let current_end = self.current_invoice_end.as_deref().unwrap_or("");
+        let is_prepaid = matches!(
+            self.generate_invoice_at,
+            GenerateInvoiceAt::BeginningOfCurrentPeriod
+                | GenerateInvoiceAt::DaysBeforeCurrentPeriod
+        ) as i32;
+        let prorate_factor = if prorate {
+            get_prorata_factor_at(current_end, current_start, Some(is_prepaid), now_date)
+        } else {
+            1.0
+        };
+
+        self.plans
+            .iter()
+            .filter_map(|plan| {
+                let plan_name = plan.plan.as_deref()?;
+                let plan_snapshot = plan_snapshots
+                    .iter()
+                    .find(|snapshot| snapshot.name == plan_name)?;
+                let uses_deferred_revenue = self.party.as_deref() == Some("Customer");
+                let deferred = if uses_deferred_revenue {
+                    plan_snapshot.enable_deferred_revenue
+                } else {
+                    plan_snapshot.enable_deferred_expense
+                };
+                Some(InvoiceItemPlan {
+                    item_code: plan_snapshot.item.clone(),
+                    qty: plan.qty,
+                    rate: plan_snapshot.rate(prorate_factor),
+                    cost_center: plan_snapshot.cost_center.clone(),
+                    enable_deferred_revenue: uses_deferred_revenue && deferred,
+                    enable_deferred_expense: !uses_deferred_revenue && deferred,
+                    service_start_date: deferred.then(|| current_start.to_string()),
+                    service_end_date: deferred.then(|| current_end.to_string()),
+                    dimensions: plan_snapshot.dimensions.clone(),
+                })
+            })
+            .collect()
     }
 
     pub fn can_generate_new_invoice(
