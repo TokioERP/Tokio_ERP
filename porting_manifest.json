@@ -378,12 +378,12 @@
     {
       "source": "accounts/doctype/bank_transaction/__init__.py",
       "target": "accounts/doctype/bank_transaction/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_transaction/auto_match_party.py",
       "target": "accounts/doctype/bank_transaction/auto_match_party.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/bank_transaction/bank_transaction.py",
@@ -398,7 +398,7 @@
     {
       "source": "accounts/doctype/bank_transaction/test_auto_match_party.py",
       "target": "accounts/doctype/bank_transaction/test_auto_match_party.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_transaction/test_bank_transaction.py",
