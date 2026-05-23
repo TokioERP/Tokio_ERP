@@ -88,17 +88,17 @@
     {
       "source": "accounts/doctype/account_category/__init__.py",
       "target": "accounts/doctype/account_category/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/account_category/account_category.py",
       "target": "accounts/doctype/account_category/account_category.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/account_category/test_account_category.py",
       "target": "accounts/doctype/account_category/test_account_category.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/account_closing_balance/__init__.py",
