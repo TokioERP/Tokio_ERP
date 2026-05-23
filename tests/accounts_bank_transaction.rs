@@ -5,8 +5,8 @@ use tokio_erp::erpnext::accounts::doctype::bank_transaction::bank_transaction::{
     get_clearance_details, get_payment_doctypes, group_related_bank_gl_entries,
     group_total_allocated_amount, remove_from_bank_transaction_plan, BankGlAllocation,
     BankTransaction, BankTransactionAllocationAction, BankTransactionError, BankTransactionPayment,
-    BankTransactionStatus, ClearanceDetails, LinkedBankTransaction, RelatedBankGlEntryRow,
-    RemoveFromBankTransactionPlan, TotalAllocatedAmountRow,
+    BankTransactionRuntimeContext, BankTransactionStatus, ClearanceDetails, LinkedBankTransaction,
+    RelatedBankGlEntryRow, RemoveFromBankTransactionPlan, TotalAllocatedAmountRow,
 };
 use tokio_erp::erpnext::{DocumentController, FieldSpec};
 
@@ -975,4 +975,93 @@ fn bank_transaction_auto_set_party_matches_erpnext_existing_party_and_match_resu
     assert!(matched.auto_set_party(Some(AutoMatchResult::new("Supplier", "SUP-0001"))));
     assert_eq!(matched.party_type, Some("Supplier".to_string()));
     assert_eq!(matched.party, Some("SUP-0001".to_string()));
+}
+
+#[test]
+fn bank_transaction_before_submit_matches_erpnext_allocate_status_and_party_sequence() {
+    let mut transaction = BankTransaction {
+        name: Some("BT-0001".to_string()),
+        docstatus: 1,
+        date: Some("2026-05-22".to_string()),
+        withdrawal: 100.0,
+        unallocated_amount: 100.0,
+        payment_entries: vec![BankTransactionPayment::new("Payment Entry", "PE-0001", 0.0)],
+        ..Default::default()
+    };
+    let context = BankTransactionRuntimeContext {
+        gl_bank_account: "Bank - TC".to_string(),
+        gl_entries: BTreeMap::from([(
+            ("Payment Entry".to_string(), "PE-0001".to_string()),
+            BTreeMap::from([("Bank - TC".to_string(), 100.0)]),
+        )]),
+        enable_party_matching: true,
+        party_match_result: Some(AutoMatchResult::new("Customer", "CUST-0001")),
+        ..Default::default()
+    };
+
+    let actions = transaction.before_submit(&context).unwrap();
+
+    assert_eq!(transaction.status, BankTransactionStatus::Reconciled);
+    assert_eq!(transaction.party_type, Some("Customer".to_string()));
+    assert_eq!(transaction.party, Some("CUST-0001".to_string()));
+    assert_eq!(
+        actions,
+        vec![BankTransactionAllocationAction::ClearLinkedPaymentEntry {
+            payment_document: "Payment Entry".to_string(),
+            payment_entry: "PE-0001".to_string(),
+            clearance_date: Some("2026-05-22".to_string()),
+        }]
+    );
+}
+
+#[test]
+fn bank_transaction_before_update_after_submit_matches_erpnext_validate_delink_allocate_status() {
+    let mut transaction = BankTransaction {
+        name: Some("BT-0001".to_string()),
+        docstatus: 1,
+        date: Some("2026-05-22".to_string()),
+        withdrawal: 100.0,
+        payment_entries: vec![
+            BankTransactionPayment::with_name("ROW-KEEP", "Payment Entry", "PE-KEEP", 20.0),
+            BankTransactionPayment::with_name("ROW-NEW", "Payment Entry", "PE-NEW", 0.0),
+        ],
+        ..Default::default()
+    };
+    let old_doc = BankTransaction {
+        payment_entries: vec![
+            BankTransactionPayment::with_name("ROW-KEEP", "Payment Entry", "PE-KEEP", 20.0),
+            BankTransactionPayment::with_name("ROW-OLD", "Bank Transaction", "BT-OLD", 15.0),
+        ],
+        ..Default::default()
+    };
+    let context = BankTransactionRuntimeContext {
+        gl_bank_account: "Bank - TC".to_string(),
+        gl_entries: BTreeMap::from([(
+            ("Payment Entry".to_string(), "PE-NEW".to_string()),
+            BTreeMap::from([("Bank - TC".to_string(), 80.0)]),
+        )]),
+        ..Default::default()
+    };
+
+    let actions = transaction
+        .before_update_after_submit(&old_doc, &context)
+        .unwrap();
+
+    assert_eq!(transaction.allocated_amount, 100.0);
+    assert_eq!(transaction.unallocated_amount, 0.0);
+    assert_eq!(transaction.status, BankTransactionStatus::Reconciled);
+    assert_eq!(
+        actions,
+        vec![
+            BankTransactionAllocationAction::UpdateLinkedBankTransaction {
+                bank_transaction_name: "BT-OLD".to_string(),
+                allocated_amount: None,
+            },
+            BankTransactionAllocationAction::ClearLinkedPaymentEntry {
+                payment_document: "Payment Entry".to_string(),
+                payment_entry: "PE-NEW".to_string(),
+                clearance_date: Some("2026-05-22".to_string()),
+            },
+        ]
+    );
 }

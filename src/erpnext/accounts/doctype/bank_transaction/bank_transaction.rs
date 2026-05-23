@@ -151,6 +151,17 @@ pub enum BankTransactionAllocationAction {
     },
 }
 
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct BankTransactionRuntimeContext {
+    pub pe_bt_allocations: BTreeMap<(String, String), BTreeMap<String, BankGlAllocation>>,
+    pub gl_entries: BTreeMap<(String, String), BTreeMap<String, f64>>,
+    pub gl_bank_account: String,
+    pub linked_bank_transactions: BTreeMap<String, LinkedBankTransaction>,
+    pub updating_linked_bank_transaction: bool,
+    pub enable_party_matching: bool,
+    pub party_match_result: Option<AutoMatchResult>,
+}
+
 impl BankTransaction {
     pub const DOCTYPE: &'static str = "Bank Transaction";
     pub const MODULE: &'static str = "Accounts";
@@ -554,6 +565,48 @@ impl BankTransaction {
         self.set_status();
 
         actions
+    }
+
+    pub fn before_submit(
+        &mut self,
+        context: &BankTransactionRuntimeContext,
+    ) -> Result<Vec<BankTransactionAllocationAction>, BankTransactionError> {
+        let actions = self.allocate_payment_entries(
+            &context.pe_bt_allocations,
+            &context.gl_entries,
+            &context.gl_bank_account,
+            &context.linked_bank_transactions,
+            context.updating_linked_bank_transaction,
+        )?;
+        self.set_status();
+
+        if context.enable_party_matching {
+            self.auto_set_party(context.party_match_result.clone());
+        }
+
+        Ok(actions)
+    }
+
+    pub fn before_update_after_submit(
+        &mut self,
+        old_doc: &BankTransaction,
+        context: &BankTransactionRuntimeContext,
+    ) -> Result<Vec<BankTransactionAllocationAction>, BankTransactionError> {
+        self.validate_duplicate_references()?;
+        self.update_allocated_amount();
+
+        let mut actions =
+            self.delink_old_payment_entries(old_doc, context.updating_linked_bank_transaction);
+        actions.extend(self.allocate_payment_entries(
+            &context.pe_bt_allocations,
+            &context.gl_entries,
+            &context.gl_bank_account,
+            &context.linked_bank_transactions,
+            context.updating_linked_bank_transaction,
+        )?);
+        self.set_status();
+
+        Ok(actions)
     }
 
     pub fn auto_set_party(&mut self, result: Option<AutoMatchResult>) -> bool {
