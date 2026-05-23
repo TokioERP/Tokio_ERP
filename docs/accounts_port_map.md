@@ -219,8 +219,8 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `repost_accounting_ledger` | 6 | 3 | 1 | 1 | parity_tested | Rust covers metadata, voucher allowed-type validation, deferred-accounting and closed-fiscal-year guards, preview empty-state, submit enqueue/start branching, and deterministic repost action planning in `accounts_repost_accounting_ledger`. JSON/HTML/DB effects kept external. |
 | `repost_accounting_ledger_items` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_repost_accounting_ledger_items`. JSON kept external. |
 | `repost_allowed_types` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_repost_allowed_types`. JSON kept external. |
-| `repost_payment_ledger` | 6 | 3 | 1 | 2 | not_started | |
-| `repost_payment_ledger_items` | 3 | 2 | 1 | 0 | not_started | |
+| `repost_payment_ledger` | 6 | 3 | 1 | 2 | parity_tested | Rust covers metadata, filter-based voucher loading, queued status assignment, submit enqueue job, PLE delete/create planning, and worker success/failure status handling in `accounts_repost_payment_ledger`. JSON/DB effects kept external. |
+| `repost_payment_ledger_items` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_repost_payment_ledger_items`. JSON kept external. |
 | `sales_invoice` | 10 | 4 | 2 | 3 | not_started | |
 | `sales_invoice_advance` | 4 | 2 | 1 | 0 | not_started | |
 | `sales_invoice_item` | 4 | 2 | 1 | 0 | not_started | |
