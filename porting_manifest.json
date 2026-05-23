@@ -333,17 +333,17 @@
     {
       "source": "accounts/doctype/bank_guarantee/__init__.py",
       "target": "accounts/doctype/bank_guarantee/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_guarantee/bank_guarantee.py",
       "target": "accounts/doctype/bank_guarantee/bank_guarantee.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/bank_guarantee/test_bank_guarantee.py",
       "target": "accounts/doctype/bank_guarantee/test_bank_guarantee.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_reconciliation_tool/__init__.py",
