@@ -29,6 +29,7 @@ pub struct FieldSpec {
     pub hidden: bool,
     pub no_copy: bool,
     pub print_hide: bool,
+    pub report_hide: bool,
     pub required: bool,
     pub unique: bool,
 }
@@ -63,6 +64,7 @@ impl FieldSpec {
             hidden: false,
             no_copy: false,
             print_hide: false,
+            report_hide: false,
             required: false,
             unique: false,
         }
@@ -97,6 +99,7 @@ impl FieldSpec {
             hidden: false,
             no_copy: false,
             print_hide: false,
+            report_hide: false,
             required: false,
             unique: false,
         }
@@ -131,6 +134,7 @@ impl FieldSpec {
             hidden: false,
             no_copy: false,
             print_hide: false,
+            report_hide: false,
             required: false,
             unique: false,
         }
@@ -165,6 +169,7 @@ impl FieldSpec {
             hidden: false,
             no_copy: false,
             print_hide: false,
+            report_hide: false,
             required: false,
             unique: false,
         }
@@ -199,6 +204,42 @@ impl FieldSpec {
             hidden: false,
             no_copy: false,
             print_hide: false,
+            report_hide: false,
+            required: false,
+            unique: false,
+        }
+    }
+
+    pub const fn table_multiselect(fieldname: &'static str, label: &'static str) -> Self {
+        Self {
+            fieldname,
+            fieldtype: "Table MultiSelect",
+            label: Some(label),
+            options: None,
+            default: None,
+            description: None,
+            documentation_url: None,
+            columns: None,
+            depends_on: None,
+            mandatory_depends_on: None,
+            oldfieldname: None,
+            oldfieldtype: None,
+            width: None,
+            fetch_from: None,
+            precision: None,
+            read_only: false,
+            fetch_if_empty: false,
+            in_filter: false,
+            in_list_view: false,
+            in_standard_filter: false,
+            ignore_user_permissions: false,
+            search_index: false,
+            allow_on_submit: false,
+            collapsible: false,
+            hidden: false,
+            no_copy: false,
+            print_hide: false,
+            report_hide: false,
             required: false,
             unique: false,
         }
@@ -233,6 +274,7 @@ impl FieldSpec {
             hidden: false,
             no_copy: false,
             print_hide: false,
+            report_hide: false,
             required: false,
             unique: false,
         }
@@ -267,6 +309,7 @@ impl FieldSpec {
             hidden: false,
             no_copy: false,
             print_hide: false,
+            report_hide: false,
             required: false,
             unique: false,
         }
@@ -301,6 +344,7 @@ impl FieldSpec {
             hidden: false,
             no_copy: false,
             print_hide: false,
+            report_hide: false,
             required: false,
             unique: false,
         }
@@ -335,6 +379,7 @@ impl FieldSpec {
             hidden: false,
             no_copy: false,
             print_hide: false,
+            report_hide: false,
             required: false,
             unique: false,
         }
@@ -369,6 +414,7 @@ impl FieldSpec {
             hidden: false,
             no_copy: false,
             print_hide: false,
+            report_hide: false,
             required: false,
             unique: false,
         }
@@ -403,6 +449,7 @@ impl FieldSpec {
             hidden: false,
             no_copy: false,
             print_hide: false,
+            report_hide: false,
             required: false,
             unique: false,
         }
@@ -437,6 +484,7 @@ impl FieldSpec {
             hidden: false,
             no_copy: false,
             print_hide: false,
+            report_hide: false,
             required: false,
             unique: false,
         }
@@ -471,6 +519,7 @@ impl FieldSpec {
             hidden: false,
             no_copy: false,
             print_hide: false,
+            report_hide: false,
             required: false,
             unique: false,
         }
@@ -505,6 +554,7 @@ impl FieldSpec {
             hidden: false,
             no_copy: false,
             print_hide: false,
+            report_hide: false,
             required: false,
             unique: false,
         }
@@ -539,6 +589,7 @@ impl FieldSpec {
             hidden: false,
             no_copy: false,
             print_hide: false,
+            report_hide: false,
             required: false,
             unique: false,
         }
@@ -573,6 +624,7 @@ impl FieldSpec {
             hidden: false,
             no_copy: false,
             print_hide: false,
+            report_hide: false,
             required: false,
             unique: false,
         }
@@ -607,6 +659,112 @@ impl FieldSpec {
             hidden: false,
             no_copy: false,
             print_hide: false,
+            report_hide: false,
+            required: false,
+            unique: false,
+        }
+    }
+
+    pub const fn text_editor(fieldname: &'static str, label: &'static str) -> Self {
+        Self {
+            fieldname,
+            fieldtype: "Text Editor",
+            label: Some(label),
+            options: None,
+            default: None,
+            description: None,
+            documentation_url: None,
+            columns: None,
+            depends_on: None,
+            mandatory_depends_on: None,
+            oldfieldname: None,
+            oldfieldtype: None,
+            width: None,
+            fetch_from: None,
+            precision: None,
+            read_only: false,
+            fetch_if_empty: false,
+            in_filter: false,
+            in_list_view: false,
+            in_standard_filter: false,
+            ignore_user_permissions: false,
+            search_index: false,
+            allow_on_submit: false,
+            collapsible: false,
+            hidden: false,
+            no_copy: false,
+            print_hide: false,
+            report_hide: false,
+            required: false,
+            unique: false,
+        }
+    }
+
+    pub const fn html(fieldname: &'static str, label: &'static str) -> Self {
+        Self {
+            fieldname,
+            fieldtype: "HTML",
+            label: Some(label),
+            options: None,
+            default: None,
+            description: None,
+            documentation_url: None,
+            columns: None,
+            depends_on: None,
+            mandatory_depends_on: None,
+            oldfieldname: None,
+            oldfieldtype: None,
+            width: None,
+            fetch_from: None,
+            precision: None,
+            read_only: false,
+            fetch_if_empty: false,
+            in_filter: false,
+            in_list_view: false,
+            in_standard_filter: false,
+            ignore_user_permissions: false,
+            search_index: false,
+            allow_on_submit: false,
+            collapsible: false,
+            hidden: false,
+            no_copy: false,
+            print_hide: false,
+            report_hide: false,
+            required: false,
+            unique: false,
+        }
+    }
+
+    pub const fn button(fieldname: &'static str, label: &'static str) -> Self {
+        Self {
+            fieldname,
+            fieldtype: "Button",
+            label: Some(label),
+            options: None,
+            default: None,
+            description: None,
+            documentation_url: None,
+            columns: None,
+            depends_on: None,
+            mandatory_depends_on: None,
+            oldfieldname: None,
+            oldfieldtype: None,
+            width: None,
+            fetch_from: None,
+            precision: None,
+            read_only: false,
+            fetch_if_empty: false,
+            in_filter: false,
+            in_list_view: false,
+            in_standard_filter: false,
+            ignore_user_permissions: false,
+            search_index: false,
+            allow_on_submit: false,
+            collapsible: false,
+            hidden: false,
+            no_copy: false,
+            print_hide: false,
+            report_hide: false,
             required: false,
             unique: false,
         }
@@ -641,6 +799,7 @@ impl FieldSpec {
             hidden: false,
             no_copy: false,
             print_hide: false,
+            report_hide: false,
             required: false,
             unique: false,
         }
@@ -773,6 +932,11 @@ impl FieldSpec {
 
     pub const fn print_hide(mut self) -> Self {
         self.print_hide = true;
+        self
+    }
+
+    pub const fn report_hide(mut self) -> Self {
+        self.report_hide = true;
         self
     }
 

@@ -202,7 +202,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `process_payment_reconciliation_log_allocations` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_process_payment_reconciliation_log_allocations`. JSON kept external. |
 | `process_period_closing_voucher` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, processing date table generation, lifecycle hooks, client action/progress helpers in `accounts_process_period_closing_voucher`. JSON/JS kept external. |
 | `process_period_closing_voucher_detail` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_process_period_closing_voucher_detail`. JSON kept external. |
-| `process_statement_of_accounts` | 7 | 3 | 1 | 1 | not_started | |
+| `process_statement_of_accounts` | 7 | 3 | 1 | 1 | parity_tested | Rust controller mirrors validation defaults/errors, auto-email dates, GL/AR filter builders, recipients/CC, and behavior-relevant metadata. JSON/JS/HTML kept external. |
 | `process_statement_of_accounts_cc` | 3 | 2 | 1 | 0 | not_started | |
 | `process_statement_of_accounts_customer` | 3 | 2 | 1 | 0 | not_started | |
 | `process_subscription` | 5 | 3 | 1 | 1 | not_started | |
@@ -1890,3 +1890,42 @@ Target: `src/erpnext/accounts/doctype/process_period_closing_voucher_detail`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `process_period_closing_voucher_detail.py` | `process_period_closing_voucher_detail.rs` | parity_tested | No-op child table controller and metadata represented in Rust. |
 | `process_period_closing_voucher_detail.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `process_statement_of_accounts`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/process_statement_of_accounts`
+Target: `src/erpnext/accounts/doctype/process_statement_of_accounts`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- `validate` sets default `subject`, `body`, and `pdf_name`, requires at least one selected customer, validates account/cost center/project company ownership, validates report print format type, and derives auto-email dates from `start_date` plus `filter_duration`.
+- General Ledger filters preserve customer party, party name, date range, presentation currency, categorize-by, project, tax id, and net-party-account flag.
+- Accounts Receivable filters preserve report date, party, customer name, payment terms, sales dimensions, ageing basis, future payment flag, and default ageing ranges `30/60/90/120`.
+- Recipient generation uses billing email first, adds primary contact emails when primary-contact sending is enabled, and collects configured CC recipients.
+- DocType metadata:
+  - `name`: `Process Statement Of Accounts`
+  - `module`: `Accounts`
+  - `autoname`: `Prompt`
+  - `allow_rename`: enabled
+  - `editable_grid`: enabled
+  - `track_changes`: enabled
+  - `row_format`: `Dynamic`
+  - `field_order`: 57 fields from `report` through `help_text`
+  - `report`: `Select`, required, options `General Ledger`, `Accounts Receivable`
+  - `company`: `Link`, options `Company`, required, `in_list_view: 1`
+  - `from_date`: `Date`, shown/mandatory for manual General Ledger runs
+  - `cost_center`: `Table MultiSelect`, options `PSOA Cost Center`
+  - `fetch_customers`: `Button`, options `fetch_customers`, print/report hidden, depends on selected collection
+  - `body`: `Text Editor`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `process_statement_of_accounts.py` | `process_statement_of_accounts.rs` | parity_tested | Validation defaults/errors, auto-email date helpers, report filter builders, recipient collection, and metadata constants represented in Rust. |
+| `test_process_statement_of_accounts.py` | `tests/accounts_process_statement_of_accounts.rs` | parity_tested | Rust tests cover deterministic controller behavior without DB/email side effects. |
+| `process_statement_of_accounts.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+| `process_statement_of_accounts.js` | ERPNext client script retained | external_kept | UI actions and form scripting remain Frappe-owned. |
+| `process_statement_of_accounts.html` | ERPNext template retained | external_kept | Print/email HTML template remains Frappe-owned. |
