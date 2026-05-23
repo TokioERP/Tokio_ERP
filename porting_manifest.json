@@ -18,17 +18,17 @@
     {
       "source": "accounts/dashboard_chart_source/__init__.py",
       "target": "accounts/dashboard_chart_source/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/dashboard_chart_source/account_balance_timeline/__init__.py",
       "target": "accounts/dashboard_chart_source/account_balance_timeline/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/dashboard_chart_source/account_balance_timeline/account_balance_timeline.py",
       "target": "accounts/dashboard_chart_source/account_balance_timeline/account_balance_timeline.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/deferred_revenue.py",
