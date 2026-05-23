@@ -2,6 +2,8 @@ use std::collections::{BTreeMap, HashSet};
 
 use crate::erpnext::{DocumentController, FieldSpec};
 
+use super::auto_match_party::AutoMatchResult;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum BankTransactionStatus {
     Pending,
@@ -552,6 +554,21 @@ impl BankTransaction {
         self.set_status();
 
         actions
+    }
+
+    pub fn auto_set_party(&mut self, result: Option<AutoMatchResult>) -> bool {
+        if self.party_type.is_some() && self.party.is_some() {
+            return false;
+        }
+
+        let Some(result) = result else {
+            return false;
+        };
+
+        self.party_type = Some(result.party_type);
+        self.party = Some(result.party);
+
+        true
     }
 
     pub fn validate_included_fee(&self) -> Result<(), BankTransactionError> {

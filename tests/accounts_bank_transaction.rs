@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use tokio_erp::erpnext::accounts::doctype::bank_transaction::auto_match_party::AutoMatchResult;
 use tokio_erp::erpnext::accounts::doctype::bank_transaction::bank_transaction::{
     get_clearance_details, get_payment_doctypes, group_related_bank_gl_entries,
     group_total_allocated_amount, remove_from_bank_transaction_plan, BankGlAllocation,
@@ -952,4 +953,26 @@ fn bank_transaction_delink_old_payment_entries_matches_erpnext_removed_child_nam
         transaction.delink_old_payment_entries(&old_doc, true),
         Vec::new()
     );
+}
+
+#[test]
+fn bank_transaction_auto_set_party_matches_erpnext_existing_party_and_match_result_rules() {
+    let mut existing = BankTransaction {
+        party_type: Some("Customer".to_string()),
+        party: Some("CUST-0001".to_string()),
+        ..Default::default()
+    };
+    assert!(!existing.auto_set_party(Some(AutoMatchResult::new("Supplier", "SUP-0001"))));
+    assert_eq!(existing.party_type, Some("Customer".to_string()));
+    assert_eq!(existing.party, Some("CUST-0001".to_string()));
+
+    let mut unmatched = BankTransaction::default();
+    assert!(!unmatched.auto_set_party(None));
+    assert_eq!(unmatched.party_type, None);
+    assert_eq!(unmatched.party, None);
+
+    let mut matched = BankTransaction::default();
+    assert!(matched.auto_set_party(Some(AutoMatchResult::new("Supplier", "SUP-0001"))));
+    assert_eq!(matched.party_type, Some("Supplier".to_string()));
+    assert_eq!(matched.party, Some("SUP-0001".to_string()));
 }
