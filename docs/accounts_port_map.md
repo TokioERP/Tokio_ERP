@@ -43,8 +43,8 @@ This is not an MVP list. Every source folder and file is tracked. A row is close
 | `number_card` | 5 | 4 | 0 | 4 | 0 | not_started | |
 | `onboarding_step` | 7 | 6 | 0 | 6 | 0 | not_started | |
 | `page` | 1 | 1 | 1 | 0 | 0 | not_started | |
-| `print_format` | 26 | 57 | 26 | 25 | 0 | not_started | |
-| `print_format_field_template` | 3 | 5 | 3 | 2 | 0 | not_started | |
+| `print_format` | 26 | 57 | 26 | 25 | 0 | parity_tested | Python init files are empty/no-op; Rust preserves 25 static print format names, folders, report/doc type targets, format type, and standard flags in `accounts_print_static_formats`. JSON/HTML kept external. |
+| `print_format_field_template` | 3 | 5 | 3 | 2 | 0 | parity_tested | Python init files are empty/no-op; Rust preserves field template names, document types, field names, template file paths, and standard flags in `accounts_print_static_formats`. JSON kept external. |
 | `report` | 53 | 244 | 128 | 52 | 50 | not_started | |
 | `test` | 1 | 4 | 4 | 0 | 0 | not_started | |
 | `workspace` | 3 | 2 | 0 | 2 | 0 | not_started | |

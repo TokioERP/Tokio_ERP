@@ -2623,147 +2623,147 @@
     {
       "source": "accounts/print_format/__init__.py",
       "target": "accounts/print_format/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/accounts_payable_standard/__init__.py",
       "target": "accounts/print_format/accounts_payable_standard/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/accounts_payable_summary_standard/__init__.py",
       "target": "accounts/print_format/accounts_payable_summary_standard/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/accounts_receivable_standard/__init__.py",
       "target": "accounts/print_format/accounts_receivable_standard/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/accounts_receivable_summary_standard/__init__.py",
       "target": "accounts/print_format/accounts_receivable_summary_standard/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/balance_sheet_standard/__init__.py",
       "target": "accounts/print_format/balance_sheet_standard/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/bank_and_cash_payment_voucher/__init__.py",
       "target": "accounts/print_format/bank_and_cash_payment_voucher/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/cash_flow_statement_standard/__init__.py",
       "target": "accounts/print_format/cash_flow_statement_standard/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/cheque_printing_format/__init__.py",
       "target": "accounts/print_format/cheque_printing_format/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/credit_note/__init__.py",
       "target": "accounts/print_format/credit_note/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/dunning_letter/__init__.py",
       "target": "accounts/print_format/dunning_letter/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/general_ledger_standard/__init__.py",
       "target": "accounts/print_format/general_ledger_standard/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/journal_auditing_voucher/__init__.py",
       "target": "accounts/print_format/journal_auditing_voucher/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/p&l_statement_standard/__init__.py",
       "target": "accounts/print_format/p&l_statement_standard/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/payment_receipt_voucher/__init__.py",
       "target": "accounts/print_format/payment_receipt_voucher/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/pos_invoice/__init__.py",
       "target": "accounts/print_format/pos_invoice/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/pos_invoice_standard/__init__.py",
       "target": "accounts/print_format/pos_invoice_standard/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/pos_invoice_with_item_image/__init__.py",
       "target": "accounts/print_format/pos_invoice_with_item_image/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/purchase_auditing_voucher/__init__.py",
       "target": "accounts/print_format/purchase_auditing_voucher/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/purchase_invoice_standard/__init__.py",
       "target": "accounts/print_format/purchase_invoice_standard/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/purchase_invoice_with_item_image/__init__.py",
       "target": "accounts/print_format/purchase_invoice_with_item_image/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/sales_auditing_voucher/__init__.py",
       "target": "accounts/print_format/sales_auditing_voucher/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/sales_invoice_return/__init__.py",
       "target": "accounts/print_format/sales_invoice_return/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/sales_invoice_standard/__init__.py",
       "target": "accounts/print_format/sales_invoice_standard/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/sales_invoice_with_item_image/__init__.py",
       "target": "accounts/print_format/sales_invoice_with_item_image/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/trial_balance_standard/__init__.py",
       "target": "accounts/print_format/trial_balance_standard/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format_field_template/__init__.py",
       "target": "accounts/print_format_field_template/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format_field_template/purchase_invoice_taxes/__init__.py",
       "target": "accounts/print_format_field_template/purchase_invoice_taxes/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format_field_template/sales_invoice_taxes/__init__.py",
       "target": "accounts/print_format_field_template/sales_invoice_taxes/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/__init__.py",
