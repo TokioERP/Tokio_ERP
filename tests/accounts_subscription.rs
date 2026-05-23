@@ -1,6 +1,6 @@
 use tokio_erp::erpnext::accounts::doctype::subscription::subscription::{
-    get_prorata_factor_at, BillingCycle, BillingCycleDelta, GenerateInvoiceAt, Subscription,
-    SubscriptionError, SubscriptionStatus,
+    get_prorata_factor_at, BillingCycle, BillingCycleDelta, GenerateInvoiceAt,
+    GeneratedInvoiceState, Subscription, SubscriptionError, SubscriptionStatus,
 };
 use tokio_erp::erpnext::accounts::doctype::subscription_plan_detail::subscription_plan_detail::SubscriptionPlanDetail;
 use tokio_erp::erpnext::{DocumentController, FieldSpec};
@@ -159,6 +159,108 @@ fn subscription_status_and_invoice_generation_gates_match_erpnext() {
 
     subscription.cancelation_date = Some("2018-01-20".to_string());
     assert!(!subscription.can_generate_new_invoice("2017-12-22", false));
+}
+
+#[test]
+fn subscription_validation_helpers_match_erpnext_errors() {
+    let mut subscription = Subscription::new("Customer", "_Test Customer", "2018-01-01");
+    subscription.trial_period_start = Some("2018-01-10".to_string());
+    subscription.trial_period_end = Some("2018-01-05".to_string());
+    assert_eq!(
+        subscription.validate_trial_period(),
+        Err(SubscriptionError::TrialPeriodEndBeforeStart)
+    );
+
+    subscription.trial_period_end = None;
+    assert_eq!(
+        subscription.validate_trial_period(),
+        Err(SubscriptionError::TrialPeriodIncomplete)
+    );
+
+    subscription.trial_period_start = Some("2018-01-02".to_string());
+    subscription.trial_period_end = Some("2018-01-03".to_string());
+    assert_eq!(
+        subscription.validate_trial_period(),
+        Err(SubscriptionError::TrialPeriodStartAfterSubscriptionStart)
+    );
+
+    let mut ending = Subscription::new("Customer", "_Test Customer", "2018-01-01");
+    ending.billing_cycle = Some(BillingCycle::new("Month", 1));
+    ending.end_date = Some("2018-01-31".to_string());
+    assert_eq!(
+        ending.validate_end_date(),
+        Err(SubscriptionError::EndDateNotAfterBillingCycle {
+            minimum_end_date: "2018-01-31".to_string(),
+        })
+    );
+
+    let mut calendar = Subscription::new("Customer", "_Test Customer", "2018-01-01");
+    calendar.follow_calendar_months = true;
+    assert_eq!(
+        calendar.validate_to_follow_calendar_months(),
+        Err(SubscriptionError::CalendarMonthsRequireEndDate)
+    );
+    calendar.end_date = Some("2018-07-01".to_string());
+    calendar.billing_cycle = Some(BillingCycle::new("Year", 1));
+    assert_eq!(
+        calendar.validate_to_follow_calendar_months(),
+        Err(SubscriptionError::CalendarMonthsRequireMonthlyBilling)
+    );
+}
+
+#[test]
+fn subscription_invoice_due_and_status_rules_match_erpnext() {
+    let mut subscription = Subscription::new("Customer", "_Test Customer", "2018-01-01");
+    assert!(!subscription.current_invoice_is_past_due("2018-01-10"));
+
+    subscription.current_invoice = Some(GeneratedInvoiceState::new("2018-01-10", "Unpaid"));
+    assert!(subscription.current_invoice_is_past_due("2018-01-10"));
+    assert!(!subscription.is_past_grace_period("2018-01-12", 3));
+    assert!(subscription.is_past_grace_period("2018-01-13", 3));
+    assert_eq!(
+        subscription.get_status_for_past_grace_period(false),
+        SubscriptionStatus::Unpaid
+    );
+    assert_eq!(
+        subscription.get_status_for_past_grace_period(true),
+        SubscriptionStatus::Cancelled
+    );
+
+    subscription.current_invoice = Some(GeneratedInvoiceState::new("2018-01-10", "Paid"));
+    assert!(!subscription.current_invoice_is_past_due("2018-01-10"));
+}
+
+#[test]
+fn subscription_set_status_matches_erpnext_ordering() {
+    let mut trial = Subscription::new("Customer", "_Test Customer", "2018-01-01");
+    trial.trial_period_end = Some("2018-01-31".to_string());
+    trial.set_subscription_status("2018-01-10", false, 0, false);
+    assert_eq!(trial.status, SubscriptionStatus::Trialing);
+
+    let mut completed = Subscription::new("Customer", "_Test Customer", "2018-01-01");
+    completed.end_date = Some("2018-01-31".to_string());
+    completed.set_subscription_status("2018-02-01", false, 0, false);
+    assert_eq!(completed.status, SubscriptionStatus::Completed);
+
+    let mut grace = Subscription::new("Customer", "_Test Customer", "2018-01-01");
+    grace.current_invoice = Some(GeneratedInvoiceState::new("2018-01-10", "Unpaid"));
+    grace.set_subscription_status("2018-01-11", true, 10, false);
+    assert_eq!(grace.status, SubscriptionStatus::GracePeriod);
+
+    let mut unpaid = Subscription::new("Customer", "_Test Customer", "2018-01-01");
+    unpaid.current_invoice = Some(GeneratedInvoiceState::new("2018-01-10", "Unpaid"));
+    unpaid.set_subscription_status("2018-01-10", true, 0, false);
+    assert_eq!(unpaid.status, SubscriptionStatus::Unpaid);
+
+    let mut cancelled = Subscription::new("Customer", "_Test Customer", "2018-01-01");
+    cancelled.current_invoice = Some(GeneratedInvoiceState::new("2018-01-10", "Unpaid"));
+    cancelled.set_subscription_status("2018-01-10", true, 0, true);
+    assert_eq!(cancelled.status, SubscriptionStatus::Cancelled);
+    assert_eq!(cancelled.cancelation_date.as_deref(), Some("2018-01-10"));
+
+    let mut active = Subscription::new("Customer", "_Test Customer", "2018-01-01");
+    active.set_subscription_status("2018-01-10", false, 0, false);
+    assert_eq!(active.status, SubscriptionStatus::Active);
 }
 
 #[test]

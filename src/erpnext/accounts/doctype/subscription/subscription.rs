@@ -81,6 +81,31 @@ impl BillingCycleDelta {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum SubscriptionError {
     MixedBillingCycles,
+    TrialPeriodEndBeforeStart,
+    TrialPeriodIncomplete,
+    TrialPeriodStartAfterSubscriptionStart,
+    EndDateNotAfterBillingCycle { minimum_end_date: String },
+    CalendarMonthsRequireEndDate,
+    CalendarMonthsRequireMonthlyBilling,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct GeneratedInvoiceState {
+    pub due_date: String,
+    pub status: String,
+}
+
+impl GeneratedInvoiceState {
+    pub fn new(due_date: impl Into<String>, status: impl Into<String>) -> Self {
+        Self {
+            due_date: due_date.into(),
+            status: status.into(),
+        }
+    }
+
+    pub fn is_paid(&self) -> bool {
+        self.status == "Paid"
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -111,6 +136,7 @@ pub struct Subscription {
     pub additional_discount_amount: f64,
     pub cost_center: Option<String>,
     pub billing_cycle: Option<BillingCycle>,
+    pub current_invoice: Option<GeneratedInvoiceState>,
 }
 
 impl Default for Subscription {
@@ -142,6 +168,7 @@ impl Default for Subscription {
             additional_discount_amount: 0.0,
             cost_center: None,
             billing_cycle: None,
+            current_invoice: None,
         }
     }
 }
@@ -402,6 +429,141 @@ impl Subscription {
             Some(end_date) => parse_date(posting_date) > parse_date(end_date),
             None => true,
         }
+    }
+
+    pub fn get_status_for_past_grace_period(&self, cancel_after_grace: bool) -> SubscriptionStatus {
+        if cancel_after_grace {
+            SubscriptionStatus::Cancelled
+        } else {
+            SubscriptionStatus::Unpaid
+        }
+    }
+
+    pub fn current_invoice_is_past_due(&self, posting_date: &str) -> bool {
+        let Some(invoice) = self.current_invoice.as_ref() else {
+            return false;
+        };
+
+        if invoice.is_paid() {
+            return false;
+        }
+
+        parse_date(posting_date) >= parse_date(&invoice.due_date)
+    }
+
+    pub fn is_past_grace_period(&self, posting_date: &str, grace_period: i32) -> bool {
+        if !self.current_invoice_is_past_due(posting_date) {
+            return false;
+        }
+
+        let due_date = self
+            .current_invoice
+            .as_ref()
+            .map(|invoice| invoice.due_date.as_str())
+            .unwrap_or(posting_date);
+        parse_date(posting_date) >= parse_date(&add_days(due_date, grace_period))
+    }
+
+    pub fn set_subscription_status(
+        &mut self,
+        posting_date: &str,
+        has_outstanding_invoice: bool,
+        grace_period: i32,
+        cancel_after_grace: bool,
+    ) {
+        if self.is_trialling(posting_date) {
+            self.status = SubscriptionStatus::Trialing;
+        } else if !has_outstanding_invoice
+            && self
+                .end_date
+                .as_deref()
+                .is_some_and(|end_date| parse_date(posting_date) > parse_date(end_date))
+        {
+            self.status = SubscriptionStatus::Completed;
+        } else if self.is_past_grace_period(posting_date, grace_period) {
+            self.status = self.get_status_for_past_grace_period(cancel_after_grace);
+            self.cancelation_date = if self.status == SubscriptionStatus::Cancelled {
+                Some(posting_date.to_string())
+            } else {
+                None
+            };
+        } else if self.current_invoice_is_past_due(posting_date)
+            && !self.is_past_grace_period(posting_date, grace_period)
+        {
+            self.status = SubscriptionStatus::GracePeriod;
+        } else if !has_outstanding_invoice {
+            self.status = SubscriptionStatus::Active;
+        }
+    }
+
+    pub fn validate_trial_period(&self) -> Result<(), SubscriptionError> {
+        if let (Some(trial_start), Some(trial_end)) = (
+            self.trial_period_start.as_deref(),
+            self.trial_period_end.as_deref(),
+        ) {
+            if parse_date(trial_end) < parse_date(trial_start) {
+                return Err(SubscriptionError::TrialPeriodEndBeforeStart);
+            }
+        }
+
+        if self.trial_period_start.is_some() && self.trial_period_end.is_none() {
+            return Err(SubscriptionError::TrialPeriodIncomplete);
+        }
+
+        if self
+            .trial_period_start
+            .as_deref()
+            .zip(self.start_date.as_deref())
+            .is_some_and(|(trial_start, start_date)| {
+                parse_date(trial_start) > parse_date(start_date)
+            })
+        {
+            return Err(SubscriptionError::TrialPeriodStartAfterSubscriptionStart);
+        }
+
+        Ok(())
+    }
+
+    pub fn validate_end_date(&self) -> Result<(), SubscriptionError> {
+        let Some(cycle) = self.billing_cycle.as_ref() else {
+            return Ok(());
+        };
+        let Some(start_date) = self.start_date.as_deref() else {
+            return Ok(());
+        };
+
+        let billing_cycle_end = add_delta(start_date, &Self::billing_cycle_data_for(cycle.clone()));
+        if self
+            .end_date
+            .as_deref()
+            .is_some_and(|end_date| parse_date(end_date) <= parse_date(&billing_cycle_end))
+        {
+            return Err(SubscriptionError::EndDateNotAfterBillingCycle {
+                minimum_end_date: billing_cycle_end,
+            });
+        }
+
+        Ok(())
+    }
+
+    pub fn validate_to_follow_calendar_months(&self) -> Result<(), SubscriptionError> {
+        if !self.follow_calendar_months {
+            return Ok(());
+        }
+
+        if self.end_date.is_none() {
+            return Err(SubscriptionError::CalendarMonthsRequireEndDate);
+        }
+
+        if self
+            .billing_cycle
+            .as_ref()
+            .is_some_and(|cycle| cycle.billing_interval != "Month")
+        {
+            return Err(SubscriptionError::CalendarMonthsRequireMonthlyBilling);
+        }
+
+        Ok(())
     }
 
     pub fn can_generate_new_invoice(
