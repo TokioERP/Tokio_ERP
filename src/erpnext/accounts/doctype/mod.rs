@@ -72,3 +72,5 @@ pub mod sales_invoice_payment;
 pub mod sales_invoice_reference;
 pub mod sales_invoice_timesheet;
 pub mod sales_partner_item;
+pub mod sales_taxes_and_charges;
+pub mod sales_taxes_and_charges_template;

@@ -2168,32 +2168,32 @@
     {
       "source": "accounts/doctype/sales_taxes_and_charges/__init__.py",
       "target": "accounts/doctype/sales_taxes_and_charges/mod.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/sales_taxes_and_charges/sales_taxes_and_charges.py",
       "target": "accounts/doctype/sales_taxes_and_charges/sales_taxes_and_charges.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/sales_taxes_and_charges_template/__init__.py",
       "target": "accounts/doctype/sales_taxes_and_charges_template/mod.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/sales_taxes_and_charges_template/sales_taxes_and_charges_template.py",
       "target": "accounts/doctype/sales_taxes_and_charges_template/sales_taxes_and_charges_template.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/sales_taxes_and_charges_template/sales_taxes_and_charges_template_dashboard.py",
       "target": "accounts/doctype/sales_taxes_and_charges_template/sales_taxes_and_charges_template_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/sales_taxes_and_charges_template/test_sales_taxes_and_charges_template.py",
       "target": "accounts/doctype/sales_taxes_and_charges_template/test_sales_taxes_and_charges_template.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/share_balance/__init__.py",
