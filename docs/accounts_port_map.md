@@ -212,8 +212,8 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `psoa_cost_center` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_psoa_cost_center`. JSON kept external. |
 | `psoa_project` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_psoa_project`. JSON kept external. |
 | `purchase_invoice` | 9 | 4 | 2 | 2 | not_started | |
-| `purchase_invoice_advance` | 4 | 2 | 1 | 0 | not_started | |
-| `purchase_invoice_item` | 4 | 2 | 1 | 0 | not_started | |
+| `purchase_invoice_advance` | 4 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_purchase_invoice_advance`. JSON kept external. |
+| `purchase_invoice_item` | 4 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust field order, key metadata, and controller behavior covered by `accounts_purchase_invoice_item`. Full JSON kept external. |
 | `purchase_taxes_and_charges` | 4 | 2 | 1 | 0 | not_started | |
 | `purchase_taxes_and_charges_template` | 6 | 4 | 1 | 1 | not_started | |
 | `repost_accounting_ledger` | 6 | 3 | 1 | 1 | not_started | |
@@ -2164,3 +2164,60 @@ Target: `src/erpnext/accounts/doctype/promotional_scheme_product_discount`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `promotional_scheme_product_discount.py` | `promotional_scheme_product_discount.rs` | parity_tested | No-op child table controller and metadata represented in Rust. |
 | `promotional_scheme_product_discount.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `purchase_invoice_advance`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/purchase_invoice_advance`
+Target: `src/erpnext/accounts/doctype/purchase_invoice_advance`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- DocType metadata:
+  - `name`: `Purchase Invoice Advance`
+  - `module`: `Accounts`
+  - `editable_grid`: enabled
+  - `index_web_pages_for_search`: enabled
+  - `istable`: enabled
+  - `field_order`: `reference_type`, `reference_name`, `remarks`, `reference_row`, `col_break1`, `advance_amount`, `allocated_amount`, `exchange_gain_loss`, `ref_exchange_rate`, `difference_posting_date`
+  - `reference_name`: `Dynamic Link`, options `reference_type`, read-only, `in_list_view: 1`, `columns: 2`, no-copy
+  - `advance_amount`: `Currency`, options `party_account_currency`, read-only, `in_list_view: 1`, `columns: 2`, no-copy
+  - `allocated_amount`: `Currency`, options `party_account_currency`, `in_list_view: 1`, `columns: 2`, no-copy
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `purchase_invoice_advance.py` | `purchase_invoice_advance.rs` | parity_tested | No-op child table controller and metadata represented in Rust. |
+| `purchase_invoice_advance.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `purchase_invoice_item`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/purchase_invoice_item`
+Target: `src/erpnext/accounts/doctype/purchase_invoice_item`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- DocType metadata:
+  - `name`: `Purchase Invoice Item`
+  - `module`: `Accounts`
+  - `editable_grid`: enabled
+  - `istable`: enabled
+  - `field_order`: 115 fields from `item_code` through `page_break`
+  - `item_code`: `Link`, options `Item`, print hidden, `in_list_view: 1`, `columns: 3`
+  - `item_name`: `Data`, required, fetched from `item_code.item_name`
+  - `qty`: `Float`, required, `in_list_view: 1`, `columns: 2`
+  - `amount`: `Currency`, options `currency`, required, read-only, `in_list_view: 1`, `columns: 2`
+  - `add_serial_batch_bundle`: `Button`, depends on serial/batch field state and draft docstatus
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `purchase_invoice_item.py` | `purchase_invoice_item.rs` | parity_tested | No-op child table controller, full field order, key metadata, and controller behavior represented in Rust. |
+| `purchase_invoice_item.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |

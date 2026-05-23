@@ -1978,22 +1978,22 @@
     {
       "source": "accounts/doctype/purchase_invoice_advance/__init__.py",
       "target": "accounts/doctype/purchase_invoice_advance/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/purchase_invoice_advance/purchase_invoice_advance.py",
       "target": "accounts/doctype/purchase_invoice_advance/purchase_invoice_advance.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/purchase_invoice_item/__init__.py",
       "target": "accounts/doctype/purchase_invoice_item/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/purchase_invoice_item/purchase_invoice_item.py",
       "target": "accounts/doctype/purchase_invoice_item/purchase_invoice_item.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/purchase_taxes_and_charges/__init__.py",

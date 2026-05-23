@@ -58,3 +58,5 @@ pub mod promotional_scheme_price_discount;
 pub mod promotional_scheme_product_discount;
 pub mod psoa_cost_center;
 pub mod psoa_project;
+pub mod purchase_invoice_advance;
+pub mod purchase_invoice_item;
