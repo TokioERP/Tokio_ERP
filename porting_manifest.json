@@ -2263,42 +2263,42 @@
     {
       "source": "accounts/doctype/shipping_rule/__init__.py",
       "target": "accounts/doctype/shipping_rule/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/shipping_rule/shipping_rule.py",
       "target": "accounts/doctype/shipping_rule/shipping_rule.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/shipping_rule/shipping_rule_dashboard.py",
       "target": "accounts/doctype/shipping_rule/shipping_rule_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/shipping_rule/test_shipping_rule.py",
       "target": "accounts/doctype/shipping_rule/test_shipping_rule.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/shipping_rule_condition/__init__.py",
       "target": "accounts/doctype/shipping_rule_condition/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/shipping_rule_condition/shipping_rule_condition.py",
       "target": "accounts/doctype/shipping_rule_condition/shipping_rule_condition.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/shipping_rule_country/__init__.py",
       "target": "accounts/doctype/shipping_rule_country/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/shipping_rule_country/shipping_rule_country.py",
       "target": "accounts/doctype/shipping_rule_country/shipping_rule_country.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/south_africa_vat_account/__init__.py",

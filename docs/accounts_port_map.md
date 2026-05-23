@@ -234,9 +234,9 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `share_transfer` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, basic validation, share existence classification, share range removal/splitting, submit/cancel plans, JV draft creation, JS hook constants, and controller hooks in `accounts_share_transfer`. JSON/JS kept external. |
 | `share_type` | 6 | 4 | 1 | 1 | parity_tested | Python controller is pass/no-op; Rust metadata, dashboard, JS hook constants, and controller behavior covered by `accounts_share_type`. JSON/JS kept external. |
 | `shareholder` | 6 | 4 | 1 | 1 | parity_tested | Rust covers metadata, onload/on_trash actions, before_save share amount calculation, dashboard, JS hook constants, and controller hooks in `accounts_shareholder`. JSON/JS kept external. |
-| `shipping_rule` | 7 | 4 | 2 | 1 | not_started | |
-| `shipping_rule_condition` | 3 | 2 | 1 | 0 | not_started | |
-| `shipping_rule_country` | 3 | 2 | 1 | 0 | not_started | |
+| `shipping_rule` | 7 | 4 | 2 | 1 | parity_tested | Rust covers metadata, validate condition ranges, overlap checks, country restriction, amount selection/conversion, tax-table append/update behavior, dashboard groups, JS hook constants, and controller hooks in `accounts_shipping_rule`. JSON/JS kept external. |
+| `shipping_rule_condition` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_shipping_rule`. JSON kept external. |
+| `shipping_rule_country` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_shipping_rule`. JSON kept external. |
 | `south_africa_vat_account` | 3 | 2 | 1 | 0 | not_started | |
 | `subscription` | 6 | 3 | 1 | 2 | not_started | |
 | `subscription_invoice` | 5 | 3 | 1 | 1 | not_started | |

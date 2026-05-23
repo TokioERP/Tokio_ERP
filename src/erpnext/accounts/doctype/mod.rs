@@ -78,3 +78,6 @@ pub mod share_balance;
 pub mod share_transfer;
 pub mod share_type;
 pub mod shareholder;
+pub mod shipping_rule;
+pub mod shipping_rule_condition;
+pub mod shipping_rule_country;
