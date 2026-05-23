@@ -62,3 +62,6 @@ pub mod purchase_invoice_advance;
 pub mod purchase_invoice_item;
 pub mod purchase_taxes_and_charges;
 pub mod purchase_taxes_and_charges_template;
+pub mod repost_accounting_ledger;
+pub mod repost_accounting_ledger_items;
+pub mod repost_allowed_types;

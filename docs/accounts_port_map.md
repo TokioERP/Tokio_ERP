@@ -216,9 +216,9 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `purchase_invoice_item` | 4 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust field order, key metadata, and controller behavior covered by `accounts_purchase_invoice_item`. Full JSON kept external. |
 | `purchase_taxes_and_charges` | 4 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust field order, key metadata, and controller behavior covered by `accounts_purchase_taxes_and_charges`. JSON kept external. |
 | `purchase_taxes_and_charges_template` | 6 | 4 | 1 | 1 | parity_tested | Rust covers metadata, validate delegation, autoname behavior, and hooks in `accounts_purchase_taxes_and_charges_template`. JSON/JS kept external. |
-| `repost_accounting_ledger` | 6 | 3 | 1 | 1 | not_started | |
-| `repost_accounting_ledger_items` | 3 | 2 | 1 | 0 | not_started | |
-| `repost_allowed_types` | 3 | 2 | 1 | 0 | not_started | |
+| `repost_accounting_ledger` | 6 | 3 | 1 | 1 | parity_tested | Rust covers metadata, voucher allowed-type validation, deferred-accounting and closed-fiscal-year guards, preview empty-state, submit enqueue/start branching, and deterministic repost action planning in `accounts_repost_accounting_ledger`. JSON/HTML/DB effects kept external. |
+| `repost_accounting_ledger_items` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_repost_accounting_ledger_items`. JSON kept external. |
+| `repost_allowed_types` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_repost_allowed_types`. JSON kept external. |
 | `repost_payment_ledger` | 6 | 3 | 1 | 2 | not_started | |
 | `repost_payment_ledger_items` | 3 | 2 | 1 | 0 | not_started | |
 | `sales_invoice` | 10 | 4 | 2 | 3 | not_started | |
