@@ -222,12 +222,12 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `repost_payment_ledger` | 6 | 3 | 1 | 2 | parity_tested | Rust covers metadata, filter-based voucher loading, queued status assignment, submit enqueue job, PLE delete/create planning, and worker success/failure status handling in `accounts_repost_payment_ledger`. JSON/DB effects kept external. |
 | `repost_payment_ledger_items` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_repost_payment_ledger_items`. JSON kept external. |
 | `sales_invoice` | 10 | 4 | 2 | 3 | not_started | |
-| `sales_invoice_advance` | 4 | 2 | 1 | 0 | not_started | |
+| `sales_invoice_advance` | 4 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_sales_invoice_advance`. JSON kept external. |
 | `sales_invoice_item` | 4 | 2 | 1 | 0 | not_started | |
-| `sales_invoice_payment` | 3 | 2 | 1 | 0 | not_started | |
-| `sales_invoice_reference` | 3 | 2 | 1 | 0 | not_started | |
-| `sales_invoice_timesheet` | 3 | 2 | 1 | 0 | not_started | |
-| `sales_partner_item` | 3 | 2 | 1 | 0 | not_started | |
+| `sales_invoice_payment` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_sales_invoice_payment`. JSON kept external. |
+| `sales_invoice_reference` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_sales_invoice_reference`. JSON kept external. |
+| `sales_invoice_timesheet` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_sales_invoice_timesheet`. JSON kept external. |
+| `sales_partner_item` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_sales_partner_item`. JSON kept external. |
 | `sales_taxes_and_charges` | 4 | 2 | 1 | 0 | not_started | |
 | `sales_taxes_and_charges_template` | 6 | 4 | 1 | 1 | not_started | |
 | `share_balance` | 3 | 2 | 1 | 0 | not_started | |

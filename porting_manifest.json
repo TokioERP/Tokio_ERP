@@ -2108,12 +2108,12 @@
     {
       "source": "accounts/doctype/sales_invoice_advance/__init__.py",
       "target": "accounts/doctype/sales_invoice_advance/mod.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/sales_invoice_advance/sales_invoice_advance.py",
       "target": "accounts/doctype/sales_invoice_advance/sales_invoice_advance.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/sales_invoice_item/__init__.py",
@@ -2128,42 +2128,42 @@
     {
       "source": "accounts/doctype/sales_invoice_payment/__init__.py",
       "target": "accounts/doctype/sales_invoice_payment/mod.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/sales_invoice_payment/sales_invoice_payment.py",
       "target": "accounts/doctype/sales_invoice_payment/sales_invoice_payment.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/sales_invoice_reference/__init__.py",
       "target": "accounts/doctype/sales_invoice_reference/mod.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/sales_invoice_reference/sales_invoice_reference.py",
       "target": "accounts/doctype/sales_invoice_reference/sales_invoice_reference.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/sales_invoice_timesheet/__init__.py",
       "target": "accounts/doctype/sales_invoice_timesheet/mod.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/sales_invoice_timesheet/sales_invoice_timesheet.py",
       "target": "accounts/doctype/sales_invoice_timesheet/sales_invoice_timesheet.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/sales_partner_item/__init__.py",
       "target": "accounts/doctype/sales_partner_item/mod.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/sales_partner_item/sales_partner_item.py",
       "target": "accounts/doctype/sales_partner_item/sales_partner_item.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/sales_taxes_and_charges/__init__.py",

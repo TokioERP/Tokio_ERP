@@ -67,3 +67,8 @@ pub mod repost_accounting_ledger_items;
 pub mod repost_allowed_types;
 pub mod repost_payment_ledger;
 pub mod repost_payment_ledger_items;
+pub mod sales_invoice_advance;
+pub mod sales_invoice_payment;
+pub mod sales_invoice_reference;
+pub mod sales_invoice_timesheet;
+pub mod sales_partner_item;
