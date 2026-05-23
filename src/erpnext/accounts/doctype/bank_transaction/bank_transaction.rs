@@ -86,6 +86,9 @@ pub enum BankTransactionError {
         gl_bank_account: String,
         amount: f64,
     },
+    VoucherOverAllocated {
+        allocable_amount: f64,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -130,6 +133,19 @@ pub struct RemoveFromBankTransactionPlan {
     pub removed_entries: Vec<BankTransactionPayment>,
     pub remaining_entries: Vec<BankTransactionPayment>,
     pub save: bool,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum BankTransactionAllocationAction {
+    ClearLinkedPaymentEntry {
+        payment_document: String,
+        payment_entry: String,
+        clearance_date: Option<String>,
+    },
+    UpdateLinkedBankTransaction {
+        bank_transaction_name: String,
+        allocated_amount: Option<f64>,
+    },
 }
 
 impl BankTransaction {
@@ -353,6 +369,93 @@ impl BankTransaction {
         Ok(())
     }
 
+    pub fn allocate_payment_entries(
+        &mut self,
+        pe_bt_allocations: &BTreeMap<(String, String), BTreeMap<String, BankGlAllocation>>,
+        gl_entries: &BTreeMap<(String, String), BTreeMap<String, f64>>,
+        gl_bank_account: &str,
+        linked_bank_transactions: &BTreeMap<String, LinkedBankTransaction>,
+        updating_linked_bank_transaction: bool,
+    ) -> Result<Vec<BankTransactionAllocationAction>, BankTransactionError> {
+        if updating_linked_bank_transaction || self.payment_entries.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let mut actions = Vec::new();
+        let mut remaining_amount = self.unallocated_amount;
+        let original_payment_entries = std::mem::take(&mut self.payment_entries);
+
+        for mut payment_entry in original_payment_entries {
+            if payment_entry.allocated_amount != 0.0 {
+                self.payment_entries.push(payment_entry);
+                continue;
+            }
+
+            let key = (
+                payment_entry.payment_document.clone(),
+                payment_entry.payment_entry.clone(),
+            );
+            let clearance_details = get_clearance_details(
+                self,
+                &payment_entry,
+                pe_bt_allocations.get(&key).cloned().unwrap_or_default(),
+                gl_entries.get(&key).cloned().unwrap_or_default(),
+                gl_bank_account,
+                linked_bank_transactions
+                    .get(&payment_entry.payment_entry)
+                    .cloned(),
+            )?;
+
+            if clearance_details.allocable_amount < 0.0 {
+                return Err(BankTransactionError::VoucherOverAllocated {
+                    allocable_amount: clearance_details.allocable_amount,
+                });
+            }
+
+            if remaining_amount <= 0.0 {
+                continue;
+            }
+
+            if clearance_details.allocable_amount == 0.0 {
+                if clearance_details.should_clear {
+                    append_clear_linked_payment_entry_action(
+                        &mut actions,
+                        &payment_entry,
+                        Some(clearance_details.clearance_date),
+                    );
+                }
+                continue;
+            }
+
+            let should_clear = clearance_details.should_clear
+                && clearance_details.allocable_amount <= remaining_amount;
+            payment_entry.allocated_amount =
+                clearance_details.allocable_amount.min(remaining_amount);
+            remaining_amount -= payment_entry.allocated_amount;
+
+            if payment_entry.payment_document == Self::DOCTYPE {
+                actions.push(
+                    BankTransactionAllocationAction::UpdateLinkedBankTransaction {
+                        bank_transaction_name: payment_entry.payment_entry.clone(),
+                        allocated_amount: Some(payment_entry.allocated_amount),
+                    },
+                );
+            } else if should_clear {
+                append_clear_linked_payment_entry_action(
+                    &mut actions,
+                    &payment_entry,
+                    Some(clearance_details.clearance_date),
+                );
+            }
+
+            self.payment_entries.push(payment_entry);
+        }
+
+        self.update_allocated_amount();
+
+        Ok(actions)
+    }
+
     pub fn validate_included_fee(&self) -> Result<(), BankTransactionError> {
         if self.included_fee != 0.0 && self.withdrawal != 0.0 && self.included_fee > self.withdrawal
         {
@@ -466,6 +569,24 @@ pub const fn get_payment_doctypes() -> [&'static str; 5] {
         "Purchase Invoice",
         "Bank Transaction",
     ]
+}
+
+fn append_clear_linked_payment_entry_action(
+    actions: &mut Vec<BankTransactionAllocationAction>,
+    payment_entry: &BankTransactionPayment,
+    clearance_date: Option<String>,
+) {
+    if !get_payment_doctypes().contains(&payment_entry.payment_document.as_str())
+        || payment_entry.payment_document == BankTransaction::DOCTYPE
+    {
+        return;
+    }
+
+    actions.push(BankTransactionAllocationAction::ClearLinkedPaymentEntry {
+        payment_document: payment_entry.payment_document.clone(),
+        payment_entry: payment_entry.payment_entry.clone(),
+        clearance_date,
+    });
 }
 
 pub fn get_clearance_details(

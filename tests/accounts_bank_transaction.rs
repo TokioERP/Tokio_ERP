@@ -1,9 +1,11 @@
+use std::collections::BTreeMap;
+
 use tokio_erp::erpnext::accounts::doctype::bank_transaction::bank_transaction::{
     get_clearance_details, get_payment_doctypes, group_related_bank_gl_entries,
     group_total_allocated_amount, remove_from_bank_transaction_plan, BankGlAllocation,
-    BankTransaction, BankTransactionError, BankTransactionPayment, BankTransactionStatus,
-    ClearanceDetails, LinkedBankTransaction, RelatedBankGlEntryRow, RemoveFromBankTransactionPlan,
-    TotalAllocatedAmountRow,
+    BankTransaction, BankTransactionAllocationAction, BankTransactionError, BankTransactionPayment,
+    BankTransactionStatus, ClearanceDetails, LinkedBankTransaction, RelatedBankGlEntryRow,
+    RemoveFromBankTransactionPlan, TotalAllocatedAmountRow,
 };
 use tokio_erp::erpnext::{DocumentController, FieldSpec};
 
@@ -600,5 +602,177 @@ fn bank_transaction_validate_currency_matches_erpnext_bank_account_guard() {
     assert_eq!(
         missing_bank_account.validate_currency(Some("Bank - TC"), Some("UZS")),
         Ok(())
+    );
+}
+
+#[test]
+fn bank_transaction_allocate_payment_entries_matches_erpnext_zero_allocation_flow() {
+    let mut transaction = BankTransaction {
+        name: Some("BT-0001".to_string()),
+        date: Some("2026-05-20".to_string()),
+        unallocated_amount: 150.0,
+        withdrawal: 150.0,
+        payment_entries: vec![
+            BankTransactionPayment::new("Payment Entry", "PE-0001", 0.0),
+            BankTransactionPayment::new("Payment Entry", "PE-0002", 25.0),
+        ],
+        ..Default::default()
+    };
+    let allocations = BTreeMap::new();
+    let gl_entries = BTreeMap::from([(
+        ("Payment Entry".to_string(), "PE-0001".to_string()),
+        BTreeMap::from([("Bank - TC".to_string(), 100.0)]),
+    )]);
+
+    let actions = transaction
+        .allocate_payment_entries(
+            &allocations,
+            &gl_entries,
+            "Bank - TC",
+            &BTreeMap::new(),
+            false,
+        )
+        .unwrap();
+
+    assert_eq!(
+        transaction.payment_entries,
+        vec![
+            BankTransactionPayment::new("Payment Entry", "PE-0001", 100.0),
+            BankTransactionPayment::new("Payment Entry", "PE-0002", 25.0),
+        ]
+    );
+    assert_eq!(transaction.allocated_amount, 125.0);
+    assert_eq!(transaction.unallocated_amount, 25.0);
+    assert_eq!(
+        actions,
+        vec![BankTransactionAllocationAction::ClearLinkedPaymentEntry {
+            payment_document: "Payment Entry".to_string(),
+            payment_entry: "PE-0001".to_string(),
+            clearance_date: Some("2026-05-20".to_string()),
+        }]
+    );
+}
+
+#[test]
+fn bank_transaction_allocate_payment_entries_removes_cleared_and_excess_rows_like_erpnext() {
+    let mut transaction = BankTransaction {
+        name: Some("BT-0001".to_string()),
+        date: Some("2026-05-20".to_string()),
+        unallocated_amount: 10.0,
+        withdrawal: 10.0,
+        payment_entries: vec![
+            BankTransactionPayment::new("Payment Entry", "PE-CLEARED", 0.0),
+            BankTransactionPayment::new("Payment Entry", "PE-ALLOC", 0.0),
+            BankTransactionPayment::new("Payment Entry", "PE-EXCESS", 0.0),
+        ],
+        ..Default::default()
+    };
+    let allocations = BTreeMap::from([(
+        ("Payment Entry".to_string(), "PE-CLEARED".to_string()),
+        BTreeMap::from([(
+            "Bank - TC".to_string(),
+            BankGlAllocation {
+                total: 100.0,
+                latest_date: Some("2026-05-21".to_string()),
+            },
+        )]),
+    )]);
+    let gl_entries = BTreeMap::from([
+        (
+            ("Payment Entry".to_string(), "PE-CLEARED".to_string()),
+            BTreeMap::from([("Bank - TC".to_string(), 100.0)]),
+        ),
+        (
+            ("Payment Entry".to_string(), "PE-ALLOC".to_string()),
+            BTreeMap::from([("Bank - TC".to_string(), 10.0)]),
+        ),
+        (
+            ("Payment Entry".to_string(), "PE-EXCESS".to_string()),
+            BTreeMap::from([("Bank - TC".to_string(), 50.0)]),
+        ),
+    ]);
+
+    let actions = transaction
+        .allocate_payment_entries(
+            &allocations,
+            &gl_entries,
+            "Bank - TC",
+            &BTreeMap::new(),
+            false,
+        )
+        .unwrap();
+
+    assert_eq!(
+        transaction.payment_entries,
+        vec![BankTransactionPayment::new(
+            "Payment Entry",
+            "PE-ALLOC",
+            10.0
+        )]
+    );
+    assert_eq!(
+        actions,
+        vec![
+            BankTransactionAllocationAction::ClearLinkedPaymentEntry {
+                payment_document: "Payment Entry".to_string(),
+                payment_entry: "PE-CLEARED".to_string(),
+                clearance_date: Some("2026-05-21".to_string()),
+            },
+            BankTransactionAllocationAction::ClearLinkedPaymentEntry {
+                payment_document: "Payment Entry".to_string(),
+                payment_entry: "PE-ALLOC".to_string(),
+                clearance_date: Some("2026-05-20".to_string()),
+            },
+        ]
+    );
+}
+
+#[test]
+fn bank_transaction_allocate_payment_entries_updates_linked_bank_transaction_like_erpnext() {
+    let mut transaction = BankTransaction {
+        name: Some("BT-0001".to_string()),
+        date: Some("2026-05-20".to_string()),
+        unallocated_amount: 80.0,
+        payment_entries: vec![BankTransactionPayment::new(
+            "Bank Transaction",
+            "BT-REFUND",
+            0.0,
+        )],
+        ..Default::default()
+    };
+    let linked_bank_transactions = BTreeMap::from([(
+        "BT-REFUND".to_string(),
+        LinkedBankTransaction {
+            unallocated_amount: 120.0,
+            gl_bank_account: "Bank - TC".to_string(),
+        },
+    )]);
+
+    let actions = transaction
+        .allocate_payment_entries(
+            &BTreeMap::new(),
+            &BTreeMap::new(),
+            "Bank - TC",
+            &linked_bank_transactions,
+            false,
+        )
+        .unwrap();
+
+    assert_eq!(
+        transaction.payment_entries,
+        vec![BankTransactionPayment::new(
+            "Bank Transaction",
+            "BT-REFUND",
+            80.0
+        )]
+    );
+    assert_eq!(
+        actions,
+        vec![
+            BankTransactionAllocationAction::UpdateLinkedBankTransaction {
+                bank_transaction_name: "BT-REFUND".to_string(),
+                allocated_amount: Some(80.0),
+            }
+        ]
     );
 }
