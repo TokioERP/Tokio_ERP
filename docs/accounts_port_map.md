@@ -205,7 +205,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `process_statement_of_accounts` | 7 | 3 | 1 | 1 | parity_tested | Rust controller mirrors validation defaults/errors, auto-email dates, GL/AR filter builders, recipients/CC, and behavior-relevant metadata. JSON/JS/HTML kept external. |
 | `process_statement_of_accounts_cc` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_process_statement_of_accounts_cc`. JSON kept external. |
 | `process_statement_of_accounts_customer` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_process_statement_of_accounts_customer`. JSON kept external. |
-| `process_subscription` | 5 | 3 | 1 | 1 | not_started | |
+| `process_subscription` | 5 | 3 | 1 | 1 | parity_tested | Rust covers submit hook, subscription filtering, 500-size batch enqueue plans, helper document creation, and metadata in `accounts_process_subscription`. JSON/JS kept external. |
 | `promotional_scheme` | 6 | 4 | 1 | 1 | not_started | |
 | `promotional_scheme_price_discount` | 3 | 2 | 1 | 0 | not_started | |
 | `promotional_scheme_product_discount` | 3 | 2 | 1 | 0 | not_started | |
@@ -2036,3 +2036,36 @@ Target: `src/erpnext/accounts/doctype/psoa_project`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `psoa_project.py` | `psoa_project.rs` | parity_tested | No-op child table controller and metadata represented in Rust. |
 | `psoa_project.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `process_subscription`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/process_subscription`
+Target: `src/erpnext/accounts/doctype/process_subscription`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- `on_submit` calls `process_all_subscription`.
+- `process_all_subscription` loads all non-cancelled subscriptions, narrows to the selected subscription when present, splits names into batches of `500`, and enqueues `erpnext.accounts.doctype.subscription.subscription.process_all` on the `long` queue with the document posting date.
+- `create_subscription_process` creates a `Process Subscription` document, sets subscription and posting date, then submits it.
+- DocType metadata:
+  - `name`: `Process Subscription`
+  - `module`: `Accounts`
+  - `allow_rename`: enabled
+  - `editable_grid`: enabled
+  - `index_web_pages_for_search`: enabled
+  - `is_submittable`: enabled
+  - `field_order`: `posting_date`, `subscription`, `amended_from`
+  - `posting_date`: `Date`, label `Posting Date`, required, `in_list_view: 1`
+  - `subscription`: `Link`, label `Subscription`, options `Subscription`
+  - `amended_from`: `Link`, label `Amended From`, options `Process Subscription`, read-only, print hidden
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `process_subscription.py` | `process_subscription.rs` | parity_tested | Submit hook, subscription filtering, 500-size enqueue batches, helper creation, and metadata represented in Rust. |
+| `test_process_subscription.py` | `tests/accounts_process_subscription.rs` | parity_tested | Source test class is empty; Rust tests cover deterministic controller behavior. |
+| `process_subscription.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+| `process_subscription.js` | ERPNext client script retained | external_kept | Client/UI behavior remains Frappe-owned. |

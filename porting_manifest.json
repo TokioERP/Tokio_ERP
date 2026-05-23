@@ -1883,17 +1883,17 @@
     {
       "source": "accounts/doctype/process_subscription/__init__.py",
       "target": "accounts/doctype/process_subscription/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/process_subscription/process_subscription.py",
       "target": "accounts/doctype/process_subscription/process_subscription.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/process_subscription/test_process_subscription.py",
       "target": "accounts/doctype/process_subscription/test_process_subscription.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/promotional_scheme/__init__.py",

@@ -52,5 +52,6 @@ pub mod process_period_closing_voucher_detail;
 pub mod process_statement_of_accounts;
 pub mod process_statement_of_accounts_cc;
 pub mod process_statement_of_accounts_customer;
+pub mod process_subscription;
 pub mod psoa_cost_center;
 pub mod psoa_project;
