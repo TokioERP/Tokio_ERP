@@ -2598,17 +2598,17 @@
     {
       "source": "accounts/notification/__init__.py",
       "target": "accounts/notification/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/notification/notification_for_new_fiscal_year/__init__.py",
       "target": "accounts/notification/notification_for_new_fiscal_year/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/notification/notification_for_new_fiscal_year/notification_for_new_fiscal_year.py",
       "target": "accounts/notification/notification_for_new_fiscal_year/notification_for_new_fiscal_year.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/page/__init__.py",

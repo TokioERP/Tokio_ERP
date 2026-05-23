@@ -39,7 +39,7 @@ This is not an MVP list. Every source folder and file is tracked. A row is close
 | `financial_report_template` | 7 | 14 | 7 | 7 | 0 | not_started | |
 | `letterhead` | 1 | 2 | 0 | 0 | 0 | not_started | |
 | `module_onboarding` | 2 | 1 | 0 | 1 | 0 | not_started | |
-| `notification` | 2 | 5 | 3 | 1 | 0 | not_started | |
+| `notification` | 2 | 5 | 3 | 1 | 0 | parity_tested | `notification_for_new_fiscal_year.py` is no-op context; Rust preserves notification metadata/template constants and context behavior in `accounts_notification_for_new_fiscal_year`. JSON/HTML kept external. |
 | `number_card` | 5 | 4 | 0 | 4 | 0 | not_started | |
 | `onboarding_step` | 7 | 6 | 0 | 6 | 0 | not_started | |
 | `page` | 1 | 1 | 1 | 0 | 0 | not_started | |
