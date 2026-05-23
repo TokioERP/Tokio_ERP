@@ -263,17 +263,17 @@
     {
       "source": "accounts/doctype/bank_account/__init__.py",
       "target": "accounts/doctype/bank_account/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_account/bank_account.py",
       "target": "accounts/doctype/bank_account/bank_account.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/bank_account/test_bank_account.py",
       "target": "accounts/doctype/bank_account/test_bank_account.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_account_subtype/__init__.py",
