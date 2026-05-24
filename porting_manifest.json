@@ -2793,7 +2793,7 @@
     {
       "source": "accounts/report/accounts_payable/accounts_payable.py",
       "target": "accounts/report/accounts_payable/accounts_payable.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/accounts_payable/test_accounts_payable.py",
@@ -2808,7 +2808,7 @@
     {
       "source": "accounts/report/accounts_payable_summary/accounts_payable_summary.py",
       "target": "accounts/report/accounts_payable_summary/accounts_payable_summary.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/accounts_receivable/__init__.py",
@@ -2983,7 +2983,7 @@
     {
       "source": "accounts/report/custom_financial_statement/custom_financial_statement.py",
       "target": "accounts/report/custom_financial_statement/custom_financial_statement.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/customer_ledger_summary/__init__.py",
@@ -3228,7 +3228,7 @@
     {
       "source": "accounts/report/purchase_invoice_trends/purchase_invoice_trends.py",
       "target": "accounts/report/purchase_invoice_trends/purchase_invoice_trends.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/purchase_register/__init__.py",
@@ -3263,7 +3263,7 @@
     {
       "source": "accounts/report/sales_invoice_trends/sales_invoice_trends.py",
       "target": "accounts/report/sales_invoice_trends/sales_invoice_trends.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/sales_partners_commission/__init__.py",
@@ -3328,7 +3328,7 @@
     {
       "source": "accounts/report/supplier_ledger_summary/supplier_ledger_summary.py",
       "target": "accounts/report/supplier_ledger_summary/supplier_ledger_summary.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/supplier_ledger_summary/test_supplier_ledger_summary.py",

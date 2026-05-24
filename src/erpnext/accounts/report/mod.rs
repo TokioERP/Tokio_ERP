@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 pub mod account_balance;
 pub mod accounts_payable;
 pub mod accounts_payable_summary;
@@ -50,3 +52,37 @@ pub mod trial_balance;
 pub mod trial_balance_for_party;
 pub mod trial_balance_simple;
 pub mod voucher_wise_balance;
+
+pub type ReportFilters = BTreeMap<String, String>;
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ReportArg {
+    Text(&'static str),
+    List(&'static [&'static str]),
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DelegatedReportExecution {
+    pub delegate: &'static str,
+    pub filters: Option<ReportFilters>,
+    pub args: Vec<(&'static str, ReportArg)>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TrendReportExecution {
+    pub document_type: &'static str,
+    pub filters: ReportFilters,
+    pub columns_source: &'static str,
+    pub data_source: &'static str,
+}
+
+impl TrendReportExecution {
+    pub fn new(document_type: &'static str, filters: Option<ReportFilters>) -> Self {
+        Self {
+            document_type,
+            filters: filters.unwrap_or_default(),
+            columns_source: "erpnext.controllers.trends.get_columns",
+            data_source: "erpnext.controllers.trends.get_data",
+        }
+    }
+}
