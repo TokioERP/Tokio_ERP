@@ -902,6 +902,21 @@ impl Subscription {
         self.update_subscription_period(posting_date.or(Some(now_date)), now_date);
         Ok(())
     }
+
+    pub fn force_fetch_subscription_updates(&self, now_date: &str) -> Option<String> {
+        let current_start = self.current_invoice_start.as_deref()?;
+        if parse_date(now_date) < parse_date(current_start) {
+            return None;
+        }
+
+        match self.generate_invoice_at {
+            GenerateInvoiceAt::BeginningOfCurrentPeriod => Some(current_start.to_string()),
+            GenerateInvoiceAt::EndOfCurrentPeriod => self.current_invoice_end.clone(),
+            GenerateInvoiceAt::DaysBeforeCurrentPeriod => {
+                Some(add_days(current_start, -self.number_of_days))
+            }
+        }
+    }
 }
 
 impl DocumentController for Subscription {

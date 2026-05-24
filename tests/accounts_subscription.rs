@@ -341,6 +341,35 @@ fn subscription_cancel_and_restart_match_erpnext_lifecycle_rules() {
 }
 
 #[test]
+fn subscription_force_fetch_update_date_matches_erpnext_branches() {
+    let mut subscription = Subscription::new("Customer", "_Test Customer", "2018-01-01");
+    subscription.current_invoice_start = Some("2018-01-10".to_string());
+    subscription.current_invoice_end = Some("2018-01-31".to_string());
+    subscription.generate_invoice_at = GenerateInvoiceAt::BeginningOfCurrentPeriod;
+    assert_eq!(
+        subscription.force_fetch_subscription_updates("2018-01-09"),
+        None
+    );
+    assert_eq!(
+        subscription.force_fetch_subscription_updates("2018-01-10"),
+        Some("2018-01-10".to_string())
+    );
+
+    subscription.generate_invoice_at = GenerateInvoiceAt::EndOfCurrentPeriod;
+    assert_eq!(
+        subscription.force_fetch_subscription_updates("2018-02-01"),
+        Some("2018-01-31".to_string())
+    );
+
+    subscription.generate_invoice_at = GenerateInvoiceAt::DaysBeforeCurrentPeriod;
+    subscription.number_of_days = 5;
+    assert_eq!(
+        subscription.force_fetch_subscription_updates("2018-02-01"),
+        Some("2018-01-05".to_string())
+    );
+}
+
+#[test]
 fn subscription_prorata_factor_matches_erpnext_formula() {
     assert_eq!(
         get_prorata_factor_at("2018-01-31", "2018-01-01", Some(1), "2018-01-15"),
