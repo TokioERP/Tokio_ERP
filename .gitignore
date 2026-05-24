@@ -3,3 +3,4 @@
 /.DS_Store
 /.worktrees/
 /worktrees/
+tools/porting-progress-mac/.build/
