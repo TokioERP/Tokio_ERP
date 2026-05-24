@@ -31,6 +31,7 @@ pub mod inactive_sales_items;
 pub mod invalid_ledger_entries;
 pub mod item_wise_purchase_register;
 pub mod item_wise_sales_register;
+pub mod non_billed_report;
 pub mod payment_ledger;
 pub mod payment_period_based_on_invoice_date;
 pub mod pos_register;

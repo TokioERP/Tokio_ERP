@@ -3158,7 +3158,7 @@
     {
       "source": "accounts/report/non_billed_report.py",
       "target": "accounts/report/non_billed_report.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/payment_ledger/__init__.py",
