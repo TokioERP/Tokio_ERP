@@ -4,7 +4,25 @@ SwiftUI dashboard for tracking the Tokio ERP rewrite progress from `porting_mani
 
 ## Run
 
-From this folder:
+Build and open the macOS app:
+
+```bash
+../../script/build_and_run.sh
+```
+
+Build the `.app` without opening it:
+
+```bash
+../../script/build_and_run.sh --no-open
+```
+
+The generated app is:
+
+```text
+/Volumes/Samsung990P/rust_erp/tokio_erp/tools/porting-progress-mac/dist/Tokio ERP Progress.app
+```
+
+The terminal-only SwiftPM runner still works from this folder:
 
 ```bash
 swift run PortingProgressApp --repo /Volumes/Samsung990P/rust_erp/tokio_erp

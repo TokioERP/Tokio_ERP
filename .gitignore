@@ -4,3 +4,4 @@
 /.worktrees/
 /worktrees/
 tools/porting-progress-mac/.build/
+tools/porting-progress-mac/dist/

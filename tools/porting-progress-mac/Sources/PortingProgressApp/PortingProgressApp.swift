@@ -1,4 +1,5 @@
 import Darwin
+import AppKit
 import Foundation
 import PortingProgressCore
 import SwiftUI
@@ -7,6 +8,7 @@ import SwiftUI
 struct PortingProgressApplication: App {
     init() {
         CommandLineReporter.printAndExitIfRequested()
+        NSApplication.shared.setActivationPolicy(.regular)
     }
 
     var body: some Scene {
@@ -26,7 +28,7 @@ enum CommandLineReporter {
 
         do {
             let calculator = ProgressCalculator()
-            let repoRoot = try resolveRepoRoot(calculator: calculator)
+            let repoRoot = try RepositoryResolver.resolve(calculator: calculator)
             let report = try calculator.report(repoRoot: repoRoot)
             print("repo=\(report.repoRoot.path)")
             printScope("overall", report.overall)
@@ -36,16 +38,6 @@ enum CommandLineReporter {
             fputs("\(error.localizedDescription)\n", stderr)
             exit(1)
         }
-    }
-
-    private static func resolveRepoRoot(calculator: ProgressCalculator) throws -> URL {
-        let args = CommandLine.arguments
-        if let index = args.firstIndex(of: "--repo"), args.indices.contains(index + 1) {
-            return URL(fileURLWithPath: args[index + 1], isDirectory: true)
-        }
-
-        let cwd = URL(fileURLWithPath: FileManager.default.currentDirectoryPath, isDirectory: true)
-        return try calculator.findRepositoryRoot(startingAt: cwd)
     }
 
     private static func printScope(_ name: String, _ scope: ProgressScope) {
@@ -78,13 +70,59 @@ final class DashboardModel: ObservableObject {
     }
 
     private func resolveRepoRoot() throws -> URL {
+        try RepositoryResolver.resolve(calculator: calculator)
+    }
+}
+
+enum RepositoryResolver {
+    private static let defaultRepoRoot = URL(
+        fileURLWithPath: "/Volumes/Samsung990P/rust_erp/tokio_erp",
+        isDirectory: true
+    )
+
+    static func resolve(calculator: ProgressCalculator) throws -> URL {
         let args = CommandLine.arguments
         if let index = args.firstIndex(of: "--repo"), args.indices.contains(index + 1) {
             return URL(fileURLWithPath: args[index + 1], isDirectory: true)
         }
 
-        let cwd = URL(fileURLWithPath: FileManager.default.currentDirectoryPath, isDirectory: true)
-        return try calculator.findRepositoryRoot(startingAt: cwd)
+        var lastError: Error?
+        for start in candidateStarts() {
+            do {
+                return try calculator.findRepositoryRoot(startingAt: start)
+            } catch {
+                lastError = error
+            }
+        }
+
+        let defaultManifest = defaultRepoRoot.appendingPathComponent("porting_manifest.json")
+        if FileManager.default.fileExists(atPath: defaultManifest.path) {
+            return defaultRepoRoot
+        }
+
+        throw lastError ?? ProgressCalculatorError.cannotFindRepositoryRoot(defaultRepoRoot)
+    }
+
+    private static func candidateStarts() -> [URL] {
+        var starts = [
+            URL(fileURLWithPath: FileManager.default.currentDirectoryPath, isDirectory: true),
+            Bundle.main.bundleURL,
+            Bundle.main.bundleURL.deletingLastPathComponent(),
+        ]
+
+        if let executableDirectory = Bundle.main.executableURL?.deletingLastPathComponent() {
+            starts.append(executableDirectory)
+        }
+
+        var seen = Set<String>()
+        return starts.filter { url in
+            let path = url.standardizedFileURL.path
+            guard !seen.contains(path) else {
+                return false
+            }
+            seen.insert(path)
+            return true
+        }
     }
 }
 
@@ -99,6 +137,7 @@ struct DashboardView: View {
         }
         .onAppear {
             model.refresh()
+            NSApplication.shared.activate(ignoringOtherApps: true)
         }
     }
 
