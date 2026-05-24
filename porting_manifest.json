@@ -8,7 +8,7 @@
     {
       "source": "accounts/__init__.py",
       "target": "accounts/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/custom/address.py",
@@ -2613,7 +2613,7 @@
     {
       "source": "accounts/page/__init__.py",
       "target": "accounts/page/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/party.py",
@@ -2768,12 +2768,12 @@
     {
       "source": "accounts/report/__init__.py",
       "target": "accounts/report/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/account_balance/__init__.py",
       "target": "accounts/report/account_balance/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/account_balance/account_balance.py",
@@ -2788,7 +2788,7 @@
     {
       "source": "accounts/report/accounts_payable/__init__.py",
       "target": "accounts/report/accounts_payable/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/accounts_payable/accounts_payable.py",
@@ -2803,7 +2803,7 @@
     {
       "source": "accounts/report/accounts_payable_summary/__init__.py",
       "target": "accounts/report/accounts_payable_summary/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/accounts_payable_summary/accounts_payable_summary.py",
@@ -2813,7 +2813,7 @@
     {
       "source": "accounts/report/accounts_receivable/__init__.py",
       "target": "accounts/report/accounts_receivable/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/accounts_receivable/accounts_receivable.py",
@@ -2828,7 +2828,7 @@
     {
       "source": "accounts/report/accounts_receivable_summary/__init__.py",
       "target": "accounts/report/accounts_receivable_summary/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/accounts_receivable_summary/accounts_receivable_summary.py",
@@ -2843,7 +2843,7 @@
     {
       "source": "accounts/report/asset_depreciation_ledger/__init__.py",
       "target": "accounts/report/asset_depreciation_ledger/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/asset_depreciation_ledger/asset_depreciation_ledger.py",
@@ -2853,7 +2853,7 @@
     {
       "source": "accounts/report/asset_depreciations_and_balances/__init__.py",
       "target": "accounts/report/asset_depreciations_and_balances/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/asset_depreciations_and_balances/asset_depreciations_and_balances.py",
@@ -2863,7 +2863,7 @@
     {
       "source": "accounts/report/balance_sheet/__init__.py",
       "target": "accounts/report/balance_sheet/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/balance_sheet/balance_sheet.py",
@@ -2878,7 +2878,7 @@
     {
       "source": "accounts/report/bank_clearance_summary/__init__.py",
       "target": "accounts/report/bank_clearance_summary/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/bank_clearance_summary/bank_clearance_summary.py",
@@ -2888,7 +2888,7 @@
     {
       "source": "accounts/report/bank_reconciliation_statement/__init__.py",
       "target": "accounts/report/bank_reconciliation_statement/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/bank_reconciliation_statement/bank_reconciliation_statement.py",
@@ -2903,7 +2903,7 @@
     {
       "source": "accounts/report/billed_items_to_be_received/__init__.py",
       "target": "accounts/report/billed_items_to_be_received/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/billed_items_to_be_received/billed_items_to_be_received.py",
@@ -2913,7 +2913,7 @@
     {
       "source": "accounts/report/budget_variance_report/__init__.py",
       "target": "accounts/report/budget_variance_report/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/budget_variance_report/budget_variance_report.py",
@@ -2923,7 +2923,7 @@
     {
       "source": "accounts/report/calculated_discount_mismatch/__init__.py",
       "target": "accounts/report/calculated_discount_mismatch/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/calculated_discount_mismatch/calculated_discount_mismatch.py",
@@ -2933,7 +2933,7 @@
     {
       "source": "accounts/report/cash_flow/__init__.py",
       "target": "accounts/report/cash_flow/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/cash_flow/cash_flow.py",
@@ -2943,7 +2943,7 @@
     {
       "source": "accounts/report/cheques_and_deposits_incorrectly_cleared/__init__.py",
       "target": "accounts/report/cheques_and_deposits_incorrectly_cleared/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/cheques_and_deposits_incorrectly_cleared/cheques_and_deposits_incorrectly_cleared.py",
@@ -2953,7 +2953,7 @@
     {
       "source": "accounts/report/consolidated_financial_statement/__init__.py",
       "target": "accounts/report/consolidated_financial_statement/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/consolidated_financial_statement/consolidated_financial_statement.py",
@@ -2963,7 +2963,7 @@
     {
       "source": "accounts/report/consolidated_trial_balance/__init__.py",
       "target": "accounts/report/consolidated_trial_balance/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/consolidated_trial_balance/consolidated_trial_balance.py",
@@ -2978,7 +2978,7 @@
     {
       "source": "accounts/report/custom_financial_statement/__init__.py",
       "target": "accounts/report/custom_financial_statement/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/custom_financial_statement/custom_financial_statement.py",
@@ -2988,7 +2988,7 @@
     {
       "source": "accounts/report/customer_ledger_summary/__init__.py",
       "target": "accounts/report/customer_ledger_summary/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/customer_ledger_summary/customer_ledger_summary.py",
@@ -3003,7 +3003,7 @@
     {
       "source": "accounts/report/deferred_revenue_and_expense/__init__.py",
       "target": "accounts/report/deferred_revenue_and_expense/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/deferred_revenue_and_expense/deferred_revenue_and_expense.py",
@@ -3018,7 +3018,7 @@
     {
       "source": "accounts/report/delivered_items_to_be_billed/__init__.py",
       "target": "accounts/report/delivered_items_to_be_billed/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/delivered_items_to_be_billed/delivered_items_to_be_billed.py",
@@ -3028,7 +3028,7 @@
     {
       "source": "accounts/report/dimension_wise_accounts_balance_report/__init__.py",
       "target": "accounts/report/dimension_wise_accounts_balance_report/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/dimension_wise_accounts_balance_report/dimension_wise_accounts_balance_report.py",
@@ -3038,7 +3038,7 @@
     {
       "source": "accounts/report/financial_ratios/__init__.py",
       "target": "accounts/report/financial_ratios/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/financial_ratios/financial_ratios.py",
@@ -3053,7 +3053,7 @@
     {
       "source": "accounts/report/general_and_payment_ledger_comparison/__init__.py",
       "target": "accounts/report/general_and_payment_ledger_comparison/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/general_and_payment_ledger_comparison/general_and_payment_ledger_comparison.py",
@@ -3068,7 +3068,7 @@
     {
       "source": "accounts/report/general_ledger/__init__.py",
       "target": "accounts/report/general_ledger/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/general_ledger/general_ledger.py",
@@ -3083,7 +3083,7 @@
     {
       "source": "accounts/report/gross_and_net_profit_report/__init__.py",
       "target": "accounts/report/gross_and_net_profit_report/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/gross_and_net_profit_report/gross_and_net_profit_report.py",
@@ -3093,7 +3093,7 @@
     {
       "source": "accounts/report/gross_profit/__init__.py",
       "target": "accounts/report/gross_profit/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/gross_profit/gross_profit.py",
@@ -3108,7 +3108,7 @@
     {
       "source": "accounts/report/inactive_sales_items/__init__.py",
       "target": "accounts/report/inactive_sales_items/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/inactive_sales_items/inactive_sales_items.py",
@@ -3118,7 +3118,7 @@
     {
       "source": "accounts/report/invalid_ledger_entries/__init__.py",
       "target": "accounts/report/invalid_ledger_entries/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/invalid_ledger_entries/invalid_ledger_entries.py",
@@ -3128,7 +3128,7 @@
     {
       "source": "accounts/report/item_wise_purchase_register/__init__.py",
       "target": "accounts/report/item_wise_purchase_register/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/item_wise_purchase_register/item_wise_purchase_register.py",
@@ -3143,7 +3143,7 @@
     {
       "source": "accounts/report/item_wise_sales_register/__init__.py",
       "target": "accounts/report/item_wise_sales_register/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/item_wise_sales_register/item_wise_sales_register.py",
@@ -3163,7 +3163,7 @@
     {
       "source": "accounts/report/payment_ledger/__init__.py",
       "target": "accounts/report/payment_ledger/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/payment_ledger/payment_ledger.py",
@@ -3178,7 +3178,7 @@
     {
       "source": "accounts/report/payment_period_based_on_invoice_date/__init__.py",
       "target": "accounts/report/payment_period_based_on_invoice_date/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/payment_period_based_on_invoice_date/payment_period_based_on_invoice_date.py",
@@ -3188,7 +3188,7 @@
     {
       "source": "accounts/report/pos_register/__init__.py",
       "target": "accounts/report/pos_register/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/pos_register/pos_register.py",
@@ -3198,7 +3198,7 @@
     {
       "source": "accounts/report/profit_and_loss_statement/__init__.py",
       "target": "accounts/report/profit_and_loss_statement/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/profit_and_loss_statement/profit_and_loss_statement.py",
@@ -3213,7 +3213,7 @@
     {
       "source": "accounts/report/profitability_analysis/__init__.py",
       "target": "accounts/report/profitability_analysis/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/profitability_analysis/profitability_analysis.py",
@@ -3223,7 +3223,7 @@
     {
       "source": "accounts/report/purchase_invoice_trends/__init__.py",
       "target": "accounts/report/purchase_invoice_trends/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/purchase_invoice_trends/purchase_invoice_trends.py",
@@ -3233,7 +3233,7 @@
     {
       "source": "accounts/report/purchase_register/__init__.py",
       "target": "accounts/report/purchase_register/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/purchase_register/purchase_register.py",
@@ -3248,7 +3248,7 @@
     {
       "source": "accounts/report/received_items_to_be_billed/__init__.py",
       "target": "accounts/report/received_items_to_be_billed/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/received_items_to_be_billed/received_items_to_be_billed.py",
@@ -3258,7 +3258,7 @@
     {
       "source": "accounts/report/sales_invoice_trends/__init__.py",
       "target": "accounts/report/sales_invoice_trends/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/sales_invoice_trends/sales_invoice_trends.py",
@@ -3268,12 +3268,12 @@
     {
       "source": "accounts/report/sales_partners_commission/__init__.py",
       "target": "accounts/report/sales_partners_commission/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/sales_payment_summary/__init__.py",
       "target": "accounts/report/sales_payment_summary/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/sales_payment_summary/sales_payment_summary.py",
@@ -3288,7 +3288,7 @@
     {
       "source": "accounts/report/sales_register/__init__.py",
       "target": "accounts/report/sales_register/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/sales_register/sales_register.py",
@@ -3303,7 +3303,7 @@
     {
       "source": "accounts/report/share_balance/__init__.py",
       "target": "accounts/report/share_balance/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/share_balance/share_balance.py",
@@ -3313,7 +3313,7 @@
     {
       "source": "accounts/report/share_ledger/__init__.py",
       "target": "accounts/report/share_ledger/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/share_ledger/share_ledger.py",
@@ -3323,7 +3323,7 @@
     {
       "source": "accounts/report/supplier_ledger_summary/__init__.py",
       "target": "accounts/report/supplier_ledger_summary/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/supplier_ledger_summary/supplier_ledger_summary.py",
@@ -3338,7 +3338,7 @@
     {
       "source": "accounts/report/tax_withholding_details/__init__.py",
       "target": "accounts/report/tax_withholding_details/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/tax_withholding_details/tax_withholding_details.py",
@@ -3353,7 +3353,7 @@
     {
       "source": "accounts/report/tds_computation_summary/__init__.py",
       "target": "accounts/report/tds_computation_summary/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/tds_computation_summary/tds_computation_summary.py",
@@ -3363,7 +3363,7 @@
     {
       "source": "accounts/report/trial_balance/__init__.py",
       "target": "accounts/report/trial_balance/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/trial_balance/test_trial_balance.py",
@@ -3378,7 +3378,7 @@
     {
       "source": "accounts/report/trial_balance_for_party/__init__.py",
       "target": "accounts/report/trial_balance_for_party/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/trial_balance_for_party/trial_balance_for_party.py",
@@ -3388,7 +3388,7 @@
     {
       "source": "accounts/report/trial_balance_simple/__init__.py",
       "target": "accounts/report/trial_balance_simple/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/utils.py",
@@ -3398,7 +3398,7 @@
     {
       "source": "accounts/report/voucher_wise_balance/__init__.py",
       "target": "accounts/report/voucher_wise_balance/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/voucher_wise_balance/voucher_wise_balance.py",
@@ -3408,7 +3408,7 @@
     {
       "source": "accounts/test/__init__.py",
       "target": "accounts/test/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/test/accounts_mixin.py",
