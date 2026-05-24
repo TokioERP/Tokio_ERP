@@ -3358,7 +3358,7 @@
     {
       "source": "accounts/report/tds_computation_summary/tds_computation_summary.py",
       "target": "accounts/report/tds_computation_summary/tds_computation_summary.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/trial_balance/__init__.py",
