@@ -243,6 +243,88 @@ fn subscription_validation_helpers_match_erpnext_errors() {
 }
 
 #[test]
+fn subscription_validate_party_billing_currency_matches_erpnext_plan_currency_guard() {
+    let mut subscription = Subscription::new("Customer", "_Test Customer", "2018-01-01");
+    subscription.company = Some("_Test Company".to_string());
+    subscription.plans = vec![
+        SubscriptionPlanDetail::new("USD-PLAN", 1),
+        SubscriptionPlanDetail::new("INR-PLAN", 1),
+    ];
+    let snapshots = vec![
+        SubscriptionPlanSnapshot {
+            name: "USD-PLAN".to_string(),
+            item: "Service A".to_string(),
+            currency: "USD".to_string(),
+            billing_interval: "Month".to_string(),
+            billing_interval_count: 1,
+            cost_center: None,
+            rate_source: PlanRateSource::FixedRate { cost: 100.0 },
+            enable_deferred_revenue: false,
+            enable_deferred_expense: false,
+            dimensions: BTreeMap::new(),
+        },
+        SubscriptionPlanSnapshot {
+            name: "INR-PLAN".to_string(),
+            item: "Service B".to_string(),
+            currency: "INR".to_string(),
+            billing_interval: "Month".to_string(),
+            billing_interval_count: 1,
+            cost_center: None,
+            rate_source: PlanRateSource::FixedRate { cost: 100.0 },
+            enable_deferred_revenue: false,
+            enable_deferred_expense: false,
+            dimensions: BTreeMap::new(),
+        },
+    ];
+
+    assert_eq!(
+        subscription.validate_party_billing_currency(&snapshots, Some("USD"), Some("EUR")),
+        Err(SubscriptionError::UnsupportedPlanCurrencies {
+            party_billing_currency: "USD".to_string(),
+            plans: vec!["INR-PLAN".to_string()],
+        })
+    );
+
+    assert!(subscription
+        .validate_party_billing_currency(&snapshots[..1], None, Some("USD"))
+        .is_ok());
+}
+
+#[test]
+fn subscription_validate_runs_erpnext_sequence_defaults_status_and_cost_center() {
+    let mut subscription = Subscription::new("Customer", "_Test Customer", "2018-01-01");
+    subscription.company = Some("_Test Company".to_string());
+    subscription.plans = vec![SubscriptionPlanDetail::new("USD-PLAN", 1)];
+    subscription.billing_cycle = Some(BillingCycle::new("Month", 1));
+    let snapshots = vec![SubscriptionPlanSnapshot {
+        name: "USD-PLAN".to_string(),
+        item: "Service A".to_string(),
+        currency: "USD".to_string(),
+        billing_interval: "Month".to_string(),
+        billing_interval_count: 1,
+        cost_center: None,
+        rate_source: PlanRateSource::FixedRate { cost: 100.0 },
+        enable_deferred_revenue: false,
+        enable_deferred_expense: false,
+        dimensions: BTreeMap::new(),
+    }];
+
+    subscription
+        .validate(
+            &snapshots,
+            "2018-01-01",
+            Some("USD"),
+            Some("EUR"),
+            Some("Main - TC"),
+            true,
+        )
+        .expect("valid subscription");
+
+    assert_eq!(subscription.cost_center.as_deref(), Some("Main - TC"));
+    assert_eq!(subscription.status, SubscriptionStatus::Active);
+}
+
+#[test]
 fn subscription_invoice_due_and_status_rules_match_erpnext() {
     let mut subscription = Subscription::new("Customer", "_Test Customer", "2018-01-01");
     assert!(!subscription.current_invoice_is_past_due("2018-01-10"));

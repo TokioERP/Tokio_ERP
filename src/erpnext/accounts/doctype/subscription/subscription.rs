@@ -86,10 +86,16 @@ pub enum SubscriptionError {
     TrialPeriodEndBeforeStart,
     TrialPeriodIncomplete,
     TrialPeriodStartAfterSubscriptionStart,
-    EndDateNotAfterBillingCycle { minimum_end_date: String },
+    EndDateNotAfterBillingCycle {
+        minimum_end_date: String,
+    },
     CalendarMonthsRequireEndDate,
     CalendarMonthsRequireMonthlyBilling,
     CompanyRequired,
+    UnsupportedPlanCurrencies {
+        party_billing_currency: String,
+        plans: Vec<String>,
+    },
     InvoiceCancelled,
     InvoiceNotCancelled,
 }
@@ -719,6 +725,71 @@ impl Subscription {
         }
 
         Ok(())
+    }
+
+    pub fn validate_party_billing_currency(
+        &self,
+        plan_snapshots: &[SubscriptionPlanSnapshot],
+        party_default_currency: Option<&str>,
+        company_default_currency: Option<&str>,
+    ) -> Result<(), SubscriptionError> {
+        if self.party.is_none() {
+            return Ok(());
+        }
+
+        let party_billing_currency = party_default_currency
+            .or(company_default_currency)
+            .unwrap_or_default();
+        let mut unsupported_plans = Vec::new();
+        for plan in self
+            .plans
+            .iter()
+            .filter_map(|detail| detail.plan.as_deref())
+        {
+            if let Some(snapshot) = plan_snapshots.iter().find(|snapshot| {
+                snapshot.name == plan && snapshot.currency != party_billing_currency
+            }) {
+                unsupported_plans.push(snapshot.name.clone());
+            }
+        }
+
+        if unsupported_plans.is_empty() {
+            Ok(())
+        } else {
+            Err(SubscriptionError::UnsupportedPlanCurrencies {
+                party_billing_currency: party_billing_currency.to_string(),
+                plans: unsupported_plans,
+            })
+        }
+    }
+
+    pub fn validate(
+        &mut self,
+        plan_snapshots: &[SubscriptionPlanSnapshot],
+        now_date: &str,
+        party_default_currency: Option<&str>,
+        company_default_currency: Option<&str>,
+        default_cost_center: Option<&str>,
+        is_new: bool,
+    ) -> Result<(), SubscriptionError> {
+        self.validate_trial_period()?;
+        Self::validate_plans_billing_cycle(&self.get_billing_cycle_and_interval(plan_snapshots))?;
+        self.validate_end_date()?;
+        self.validate_to_follow_calendar_months()?;
+
+        if self.cost_center.is_none() {
+            self.cost_center = default_cost_center.map(str::to_string);
+        }
+
+        if is_new {
+            self.set_subscription_status(now_date, false, 0, false);
+        }
+
+        self.validate_party_billing_currency(
+            plan_snapshots,
+            party_default_currency,
+            company_default_currency,
+        )
     }
 
     pub fn create_invoice_plan(
