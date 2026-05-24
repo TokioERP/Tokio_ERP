@@ -5,6 +5,7 @@ use tokio_erp::erpnext::accounts::doctype::exchange_rate_revaluation::exchange_r
 use tokio_erp::erpnext::accounts::doctype::loyalty_program::loyalty_program_dashboard::loyalty_program_dashboard;
 use tokio_erp::erpnext::accounts::doctype::payment_gateway_account::payment_gateway_account_dashboard::payment_gateway_account_dashboard;
 use tokio_erp::erpnext::accounts::doctype::payment_order::payment_order_dashboard::payment_order_dashboard;
+use tokio_erp::erpnext::accounts::doctype::promotional_scheme::promotional_scheme_dashboard::get_data as promotional_scheme_dashboard;
 
 #[test]
 fn selected_accounts_dashboards_match_erpnext_static_get_data() {
@@ -48,6 +49,13 @@ fn selected_accounts_dashboards_match_erpnext_static_get_data() {
         DashboardData::new("cost_center").reports(vec![DashboardSection::labeled(
             "Reports",
             vec!["Budget Variance Report", "General Ledger"],
+        )])
+    );
+    assert_eq!(
+        promotional_scheme_dashboard(),
+        DashboardData::new("promotional_scheme").transactions(vec![DashboardSection::labeled(
+            "Reference",
+            vec!["Pricing Rule"],
         )])
     );
 }

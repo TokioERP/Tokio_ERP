@@ -1908,7 +1908,7 @@
     {
       "source": "accounts/doctype/promotional_scheme/promotional_scheme_dashboard.py",
       "target": "accounts/doctype/promotional_scheme/promotional_scheme_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/promotional_scheme/test_promotional_scheme.py",
