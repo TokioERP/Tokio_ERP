@@ -3113,7 +3113,7 @@
     {
       "source": "accounts/report/inactive_sales_items/inactive_sales_items.py",
       "target": "accounts/report/inactive_sales_items/inactive_sales_items.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/invalid_ledger_entries/__init__.py",
@@ -3193,7 +3193,7 @@
     {
       "source": "accounts/report/pos_register/pos_register.py",
       "target": "accounts/report/pos_register/pos_register.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/profit_and_loss_statement/__init__.py",
