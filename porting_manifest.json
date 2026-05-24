@@ -2778,7 +2778,7 @@
     {
       "source": "accounts/report/account_balance/account_balance.py",
       "target": "accounts/report/account_balance/account_balance.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/account_balance/test_account_balance.py",
