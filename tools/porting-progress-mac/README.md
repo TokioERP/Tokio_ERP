@@ -22,6 +22,12 @@ The generated app is:
 /Volumes/Samsung990P/rust_erp/tokio_erp/tools/porting-progress-mac/dist/Tokio ERP Progress.app
 ```
 
+The app icon is bundled from:
+
+```text
+/Volumes/Samsung990P/rust_erp/tokio_erp/tools/porting-progress-mac/Resources/AppIcon.icns
+```
+
 The terminal-only SwiftPM runner still works from this folder:
 
 ```bash

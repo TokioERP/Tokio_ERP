@@ -13,8 +13,10 @@ DIST_DIR="$PACKAGE_DIR/dist"
 APP_BUNDLE="$DIST_DIR/$APP_NAME.app"
 APP_CONTENTS="$APP_BUNDLE/Contents"
 APP_MACOS="$APP_CONTENTS/MacOS"
+APP_RESOURCES="$APP_CONTENTS/Resources"
 APP_BINARY="$APP_MACOS/$PRODUCT_NAME"
 INFO_PLIST="$APP_CONTENTS/Info.plist"
+ICON_FILE="$PACKAGE_DIR/Resources/AppIcon.icns"
 
 build_bundle() {
   swift build --package-path "$PACKAGE_DIR"
@@ -22,9 +24,12 @@ build_bundle() {
   build_binary="$(swift build --package-path "$PACKAGE_DIR" --show-bin-path)/$PRODUCT_NAME"
 
   rm -rf "$APP_BUNDLE"
-  mkdir -p "$APP_MACOS"
+  mkdir -p "$APP_MACOS" "$APP_RESOURCES"
   cp "$build_binary" "$APP_BINARY"
   chmod +x "$APP_BINARY"
+  if [[ -f "$ICON_FILE" ]]; then
+    cp "$ICON_FILE" "$APP_RESOURCES/AppIcon.icns"
+  fi
 
   cat >"$INFO_PLIST" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -41,6 +46,8 @@ build_bundle() {
   <string>$APP_NAME</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
+  <key>CFBundleIconFile</key>
+  <string>AppIcon</string>
   <key>LSMinimumSystemVersion</key>
   <string>$MIN_SYSTEM_VERSION</string>
   <key>NSPrincipalClass</key>
