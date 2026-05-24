@@ -3343,7 +3343,7 @@
     {
       "source": "accounts/report/tax_withholding_details/tax_withholding_details.py",
       "target": "accounts/report/tax_withholding_details/tax_withholding_details.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/tax_withholding_details/test_tax_withholding_details.py",
