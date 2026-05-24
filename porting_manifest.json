@@ -3123,7 +3123,7 @@
     {
       "source": "accounts/report/invalid_ledger_entries/invalid_ledger_entries.py",
       "target": "accounts/report/invalid_ledger_entries/invalid_ledger_entries.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/item_wise_purchase_register/__init__.py",
