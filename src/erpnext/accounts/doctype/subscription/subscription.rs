@@ -978,6 +978,20 @@ impl Subscription {
             plan.updated_period_start = self.current_invoice_start.clone();
         }
 
+        if self.cancel_at_period_end
+            && (self
+                .current_invoice_end
+                .as_deref()
+                .is_some_and(|current_end| parse_date(posting_date) >= parse_date(current_end))
+                || self
+                    .end_date
+                    .as_deref()
+                    .is_some_and(|end_date| parse_date(posting_date) >= parse_date(end_date)))
+            && self.cancel_subscription(posting_date).is_ok()
+        {
+            plan.cancelled = true;
+        }
+
         self.set_subscription_status(
             posting_date,
             has_outstanding_invoice,
