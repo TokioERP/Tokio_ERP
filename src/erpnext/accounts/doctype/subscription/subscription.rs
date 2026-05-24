@@ -199,6 +199,14 @@ impl GeneratedInvoiceState {
     }
 }
 
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct SubscriptionProcessPlan {
+    pub generated_invoice_posting_date: Option<String>,
+    pub updated_period_start: Option<String>,
+    pub cancelled: bool,
+    pub returned_early: bool,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Subscription {
     pub name: Option<String>,
@@ -916,6 +924,40 @@ impl Subscription {
                 Some(add_days(current_start, -self.number_of_days))
             }
         }
+    }
+
+    pub fn process_subscription(
+        &mut self,
+        posting_date: &str,
+        has_outstanding_invoice: bool,
+        grace_period: i32,
+        cancel_after_grace: bool,
+    ) -> SubscriptionProcessPlan {
+        let mut plan = SubscriptionProcessPlan::default();
+        let current_start = self.current_invoice_start.clone();
+        let current_end = self.current_invoice_end.clone();
+
+        if !self.is_current_invoice_generated(
+            current_start.as_deref(),
+            current_end.as_deref(),
+            posting_date,
+        ) && self.can_generate_new_invoice(posting_date, has_outstanding_invoice)
+        {
+            plan.generated_invoice_posting_date = Some(posting_date.to_string());
+            if let Some(current_end) = current_end.as_deref() {
+                let next_start = add_days(current_end, 1);
+                self.update_subscription_period(Some(&next_start), posting_date);
+                plan.updated_period_start = Some(next_start);
+            }
+        }
+
+        self.set_subscription_status(
+            posting_date,
+            has_outstanding_invoice,
+            grace_period,
+            cancel_after_grace,
+        );
+        plan
     }
 }
 
