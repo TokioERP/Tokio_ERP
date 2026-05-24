@@ -2,6 +2,7 @@ use tokio_erp::erpnext::accounts::doctype::bank::bank_dashboard::bank_dashboard;
 use tokio_erp::erpnext::accounts::doctype::cost_center::cost_center_dashboard::cost_center_dashboard;
 use tokio_erp::erpnext::accounts::doctype::dashboard::{DashboardData, DashboardSection};
 use tokio_erp::erpnext::accounts::doctype::exchange_rate_revaluation::exchange_rate_revaluation_dashboard::exchange_rate_revaluation_dashboard;
+use tokio_erp::erpnext::accounts::doctype::finance_book::finance_book_dashboard::get_data as finance_book_dashboard;
 use tokio_erp::erpnext::accounts::doctype::loyalty_program::loyalty_program_dashboard::loyalty_program_dashboard;
 use tokio_erp::erpnext::accounts::doctype::payment_gateway_account::payment_gateway_account_dashboard::payment_gateway_account_dashboard;
 use tokio_erp::erpnext::accounts::doctype::payment_order::payment_order_dashboard::payment_order_dashboard;
@@ -57,5 +58,18 @@ fn selected_accounts_dashboards_match_erpnext_static_get_data() {
             "Reference",
             vec!["Pricing Rule"],
         )])
+    );
+    assert_eq!(
+        finance_book_dashboard(),
+        DashboardData::new("finance_book")
+            .non_standard_fieldnames(vec![
+                ("Asset", "default_finance_book"),
+                ("Company", "default_finance_book"),
+            ])
+            .transactions(vec![
+                DashboardSection::labeled("Assets", vec!["Asset", "Asset Value Adjustment"]),
+                DashboardSection::items(vec!["Company"]),
+                DashboardSection::items(vec!["Journal Entry"]),
+            ])
     );
 }

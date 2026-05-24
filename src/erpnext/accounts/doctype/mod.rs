@@ -28,6 +28,7 @@ pub mod customer_item;
 pub mod dashboard;
 pub mod discounted_invoice;
 pub mod exchange_rate_revaluation;
+pub mod finance_book;
 pub mod fiscal_year_company;
 pub mod item_wise_tax_detail;
 pub mod ledger_health_monitor_company;
