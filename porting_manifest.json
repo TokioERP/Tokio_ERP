@@ -3403,7 +3403,7 @@
     {
       "source": "accounts/report/voucher_wise_balance/voucher_wise_balance.py",
       "target": "accounts/report/voucher_wise_balance/voucher_wise_balance.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/test/__init__.py",
