@@ -873,7 +873,7 @@
     {
       "source": "accounts/doctype/invoice_discounting/__init__.py",
       "target": "accounts/doctype/invoice_discounting/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/invoice_discounting/invoice_discounting.py",
@@ -883,7 +883,7 @@
     {
       "source": "accounts/doctype/invoice_discounting/invoice_discounting_dashboard.py",
       "target": "accounts/doctype/invoice_discounting/invoice_discounting_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/invoice_discounting/test_invoice_discounting.py",
@@ -893,7 +893,7 @@
     {
       "source": "accounts/doctype/item_tax_template/__init__.py",
       "target": "accounts/doctype/item_tax_template/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/item_tax_template/item_tax_template.py",
@@ -903,7 +903,7 @@
     {
       "source": "accounts/doctype/item_tax_template/item_tax_template_dashboard.py",
       "target": "accounts/doctype/item_tax_template/item_tax_template_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/item_tax_template/test_item_tax_template.py",
@@ -1128,7 +1128,7 @@
     {
       "source": "accounts/doctype/monthly_distribution/__init__.py",
       "target": "accounts/doctype/monthly_distribution/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/monthly_distribution/monthly_distribution.py",
@@ -1138,7 +1138,7 @@
     {
       "source": "accounts/doctype/monthly_distribution/monthly_distribution_dashboard.py",
       "target": "accounts/doctype/monthly_distribution/monthly_distribution_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/monthly_distribution/test_monthly_distribution.py",
@@ -1373,7 +1373,7 @@
     {
       "source": "accounts/doctype/payment_request/__init__.py",
       "target": "accounts/doctype/payment_request/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_request/payment_request.py",
@@ -1383,7 +1383,7 @@
     {
       "source": "accounts/doctype/payment_request/payment_request_dashboard.py",
       "target": "accounts/doctype/payment_request/payment_request_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_request/test_payment_request.py",
@@ -1958,7 +1958,7 @@
     {
       "source": "accounts/doctype/purchase_invoice/__init__.py",
       "target": "accounts/doctype/purchase_invoice/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/purchase_invoice/purchase_invoice.py",
@@ -1968,7 +1968,7 @@
     {
       "source": "accounts/doctype/purchase_invoice/purchase_invoice_dashboard.py",
       "target": "accounts/doctype/purchase_invoice/purchase_invoice_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/purchase_invoice/test_purchase_invoice.py",
