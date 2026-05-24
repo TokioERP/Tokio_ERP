@@ -3023,7 +3023,7 @@
     {
       "source": "accounts/report/delivered_items_to_be_billed/delivered_items_to_be_billed.py",
       "target": "accounts/report/delivered_items_to_be_billed/delivered_items_to_be_billed.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/dimension_wise_accounts_balance_report/__init__.py",
@@ -3253,7 +3253,7 @@
     {
       "source": "accounts/report/received_items_to_be_billed/received_items_to_be_billed.py",
       "target": "accounts/report/received_items_to_be_billed/received_items_to_be_billed.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/sales_invoice_trends/__init__.py",
