@@ -828,7 +828,7 @@
     {
       "source": "accounts/doctype/fiscal_year/__init__.py",
       "target": "accounts/doctype/fiscal_year/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/fiscal_year/fiscal_year.py",
@@ -838,7 +838,7 @@
     {
       "source": "accounts/doctype/fiscal_year/fiscal_year_dashboard.py",
       "target": "accounts/doctype/fiscal_year/fiscal_year_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/fiscal_year/test_fiscal_year.py",
@@ -2018,7 +2018,7 @@
     {
       "source": "accounts/doctype/purchase_taxes_and_charges_template/purchase_taxes_and_charges_template_dashboard.py",
       "target": "accounts/doctype/purchase_taxes_and_charges_template/purchase_taxes_and_charges_template_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/purchase_taxes_and_charges_template/test_purchase_taxes_and_charges_template.py",
@@ -2088,7 +2088,7 @@
     {
       "source": "accounts/doctype/sales_invoice/__init__.py",
       "target": "accounts/doctype/sales_invoice/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/sales_invoice/sales_invoice.py",
@@ -2098,7 +2098,7 @@
     {
       "source": "accounts/doctype/sales_invoice/sales_invoice_dashboard.py",
       "target": "accounts/doctype/sales_invoice/sales_invoice_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/sales_invoice/test_sales_invoice.py",
@@ -2353,7 +2353,7 @@
     {
       "source": "accounts/doctype/subscription_plan/subscription_plan_dashboard.py",
       "target": "accounts/doctype/subscription_plan/subscription_plan_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/subscription_plan/test_subscription_plan.py",

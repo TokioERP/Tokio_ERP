@@ -1,1 +1,2 @@
 pub mod purchase_taxes_and_charges_template;
+pub mod purchase_taxes_and_charges_template_dashboard;

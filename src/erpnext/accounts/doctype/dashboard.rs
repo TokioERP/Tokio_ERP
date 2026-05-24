@@ -3,6 +3,7 @@ pub struct DashboardData {
     pub fieldname: &'static str,
     pub non_standard_fieldnames: Vec<(&'static str, &'static str)>,
     pub internal_links: Vec<(&'static str, Vec<&'static str>)>,
+    pub internal_and_external_links: Vec<(&'static str, Vec<&'static str>)>,
     pub transactions: Vec<DashboardSection>,
     pub reports: Vec<DashboardSection>,
 }
@@ -19,6 +20,7 @@ impl DashboardData {
             fieldname,
             non_standard_fieldnames: Vec::new(),
             internal_links: Vec::new(),
+            internal_and_external_links: Vec::new(),
             transactions: Vec::new(),
             reports: Vec::new(),
         }
@@ -37,6 +39,14 @@ impl DashboardData {
         internal_links: Vec<(&'static str, Vec<&'static str>)>,
     ) -> Self {
         self.internal_links = internal_links;
+        self
+    }
+
+    pub fn internal_and_external_links(
+        mut self,
+        internal_and_external_links: Vec<(&'static str, Vec<&'static str>)>,
+    ) -> Self {
+        self.internal_and_external_links = internal_and_external_links;
         self
     }
 

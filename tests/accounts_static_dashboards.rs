@@ -3,6 +3,7 @@ use tokio_erp::erpnext::accounts::doctype::cost_center::cost_center_dashboard::c
 use tokio_erp::erpnext::accounts::doctype::dashboard::{DashboardData, DashboardSection};
 use tokio_erp::erpnext::accounts::doctype::exchange_rate_revaluation::exchange_rate_revaluation_dashboard::exchange_rate_revaluation_dashboard;
 use tokio_erp::erpnext::accounts::doctype::finance_book::finance_book_dashboard::get_data as finance_book_dashboard;
+use tokio_erp::erpnext::accounts::doctype::fiscal_year::fiscal_year_dashboard::get_data as fiscal_year_dashboard;
 use tokio_erp::erpnext::accounts::doctype::invoice_discounting::invoice_discounting_dashboard::get_data as invoice_discounting_dashboard;
 use tokio_erp::erpnext::accounts::doctype::item_tax_template::item_tax_template_dashboard::get_data as item_tax_template_dashboard;
 use tokio_erp::erpnext::accounts::doctype::loyalty_program::loyalty_program_dashboard::loyalty_program_dashboard;
@@ -12,6 +13,9 @@ use tokio_erp::erpnext::accounts::doctype::payment_order::payment_order_dashboar
 use tokio_erp::erpnext::accounts::doctype::payment_request::payment_request_dashboard::get_data as payment_request_dashboard;
 use tokio_erp::erpnext::accounts::doctype::promotional_scheme::promotional_scheme_dashboard::get_data as promotional_scheme_dashboard;
 use tokio_erp::erpnext::accounts::doctype::purchase_invoice::purchase_invoice_dashboard::get_data as purchase_invoice_dashboard;
+use tokio_erp::erpnext::accounts::doctype::purchase_taxes_and_charges_template::purchase_taxes_and_charges_template_dashboard::get_data as purchase_taxes_template_dashboard;
+use tokio_erp::erpnext::accounts::doctype::sales_invoice::sales_invoice_dashboard::get_data as sales_invoice_dashboard;
+use tokio_erp::erpnext::accounts::doctype::subscription_plan::subscription_plan_dashboard::get_data as subscription_plan_dashboard;
 
 #[test]
 fn selected_accounts_dashboards_match_erpnext_static_get_data() {
@@ -158,5 +162,81 @@ fn selected_accounts_dashboards_match_erpnext_static_get_data() {
                 DashboardSection::labeled("Returns", vec!["Purchase Invoice"]),
                 DashboardSection::labeled("Subscription", vec!["Auto Repeat"]),
             ])
+    );
+    assert_eq!(
+        fiscal_year_dashboard(),
+        DashboardData::new("fiscal_year")
+            .non_standard_fieldnames(vec![("Budget", "from_fiscal_year")])
+            .transactions(vec![
+                DashboardSection::labeled("Budgets", vec!["Budget"]),
+                DashboardSection::labeled("References", vec!["Period Closing Voucher"]),
+                DashboardSection::labeled(
+                    "Target Details",
+                    vec![
+                        "Sales Person",
+                        "Sales Partner",
+                        "Territory",
+                        "Monthly Distribution",
+                    ],
+                ),
+            ])
+    );
+    assert_eq!(
+        purchase_taxes_template_dashboard(),
+        DashboardData::new("taxes_and_charges")
+            .non_standard_fieldnames(vec![("Tax Rule", "purchase_tax_template")])
+            .transactions(vec![
+                DashboardSection::labeled(
+                    "Transactions",
+                    vec!["Purchase Invoice", "Purchase Order", "Purchase Receipt"],
+                ),
+                DashboardSection::labeled("References", vec!["Supplier Quotation", "Tax Rule"]),
+            ])
+    );
+    assert_eq!(
+        sales_invoice_dashboard(),
+        DashboardData::new("sales_invoice")
+            .non_standard_fieldnames(vec![
+                ("Delivery Note", "against_sales_invoice"),
+                ("Journal Entry", "reference_name"),
+                ("Payment Entry", "reference_name"),
+                ("Payment Request", "reference_name"),
+                ("Sales Invoice", "return_against"),
+                ("Auto Repeat", "reference_document"),
+                ("Purchase Invoice", "inter_company_invoice_reference"),
+            ])
+            .internal_links(vec![
+                ("Sales Order", vec!["items", "sales_order"]),
+                ("Timesheet", vec!["timesheets", "time_sheet"]),
+            ])
+            .internal_and_external_links(vec![("Delivery Note", vec!["items", "delivery_note"])])
+            .transactions(vec![
+                DashboardSection::labeled(
+                    "Payment",
+                    vec![
+                        "Payment Entry",
+                        "Payment Request",
+                        "Journal Entry",
+                        "Invoice Discounting",
+                        "Dunning",
+                    ],
+                ),
+                DashboardSection::labeled(
+                    "Reference",
+                    vec!["Timesheet", "Delivery Note", "Sales Order"],
+                ),
+                DashboardSection::labeled("Returns", vec!["Sales Invoice"]),
+                DashboardSection::labeled("Subscription", vec!["Auto Repeat"]),
+                DashboardSection::labeled("Internal Transfers", vec!["Purchase Invoice"]),
+            ])
+    );
+    assert_eq!(
+        subscription_plan_dashboard(),
+        DashboardData::new("subscription_plan")
+            .non_standard_fieldnames(vec![("Payment Request", "plan"), ("Subscription", "plan")])
+            .transactions(vec![DashboardSection::labeled(
+                "References",
+                vec!["Payment Request", "Subscription"],
+            )])
     );
 }
