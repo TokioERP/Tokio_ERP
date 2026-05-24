@@ -3308,7 +3308,7 @@
     {
       "source": "accounts/report/share_balance/share_balance.py",
       "target": "accounts/report/share_balance/share_balance.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/share_ledger/__init__.py",
