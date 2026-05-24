@@ -211,6 +211,62 @@ fn pos_register_concatenates_payments_without_grouping_and_groups_with_subtotals
 }
 
 #[test]
+fn pos_register_grouped_rows_preserve_first_seen_group_order_like_erpnext_dict() {
+    let entries = vec![
+        PosRegisterRow::new(
+            "2026-05-01",
+            "POS-0001",
+            "Main POS",
+            "_Test Company",
+            "cashier@example.com",
+            "CUST-Z",
+            false,
+            100.0,
+            Some(100.0),
+            None,
+        ),
+        PosRegisterRow::new(
+            "2026-05-02",
+            "POS-0002",
+            "Main POS",
+            "_Test Company",
+            "cashier@example.com",
+            "CUST-A",
+            false,
+            60.0,
+            Some(60.0),
+            None,
+        ),
+    ];
+
+    let grouped = execute(
+        PosRegisterFilters {
+            group_by: Some("Customer".to_string()),
+            ..filters()
+        },
+        entries,
+        &[],
+    )
+    .unwrap();
+
+    assert!(matches!(
+        grouped.1[0],
+        PosRegisterSubtotalRow::Row(ref row) if row.customer == "CUST-Z"
+    ));
+    assert!(matches!(
+        grouped.1[1],
+        PosRegisterSubtotalRow::Subtotal {
+            ref group_by_value,
+            ..
+        } if group_by_value == "CUST-Z"
+    ));
+    assert!(matches!(
+        grouped.1[3],
+        PosRegisterSubtotalRow::Row(ref row) if row.customer == "CUST-A"
+    ));
+}
+
+#[test]
 fn pos_register_add_subtotal_row_sums_grand_total_and_paid_amount() {
     let invoices = vec![
         PosRegisterRow::new(

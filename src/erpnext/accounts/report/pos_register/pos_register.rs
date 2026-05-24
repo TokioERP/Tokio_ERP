@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PosRegisterError {
     MissingCompany,
@@ -176,12 +174,17 @@ pub fn execute(
         ));
     }
 
-    let mut invoice_map: BTreeMap<String, Vec<PosRegisterRow>> = BTreeMap::new();
+    let mut invoice_map: Vec<(String, Vec<PosRegisterRow>)> = Vec::new();
     for entry in pos_entries {
-        invoice_map
-            .entry(entry.group_value(group_by_field))
-            .or_default()
-            .push(entry);
+        let group_value = entry.group_value(group_by_field);
+        if let Some((_, entries)) = invoice_map
+            .iter_mut()
+            .find(|(key, _)| key.as_str() == group_value)
+        {
+            entries.push(entry);
+        } else {
+            invoice_map.push((group_value, vec![entry]));
+        }
     }
 
     let mut grouped_data = Vec::new();
