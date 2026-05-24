@@ -946,6 +946,27 @@ impl Subscription {
             plan.generated_invoice_posting_date = Some(posting_date.to_string());
             if let Some(current_end) = current_end.as_deref() {
                 let next_start = add_days(current_end, 1);
+                if self
+                    .end_date
+                    .as_deref()
+                    .is_some_and(|end_date| parse_date(&next_start) > parse_date(end_date))
+                {
+                    if self.cancel_at_period_end {
+                        if self.cancel_subscription(posting_date).is_ok() {
+                            plan.cancelled = true;
+                        }
+                    } else {
+                        self.set_subscription_status(
+                            posting_date,
+                            has_outstanding_invoice,
+                            grace_period,
+                            cancel_after_grace,
+                        );
+                    }
+                    plan.returned_early = true;
+                    return plan;
+                }
+
                 self.update_subscription_period(Some(&next_start), posting_date);
                 plan.updated_period_start = Some(next_start);
             }
