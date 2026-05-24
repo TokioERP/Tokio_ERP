@@ -2928,7 +2928,7 @@
     {
       "source": "accounts/report/calculated_discount_mismatch/calculated_discount_mismatch.py",
       "target": "accounts/report/calculated_discount_mismatch/calculated_discount_mismatch.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/cash_flow/__init__.py",
