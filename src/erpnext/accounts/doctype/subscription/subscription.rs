@@ -105,6 +105,8 @@ pub struct SubscriptionPlanSnapshot {
     pub name: String,
     pub item: String,
     pub currency: String,
+    pub billing_interval: String,
+    pub billing_interval_count: i32,
     pub cost_center: Option<String>,
     pub rate_source: PlanRateSource,
     pub enable_deferred_revenue: bool,
@@ -197,6 +199,15 @@ impl GeneratedInvoiceState {
     pub fn is_paid(&self) -> bool {
         self.status == "Paid"
     }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SubscriptionInvoiceQueryPlan {
+    pub doctype: &'static str,
+    pub filters: Vec<(String, String, String)>,
+    pub limit: Option<usize>,
+    pub order_by: Option<String>,
+    pub pluck: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -517,6 +528,41 @@ impl Subscription {
         } else {
             Ok(())
         }
+    }
+
+    pub fn get_billing_cycle_and_interval(
+        &self,
+        plan_snapshots: &[SubscriptionPlanSnapshot],
+    ) -> Vec<BillingCycle> {
+        let mut billing_info = Vec::new();
+        for plan in self
+            .plans
+            .iter()
+            .filter_map(|detail| detail.plan.as_deref())
+        {
+            let Some(snapshot) = plan_snapshots.iter().find(|snapshot| snapshot.name == plan)
+            else {
+                continue;
+            };
+            let cycle = BillingCycle::new(
+                snapshot.billing_interval.clone(),
+                snapshot.billing_interval_count,
+            );
+            if !billing_info.contains(&cycle) {
+                billing_info.push(cycle);
+            }
+        }
+        billing_info
+    }
+
+    pub fn get_billing_cycle_data(
+        &self,
+        plan_snapshots: &[SubscriptionPlanSnapshot],
+    ) -> Option<BillingCycleDelta> {
+        self.get_billing_cycle_and_interval(plan_snapshots)
+            .first()
+            .cloned()
+            .map(Self::billing_cycle_data_for)
     }
 
     pub fn billing_cycle_data_for(cycle: BillingCycle) -> BillingCycleDelta {
@@ -868,6 +914,50 @@ impl Subscription {
             })
     }
 
+    pub fn current_invoice_query_plan(&self) -> SubscriptionInvoiceQueryPlan {
+        SubscriptionInvoiceQueryPlan {
+            doctype: self.invoice_document_type(),
+            filters: vec![
+                subscription_filter(self.name.as_deref().unwrap_or_default()),
+                ("docstatus".to_string(), "<".to_string(), "2".to_string()),
+            ],
+            limit: Some(1),
+            order_by: Some("to_date desc".to_string()),
+            pluck: Some("name".to_string()),
+        }
+    }
+
+    pub fn invoices_query_plan(&self) -> SubscriptionInvoiceQueryPlan {
+        SubscriptionInvoiceQueryPlan {
+            doctype: self.invoice_document_type(),
+            filters: vec![subscription_filter(
+                self.name.as_deref().unwrap_or_default(),
+            )],
+            limit: None,
+            order_by: Some("from_date asc".to_string()),
+            pluck: None,
+        }
+    }
+
+    pub fn outstanding_invoice_count_query_plan(&self) -> SubscriptionInvoiceQueryPlan {
+        SubscriptionInvoiceQueryPlan {
+            doctype: self.invoice_document_type(),
+            filters: vec![
+                subscription_filter(self.name.as_deref().unwrap_or_default()),
+                ("docstatus".to_string(), "=".to_string(), "1".to_string()),
+                ("status".to_string(), "!=".to_string(), "Paid".to_string()),
+            ],
+            limit: None,
+            order_by: None,
+            pluck: None,
+        }
+    }
+
+    pub fn cancel_subscription_at_period_end(&mut self, now_date: &str) {
+        self.status = SubscriptionStatus::Cancelled;
+        self.cancelation_date = Some(now_date.to_string());
+    }
+
     pub fn cancel_subscription(
         &mut self,
         now_date: &str,
@@ -1080,6 +1170,14 @@ fn date_diff(left: &str, right: &str) -> i32 {
 
 fn parse_date(value: &str) -> SimpleDate {
     SimpleDate::parse(value)
+}
+
+fn subscription_filter(name: &str) -> (String, String, String) {
+    (
+        "subscription".to_string(),
+        "=".to_string(),
+        name.to_string(),
+    )
 }
 
 fn days_in_month(year: i32, month: u8) -> u8 {

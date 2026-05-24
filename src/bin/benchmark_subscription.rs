@@ -63,6 +63,8 @@ fn main() {
         name: "_Test Plan".to_string(),
         item: "Service Item".to_string(),
         currency: "USD".to_string(),
+        billing_interval: "Month".to_string(),
+        billing_interval_count: 1,
         cost_center: Some("Main - TC".to_string()),
         rate_source: PlanRateSource::FixedRate { cost: 900.0 },
         enable_deferred_revenue: false,

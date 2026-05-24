@@ -341,6 +341,126 @@ fn subscription_cancel_and_restart_match_erpnext_lifecycle_rules() {
 }
 
 #[test]
+fn subscription_cancel_at_period_end_matches_erpnext_simple_cancel_marker() {
+    let mut subscription = Subscription::new("Customer", "_Test Customer", "2018-01-01");
+    subscription.status = SubscriptionStatus::Active;
+
+    subscription.cancel_subscription_at_period_end("2018-02-01");
+
+    assert_eq!(subscription.status, SubscriptionStatus::Cancelled);
+    assert_eq!(subscription.cancelation_date.as_deref(), Some("2018-02-01"));
+}
+
+#[test]
+fn subscription_invoice_query_plans_match_erpnext_db_shapes() {
+    let mut subscription = Subscription::new("Customer", "_Test Customer", "2018-01-01");
+    subscription.name = Some("SUB-0001".to_string());
+
+    let current_invoice = subscription.current_invoice_query_plan();
+    assert_eq!(current_invoice.doctype, "Sales Invoice");
+    assert_eq!(
+        current_invoice.filters,
+        vec![
+            (
+                "subscription".to_string(),
+                "=".to_string(),
+                "SUB-0001".to_string()
+            ),
+            ("docstatus".to_string(), "<".to_string(), "2".to_string()),
+        ]
+    );
+    assert_eq!(current_invoice.limit, Some(1));
+    assert_eq!(current_invoice.order_by.as_deref(), Some("to_date desc"));
+    assert_eq!(current_invoice.pluck.as_deref(), Some("name"));
+
+    let invoices = subscription.invoices_query_plan();
+    assert_eq!(invoices.doctype, "Sales Invoice");
+    assert_eq!(
+        invoices.filters,
+        vec![(
+            "subscription".to_string(),
+            "=".to_string(),
+            "SUB-0001".to_string()
+        )]
+    );
+    assert_eq!(invoices.limit, None);
+    assert_eq!(invoices.order_by.as_deref(), Some("from_date asc"));
+    assert_eq!(invoices.pluck, None);
+
+    let outstanding = subscription.outstanding_invoice_count_query_plan();
+    assert_eq!(outstanding.doctype, "Sales Invoice");
+    assert_eq!(
+        outstanding.filters,
+        vec![
+            (
+                "subscription".to_string(),
+                "=".to_string(),
+                "SUB-0001".to_string()
+            ),
+            ("docstatus".to_string(), "=".to_string(), "1".to_string()),
+            ("status".to_string(), "!=".to_string(), "Paid".to_string()),
+        ]
+    );
+}
+
+#[test]
+fn subscription_billing_cycle_query_and_data_match_erpnext_plan_distinct_logic() {
+    let mut subscription = Subscription::new("Customer", "_Test Customer", "2018-01-01");
+    subscription.plans = vec![
+        SubscriptionPlanDetail::new("MONTHLY-A", 1),
+        SubscriptionPlanDetail::new("MONTHLY-B", 1),
+        SubscriptionPlanDetail::new("YEARLY", 1),
+    ];
+    let snapshots = vec![
+        SubscriptionPlanSnapshot {
+            name: "MONTHLY-A".to_string(),
+            item: "Service A".to_string(),
+            currency: "USD".to_string(),
+            billing_interval: "Month".to_string(),
+            billing_interval_count: 1,
+            cost_center: None,
+            rate_source: PlanRateSource::FixedRate { cost: 100.0 },
+            enable_deferred_revenue: false,
+            enable_deferred_expense: false,
+            dimensions: BTreeMap::new(),
+        },
+        SubscriptionPlanSnapshot {
+            name: "MONTHLY-B".to_string(),
+            item: "Service B".to_string(),
+            currency: "USD".to_string(),
+            billing_interval: "Month".to_string(),
+            billing_interval_count: 1,
+            cost_center: None,
+            rate_source: PlanRateSource::FixedRate { cost: 200.0 },
+            enable_deferred_revenue: false,
+            enable_deferred_expense: false,
+            dimensions: BTreeMap::new(),
+        },
+        SubscriptionPlanSnapshot {
+            name: "YEARLY".to_string(),
+            item: "Service C".to_string(),
+            currency: "USD".to_string(),
+            billing_interval: "Year".to_string(),
+            billing_interval_count: 1,
+            cost_center: None,
+            rate_source: PlanRateSource::FixedRate { cost: 1200.0 },
+            enable_deferred_revenue: false,
+            enable_deferred_expense: false,
+            dimensions: BTreeMap::new(),
+        },
+    ];
+
+    assert_eq!(
+        subscription.get_billing_cycle_and_interval(&snapshots),
+        vec![BillingCycle::new("Month", 1), BillingCycle::new("Year", 1)]
+    );
+    assert_eq!(
+        subscription.get_billing_cycle_data(&snapshots),
+        Some(BillingCycleDelta::months_with_days(1, -1))
+    );
+}
+
+#[test]
 fn subscription_force_fetch_update_date_matches_erpnext_branches() {
     let mut subscription = Subscription::new("Customer", "_Test Customer", "2018-01-01");
     subscription.current_invoice_start = Some("2018-01-10".to_string());
@@ -539,6 +659,8 @@ fn subscription_get_items_from_plans_matches_erpnext_prorate_deferred_and_dimens
         name: "_Test Plan".to_string(),
         item: "Service Item".to_string(),
         currency: "USD".to_string(),
+        billing_interval: "Month".to_string(),
+        billing_interval_count: 1,
         cost_center: Some("Main - TC".to_string()),
         rate_source: PlanRateSource::FixedRate { cost: 900.0 },
         enable_deferred_revenue: true,
@@ -580,6 +702,8 @@ fn subscription_create_invoice_plan_matches_erpnext_invoice_fields() {
         name: "_Test Plan".to_string(),
         item: "Service Item".to_string(),
         currency: "USD".to_string(),
+        billing_interval: "Month".to_string(),
+        billing_interval_count: 1,
         cost_center: Some("Main - TC".to_string()),
         rate_source: PlanRateSource::FixedRate { cost: 900.0 },
         enable_deferred_revenue: false,
@@ -647,6 +771,8 @@ fn subscription_create_invoice_plan_matches_supplier_tds_and_trial_discount() {
         name: "_Test Plan".to_string(),
         item: "Service Item".to_string(),
         currency: "INR".to_string(),
+        billing_interval: "Month".to_string(),
+        billing_interval_count: 1,
         cost_center: None,
         rate_source: PlanRateSource::FixedRate { cost: 100.0 },
         enable_deferred_revenue: false,
