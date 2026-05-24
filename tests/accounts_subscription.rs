@@ -431,6 +431,32 @@ fn subscription_process_cancels_at_period_end_without_advancing_past_end_date() 
 }
 
 #[test]
+fn subscription_process_updates_period_when_posting_date_passes_current_end_without_invoice() {
+    let mut subscription = Subscription::new("Customer", "_Test Customer", "2018-01-01");
+    subscription.status = SubscriptionStatus::Active;
+    subscription.current_invoice_start = Some("2018-01-01".to_string());
+    subscription.current_invoice_end = Some("2018-01-31".to_string());
+    subscription.generate_invoice_at = GenerateInvoiceAt::EndOfCurrentPeriod;
+    subscription.billing_cycle = Some(BillingCycle::new("Month", 1));
+
+    let plan = subscription.process_subscription("2018-02-05", false, 0, false);
+
+    assert_eq!(plan.generated_invoice_posting_date, None);
+    assert_eq!(plan.updated_period_start.as_deref(), Some("2018-02-05"));
+    assert_eq!(
+        subscription.current_invoice_start.as_deref(),
+        Some("2018-02-05")
+    );
+    assert_eq!(
+        subscription.current_invoice_end.as_deref(),
+        Some("2018-03-04")
+    );
+    assert_eq!(subscription.status, SubscriptionStatus::Active);
+    assert!(!plan.cancelled);
+    assert!(!plan.returned_early);
+}
+
+#[test]
 fn subscription_prorata_factor_matches_erpnext_formula() {
     assert_eq!(
         get_prorata_factor_at("2018-01-31", "2018-01-01", Some(1), "2018-01-15"),

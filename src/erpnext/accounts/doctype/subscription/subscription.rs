@@ -970,6 +970,12 @@ impl Subscription {
                 self.update_subscription_period(Some(&next_start), posting_date);
                 plan.updated_period_start = Some(next_start);
             }
+        } else if current_end
+            .as_deref()
+            .is_some_and(|current_end| parse_date(posting_date) > parse_date(current_end))
+        {
+            self.update_subscription_period(None, posting_date);
+            plan.updated_period_start = self.current_invoice_start.clone();
         }
 
         self.set_subscription_status(
