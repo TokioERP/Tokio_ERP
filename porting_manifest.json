@@ -2883,7 +2883,7 @@
     {
       "source": "accounts/report/bank_clearance_summary/bank_clearance_summary.py",
       "target": "accounts/report/bank_clearance_summary/bank_clearance_summary.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/bank_reconciliation_statement/__init__.py",
