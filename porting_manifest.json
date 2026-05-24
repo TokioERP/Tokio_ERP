@@ -3183,7 +3183,7 @@
     {
       "source": "accounts/report/payment_period_based_on_invoice_date/payment_period_based_on_invoice_date.py",
       "target": "accounts/report/payment_period_based_on_invoice_date/payment_period_based_on_invoice_date.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/pos_register/__init__.py",
