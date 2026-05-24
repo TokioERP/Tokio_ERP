@@ -90,6 +90,8 @@ pub enum SubscriptionError {
     CalendarMonthsRequireEndDate,
     CalendarMonthsRequireMonthlyBilling,
     CompanyRequired,
+    InvoiceCancelled,
+    InvoiceNotCancelled,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -856,6 +858,49 @@ impl Subscription {
                 parse_date(&start) <= parse_date(posting_date)
                     && parse_date(posting_date) <= parse_date(&end)
             })
+    }
+
+    pub fn cancel_subscription(
+        &mut self,
+        now_date: &str,
+    ) -> Result<Option<(String, String)>, SubscriptionError> {
+        if self.status == SubscriptionStatus::Cancelled {
+            return Err(SubscriptionError::InvoiceCancelled);
+        }
+
+        let to_generate_invoice = self.status == SubscriptionStatus::Active
+            && self.generate_invoice_at != GenerateInvoiceAt::BeginningOfCurrentPeriod;
+        self.status = SubscriptionStatus::Cancelled;
+        self.cancelation_date = Some(now_date.to_string());
+
+        if to_generate_invoice
+            && self
+                .current_invoice_start
+                .as_deref()
+                .is_some_and(|start| parse_date(now_date) >= parse_date(start))
+        {
+            return Ok(Some((
+                self.current_invoice_start.clone().unwrap(),
+                now_date.to_string(),
+            )));
+        }
+
+        Ok(None)
+    }
+
+    pub fn restart_subscription(
+        &mut self,
+        posting_date: Option<&str>,
+        now_date: &str,
+    ) -> Result<(), SubscriptionError> {
+        if self.status != SubscriptionStatus::Cancelled {
+            return Err(SubscriptionError::InvoiceNotCancelled);
+        }
+
+        self.status = SubscriptionStatus::Active;
+        self.cancelation_date = None;
+        self.update_subscription_period(posting_date.or(Some(now_date)), now_date);
+        Ok(())
     }
 }
 

@@ -298,6 +298,49 @@ fn subscription_set_status_matches_erpnext_ordering() {
 }
 
 #[test]
+fn subscription_cancel_and_restart_match_erpnext_lifecycle_rules() {
+    let mut active = Subscription::new("Customer", "_Test Customer", "2018-01-01");
+    active.status = SubscriptionStatus::Active;
+    active.current_invoice_start = Some("2018-01-01".to_string());
+    active.current_invoice_end = Some("2018-01-31".to_string());
+    active.generate_invoice_at = GenerateInvoiceAt::EndOfCurrentPeriod;
+
+    let cancel_plan = active
+        .cancel_subscription("2018-01-15")
+        .expect("cancel active subscription");
+    assert_eq!(active.status, SubscriptionStatus::Cancelled);
+    assert_eq!(active.cancelation_date.as_deref(), Some("2018-01-15"));
+    assert_eq!(
+        cancel_plan,
+        Some(("2018-01-01".to_string(), "2018-01-15".to_string()))
+    );
+    assert_eq!(
+        active.cancel_subscription("2018-01-16"),
+        Err(SubscriptionError::InvoiceCancelled)
+    );
+
+    active.billing_cycle = Some(BillingCycle::new("Month", 1));
+    active
+        .restart_subscription(Some("2018-02-01"), "2018-02-10")
+        .expect("restart cancelled subscription");
+    assert_eq!(active.status, SubscriptionStatus::Active);
+    assert_eq!(active.cancelation_date, None);
+    assert_eq!(active.current_invoice_start.as_deref(), Some("2018-02-01"));
+    assert_eq!(active.current_invoice_end.as_deref(), Some("2018-02-28"));
+
+    assert_eq!(
+        active.restart_subscription(None, "2018-03-01"),
+        Err(SubscriptionError::InvoiceNotCancelled)
+    );
+
+    let mut beginning = Subscription::new("Customer", "_Test Customer", "2018-01-01");
+    beginning.status = SubscriptionStatus::Active;
+    beginning.current_invoice_start = Some("2018-01-01".to_string());
+    beginning.generate_invoice_at = GenerateInvoiceAt::BeginningOfCurrentPeriod;
+    assert_eq!(beginning.cancel_subscription("2018-01-15"), Ok(None));
+}
+
+#[test]
 fn subscription_prorata_factor_matches_erpnext_formula() {
     assert_eq!(
         get_prorata_factor_at("2018-01-31", "2018-01-01", Some(1), "2018-01-15"),
