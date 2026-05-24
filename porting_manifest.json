@@ -3043,7 +3043,7 @@
     {
       "source": "accounts/report/financial_ratios/financial_ratios.py",
       "target": "accounts/report/financial_ratios/financial_ratios.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/financial_statements.py",
