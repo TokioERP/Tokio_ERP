@@ -2908,7 +2908,7 @@
     {
       "source": "accounts/report/billed_items_to_be_received/billed_items_to_be_received.py",
       "target": "accounts/report/billed_items_to_be_received/billed_items_to_be_received.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/budget_variance_report/__init__.py",
