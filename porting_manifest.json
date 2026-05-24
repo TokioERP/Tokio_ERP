@@ -3318,7 +3318,7 @@
     {
       "source": "accounts/report/share_ledger/share_ledger.py",
       "target": "accounts/report/share_ledger/share_ledger.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/supplier_ledger_summary/__init__.py",
