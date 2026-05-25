@@ -3218,7 +3218,7 @@
     {
       "source": "accounts/report/profitability_analysis/profitability_analysis.py",
       "target": "accounts/report/profitability_analysis/profitability_analysis.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/purchase_invoice_trends/__init__.py",
