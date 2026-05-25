@@ -2918,7 +2918,7 @@
     {
       "source": "accounts/report/budget_variance_report/budget_variance_report.py",
       "target": "accounts/report/budget_variance_report/budget_variance_report.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/calculated_discount_mismatch/__init__.py",
