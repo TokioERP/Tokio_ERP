@@ -3168,7 +3168,7 @@
     {
       "source": "accounts/report/payment_ledger/payment_ledger.py",
       "target": "accounts/report/payment_ledger/payment_ledger.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/payment_ledger/test_payment_ledger.py",
