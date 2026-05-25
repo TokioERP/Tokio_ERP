@@ -66,6 +66,13 @@ pub struct BudgetVarianceRow {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct BudgetVarianceReport {
+    pub columns: Vec<ReportColumn>,
+    pub rows: Vec<BudgetVarianceRow>,
+    pub chart_data: Option<ChartData>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct ChartData {
     pub labels: Vec<String>,
     pub budget_values: Vec<f64>,
@@ -104,8 +111,11 @@ struct ErpDate {
     day: u32,
 }
 
-pub type BudgetMap =
-    BTreeMap<String, BTreeMap<String, BTreeMap<String, BTreeMap<String, BudgetActual>>>>;
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct BudgetMap {
+    order: Vec<(String, String)>,
+    values: BTreeMap<String, BTreeMap<String, BTreeMap<String, BTreeMap<String, BudgetActual>>>>,
+}
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct BudgetActual {
@@ -152,6 +162,43 @@ impl ReportColumn {
             options: String::new(),
             width,
         }
+    }
+}
+
+pub fn execute(
+    filters: &BudgetVarianceFilters,
+    fiscal_years: &[FiscalYear],
+    dimensions: &[String],
+    budget_records: &[BudgetRecord],
+    actuals: &[GlEntry],
+) -> BudgetVarianceReport {
+    let columns = get_columns(filters, fiscal_years);
+    let selected_dimensions = filters
+        .budget_against_filter
+        .clone()
+        .unwrap_or_else(|| dimensions.to_vec());
+
+    if selected_dimensions.is_empty() {
+        return BudgetVarianceReport {
+            columns,
+            rows: Vec::new(),
+            chart_data: None,
+        };
+    }
+
+    let budget_records: Vec<BudgetRecord> = budget_records
+        .iter()
+        .filter(|budget| selected_dimensions.contains(&budget.dimension))
+        .cloned()
+        .collect();
+    let budget_map = build_budget_map(&budget_records, actuals, fiscal_years);
+    let rows = build_report_data(&budget_map, filters, fiscal_years);
+    let chart_data = build_comparison_chart_data(&columns, &rows);
+
+    BudgetVarianceReport {
+        columns,
+        rows,
+        chart_data,
     }
 }
 
@@ -211,10 +258,25 @@ pub fn get_columns(
     columns
 }
 
-pub fn build_budget_map(budget_records: &[BudgetRecord], actuals: &[GlEntry]) -> BudgetMap {
-    let mut budget_map = BTreeMap::new();
+pub fn build_budget_map(
+    budget_records: &[BudgetRecord],
+    actuals: &[GlEntry],
+    fiscal_years: &[FiscalYear],
+) -> BudgetMap {
+    let mut budget_map = BudgetMap::default();
 
     for budget in budget_records {
+        let order_key = (budget.dimension.clone(), budget.account.clone());
+        if !budget_map.order.contains(&order_key) {
+            budget_map.order.push(order_key);
+        }
+        budget_map
+            .values
+            .entry(budget.dimension.clone())
+            .or_insert_with(BTreeMap::new)
+            .entry(budget.account.clone())
+            .or_insert_with(BTreeMap::new);
+
         for row in &budget.distributions {
             let months = get_months_in_range(&row.start_date, &row.end_date);
             if months.is_empty() {
@@ -223,14 +285,15 @@ pub fn build_budget_map(budget_records: &[BudgetRecord], actuals: &[GlEntry]) ->
 
             let monthly_budget = row.amount / months.len() as f64;
             for month_date in months {
-                let fiscal_year = fiscal_year_for_date(month_date);
+                let fiscal_year = fiscal_year_for_date(month_date, fiscal_years);
                 let month = month_name(month_date.month).to_string();
                 let values = budget_map
+                    .values
                     .entry(budget.dimension.clone())
                     .or_insert_with(BTreeMap::new)
                     .entry(budget.account.clone())
                     .or_insert_with(BTreeMap::new)
-                    .entry(fiscal_year)
+                    .entry(fiscal_year.clone())
                     .or_insert_with(BTreeMap::new)
                     .entry(month.clone())
                     .or_insert_with(BudgetActual::default);
@@ -240,7 +303,7 @@ pub fn build_budget_map(budget_records: &[BudgetRecord], actuals: &[GlEntry]) ->
                 for actual in actuals.iter().filter(|actual| {
                     actual.account == budget.account
                         && actual.budget_against == budget.dimension
-                        && actual.fiscal_year == fiscal_year_for_date(month_date)
+                        && actual.fiscal_year == fiscal_year
                         && month_name(parse_date(&actual.posting_date).month) == month
                 }) {
                     values.actual += actual.debit - actual.credit;
@@ -261,71 +324,75 @@ pub fn build_report_data(
     let show_cumulative = filters.show_cumulative && filters.period != "Yearly";
     let periods = get_periods(filters, fiscal_years);
 
-    for (dimension, accounts) in budget_map {
-        for (account, fiscal_year_map) in accounts {
-            let mut row = BudgetVarianceRow {
-                budget_against: dimension.clone(),
-                account: account.clone(),
-                values: BTreeMap::new(),
-            };
-            let mut running_budget = 0.0;
-            let mut running_actual = 0.0;
-            let mut total_budget = 0.0;
-            let mut total_actual = 0.0;
+    for (dimension, account) in &budget_map.order {
+        let fiscal_year_map = budget_map
+            .values
+            .get(dimension)
+            .and_then(|accounts| accounts.get(account));
 
-            for period in &periods {
-                let months = get_months_between(period.from_date, period.to_date);
-                let month_map = fiscal_year_map.get(&period.fiscal_year);
-                let mut period_budget = 0.0;
-                let mut period_actual = 0.0;
+        let mut row = BudgetVarianceRow {
+            budget_against: dimension.clone(),
+            account: account.clone(),
+            values: BTreeMap::new(),
+        };
+        let mut running_budget = 0.0;
+        let mut running_actual = 0.0;
+        let mut total_budget = 0.0;
+        let mut total_actual = 0.0;
 
-                for month in months {
-                    if let Some(values) = month_map.and_then(|month_map| month_map.get(&month)) {
-                        period_budget += values.budget;
-                        period_actual += values.actual;
-                    }
+        for period in &periods {
+            let months = get_months_between(period.from_date, period.to_date);
+            let month_map = fiscal_year_map
+                .and_then(|fiscal_year_map| fiscal_year_map.get(&period.fiscal_year));
+            let mut period_budget = 0.0;
+            let mut period_actual = 0.0;
+
+            for month in months {
+                if let Some(values) = month_map.and_then(|month_map| month_map.get(&month)) {
+                    period_budget += values.budget;
+                    period_actual += values.actual;
                 }
-
-                let (display_budget, display_actual) = if show_cumulative {
-                    running_budget += period_budget;
-                    running_actual += period_actual;
-                    (running_budget, running_actual)
-                } else {
-                    (period_budget, period_actual)
-                };
-
-                total_budget += period_budget;
-                total_actual += period_actual;
-
-                let (budget_label, actual_label, variance_label) = if filters.period == "Yearly" {
-                    (
-                        format!("Budget {}", period.fiscal_year),
-                        format!("Actual {}", period.fiscal_year),
-                        format!("Variance {}", period.fiscal_year),
-                    )
-                } else {
-                    (
-                        format!("Budget ({}) {}", period.label_suffix, period.fiscal_year),
-                        format!("Actual ({}) {}", period.label_suffix, period.fiscal_year),
-                        format!("Variance ({}) {}", period.label_suffix, period.fiscal_year),
-                    )
-                };
-
-                row.values.insert(scrub(&budget_label), display_budget);
-                row.values.insert(scrub(&actual_label), display_actual);
-                row.values
-                    .insert(scrub(&variance_label), display_budget - display_actual);
             }
 
-            if filters.period != "Yearly" {
-                row.values.insert("total_budget".to_string(), total_budget);
-                row.values.insert("total_actual".to_string(), total_actual);
-                row.values
-                    .insert("total_variance".to_string(), total_budget - total_actual);
-            }
+            let (display_budget, display_actual) = if show_cumulative {
+                running_budget += period_budget;
+                running_actual += period_actual;
+                (running_budget, running_actual)
+            } else {
+                (period_budget, period_actual)
+            };
 
-            data.push(row);
+            total_budget += period_budget;
+            total_actual += period_actual;
+
+            let (budget_label, actual_label, variance_label) = if filters.period == "Yearly" {
+                (
+                    format!("Budget {}", period.fiscal_year),
+                    format!("Actual {}", period.fiscal_year),
+                    format!("Variance {}", period.fiscal_year),
+                )
+            } else {
+                (
+                    format!("Budget ({}) {}", period.label_suffix, period.fiscal_year),
+                    format!("Actual ({}) {}", period.label_suffix, period.fiscal_year),
+                    format!("Variance ({}) {}", period.label_suffix, period.fiscal_year),
+                )
+            };
+
+            row.values.insert(scrub(&budget_label), display_budget);
+            row.values.insert(scrub(&actual_label), display_actual);
+            row.values
+                .insert(scrub(&variance_label), display_budget - display_actual);
         }
+
+        if filters.period != "Yearly" {
+            row.values.insert("total_budget".to_string(), total_budget);
+            row.values.insert("total_actual".to_string(), total_actual);
+            row.values
+                .insert("total_variance".to_string(), total_budget - total_actual);
+        }
+
+        data.push(row);
     }
 
     data
@@ -521,8 +588,15 @@ fn parse_date(value: &str) -> ErpDate {
     }
 }
 
-fn fiscal_year_for_date(date: ErpDate) -> String {
-    date.year.to_string()
+fn fiscal_year_for_date(date: ErpDate, fiscal_years: &[FiscalYear]) -> String {
+    fiscal_years
+        .iter()
+        .find(|fiscal_year| {
+            parse_date(&fiscal_year.year_start_date) <= date
+                && date <= parse_date(&fiscal_year.year_end_date)
+        })
+        .map(|fiscal_year| fiscal_year.name.clone())
+        .unwrap_or_else(|| date.year.to_string())
 }
 
 fn month_name(month: u32) -> &'static str {
