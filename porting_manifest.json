@@ -2848,7 +2848,7 @@
     {
       "source": "accounts/report/asset_depreciation_ledger/asset_depreciation_ledger.py",
       "target": "accounts/report/asset_depreciation_ledger/asset_depreciation_ledger.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/asset_depreciations_and_balances/__init__.py",
