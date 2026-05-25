@@ -3278,7 +3278,7 @@
     {
       "source": "accounts/report/sales_payment_summary/sales_payment_summary.py",
       "target": "accounts/report/sales_payment_summary/sales_payment_summary.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/sales_payment_summary/test_sales_payment_summary.py",
