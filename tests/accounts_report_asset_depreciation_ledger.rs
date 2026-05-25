@@ -229,15 +229,49 @@ fn asset_depreciation_ledger_builds_rows_with_schedule_fallback_and_running_accu
                 "Laptop",
                 "2026-01-31",
                 600.0,
-                200.0,
+                -50.0,
                 50.0,
-                250.0,
-                350.0,
+                0.0,
+                600.0,
                 "JV-0003",
                 "Hardware",
             ),
         ]
     );
+}
+
+#[test]
+fn asset_depreciation_ledger_requeries_schedule_when_accumulated_amount_is_zero_like_python_falsy()
+{
+    let mut asset = AssetDetail::new("AST-0001", "Truck", 1000.0, 200.0, "Vehicles");
+    asset.accumulated_depreciation_amount = Some(0.0);
+
+    let input = AssetDepreciationInput {
+        filters: AssetDepreciationFilters {
+            company: "_Test Company".to_string(),
+            from_date: "2026-01-01".to_string(),
+            to_date: "2026-12-31".to_string(),
+            ..Default::default()
+        },
+        depreciation_accounts: vec!["Depreciation - TC".to_string()],
+        gl_entries: vec![
+            GlEntry::new("AST-0001", 100.0, "JV-0001", "2026-01-31", ""),
+            GlEntry::new("AST-0001", 125.0, "JV-0002", "2026-02-28", ""),
+        ],
+        assets: vec![asset],
+        schedule_amounts: vec![
+            DepreciationScheduleAmount::new("AST-0001", "2026-01-31", 0.0),
+            DepreciationScheduleAmount::new("AST-0001", "2026-02-28", 500.0),
+        ],
+        ..Default::default()
+    };
+
+    let report = execute(input).unwrap();
+
+    assert_eq!(report.rows[0].accumulated_depreciation_amount, 0.0);
+    assert_eq!(report.rows[0].opening_accumulated_depreciation, -100.0);
+    assert_eq!(report.rows[1].accumulated_depreciation_amount, 500.0);
+    assert_eq!(report.rows[1].opening_accumulated_depreciation, 375.0);
 }
 
 #[test]

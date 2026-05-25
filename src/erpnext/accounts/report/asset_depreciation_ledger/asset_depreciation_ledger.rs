@@ -183,8 +183,7 @@ impl AssetDetail {
             asset_name: asset_name.into(),
             net_purchase_amount,
             opening_accumulated_depreciation,
-            accumulated_depreciation_amount: (opening_accumulated_depreciation != 0.0)
-                .then_some(opening_accumulated_depreciation),
+            accumulated_depreciation_amount: None,
             asset_category: asset_category.into(),
             status: String::new(),
             depreciation_method: String::new(),
@@ -467,7 +466,10 @@ fn build_rows(
             continue;
         };
 
-        let accumulated = if let Some(existing) = asset_data.accumulated_depreciation_amount {
+        let accumulated = if let Some(existing) = asset_data
+            .accumulated_depreciation_amount
+            .filter(|amount| *amount != 0.0)
+        {
             existing + entry.debit
         } else {
             schedule_amounts
