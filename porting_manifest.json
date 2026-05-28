@@ -3383,7 +3383,7 @@
     {
       "source": "accounts/report/trial_balance_for_party/trial_balance_for_party.py",
       "target": "accounts/report/trial_balance_for_party/trial_balance_for_party.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/trial_balance_simple/__init__.py",
