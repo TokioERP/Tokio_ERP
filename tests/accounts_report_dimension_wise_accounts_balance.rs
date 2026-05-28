@@ -147,7 +147,7 @@ fn dimension_wise_dimensions_follow_meta_company_filter() {
 }
 
 #[test]
-fn dimension_wise_formats_entries_accumulates_parents_and_filters_zero_rows() {
+fn dimension_wise_format_accumulate_and_prepare_data_match_erpnext_steps() {
     let dimension_list = vec!["Main - TC".to_string(), "Admin - TC".to_string()];
     let mut account_rows = accounts();
     let entries = vec![
@@ -193,7 +193,7 @@ fn dimension_wise_formats_entries_accumulates_parents_and_filters_zero_rows() {
     accumulate_values_into_parents(&mut account_rows, &dimension_list);
     let rows = prepare_data(&account_rows, &filters(), "USD", &dimension_list);
 
-    assert_eq!(rows.len(), 2);
+    assert_eq!(rows.len(), 3);
     assert_eq!(rows[0].account, "Expense - TC");
     assert_eq!(rows[0].values["main_tc"], 100.444);
     assert_eq!(rows[0].values["admin_tc"], -10.0);
@@ -202,6 +202,8 @@ fn dimension_wise_formats_entries_accumulates_parents_and_filters_zero_rows() {
     assert_eq!(rows[1].account, "Meals - TC");
     assert_eq!(rows[1].account_name, "5100 - Meals");
     assert_eq!(rows[1].values["main_tc"], 100.444);
+    assert_eq!(rows[2].account, "Asset - TC");
+    assert!(!rows[2].has_value);
 }
 
 #[test]

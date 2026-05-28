@@ -299,12 +299,9 @@ pub fn get_data(
     );
     accumulate_values_into_parents(&mut accounts, dimension_list);
 
-    Some(prepare_data(
-        &accounts,
-        filters,
-        company_currency,
-        dimension_list,
-    ))
+    let rows = prepare_data(&accounts, filters, company_currency, dimension_list);
+
+    Some(filter_out_zero_value_rows(rows))
 }
 
 pub fn get_dimensions(
@@ -444,7 +441,7 @@ pub fn prepare_data(
         });
     }
 
-    filter_out_zero_value_rows(rows)
+    rows
 }
 
 fn filter_gl_entries(
