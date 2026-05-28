@@ -3058,7 +3058,7 @@
     {
       "source": "accounts/report/general_and_payment_ledger_comparison/general_and_payment_ledger_comparison.py",
       "target": "accounts/report/general_and_payment_ledger_comparison/general_and_payment_ledger_comparison.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/general_and_payment_ledger_comparison/test_general_and_payment_ledger_comparison.py",
