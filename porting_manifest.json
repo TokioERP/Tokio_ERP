@@ -2893,7 +2893,7 @@
     {
       "source": "accounts/report/bank_reconciliation_statement/bank_reconciliation_statement.py",
       "target": "accounts/report/bank_reconciliation_statement/bank_reconciliation_statement.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/bank_reconciliation_statement/test_bank_reconciliation_statement.py",
