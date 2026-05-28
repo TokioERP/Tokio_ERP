@@ -3088,7 +3088,7 @@
     {
       "source": "accounts/report/gross_and_net_profit_report/gross_and_net_profit_report.py",
       "target": "accounts/report/gross_and_net_profit_report/gross_and_net_profit_report.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/gross_profit/__init__.py",
