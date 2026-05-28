@@ -3033,7 +3033,7 @@
     {
       "source": "accounts/report/dimension_wise_accounts_balance_report/dimension_wise_accounts_balance_report.py",
       "target": "accounts/report/dimension_wise_accounts_balance_report/dimension_wise_accounts_balance_report.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/financial_ratios/__init__.py",
