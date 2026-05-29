@@ -52,6 +52,7 @@ pub mod tds_computation_summary;
 pub mod trial_balance;
 pub mod trial_balance_for_party;
 pub mod trial_balance_simple;
+pub mod utils;
 pub mod voucher_wise_balance;
 
 pub type ReportFilters = BTreeMap<String, String>;

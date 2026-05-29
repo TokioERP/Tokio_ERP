@@ -3393,7 +3393,7 @@
     {
       "source": "accounts/report/utils.py",
       "target": "accounts/report/utils.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/voucher_wise_balance/__init__.py",
