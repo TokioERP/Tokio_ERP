@@ -5,10 +5,11 @@ use tokio_erp::erpnext::accounts::report::gross_profit::gross_profit::{
     get_delivery_notes_query_plan, get_group_wise_columns, get_invoice_row,
     get_last_purchase_rate_query_plan, get_product_bundle_query_plan, get_stock_ledger_query_plan,
     group_items_by_invoice, group_rows, prepare_delivered_by_supplier_purchase_query_plan,
-    prepare_invoice_query_plan, prepare_return_invoice_query_plan, should_skip_row,
-    update_return_invoices, AccountingDimensionFilter, DeliveryNoteSummary, GrossProfitFilters,
-    GrossProfitInvoiceRow, GrossProfitSourceRow, MasterNameSettings, ProductBundleItem, ReportCell,
-    ReportColumn, ReturnAdjustedRow, ReturnedInvoiceItem, StockLedgerEntry,
+    prepare_invoice_query_plan, prepare_return_invoice_query_plan, process_gross_profit_rows,
+    should_skip_row, update_return_invoices, AccountingDimensionFilter, DeliveryNoteSummary,
+    GrossProfitFilters, GrossProfitInvoiceRow, GrossProfitProcessRow, GrossProfitSourceRow,
+    MasterNameSettings, PackedItemOverride, ProductBundleItem, ReportCell, ReportColumn,
+    ReturnAdjustedRow, ReturnedInvoiceItem, StockLedgerEntry,
 };
 
 fn filters(group_by: &str) -> GrossProfitFilters {
@@ -97,6 +98,37 @@ fn invoice_item_row(invoice: &str, item_code: &str) -> GrossProfitInvoiceRow {
         invoice_base_net_total: 500.0,
         invoice: None,
         serial_and_batch_bundle: Some("SBB-001".to_string()),
+    }
+}
+
+fn process_row(invoice: &str, item_code: Option<&str>, indent: f64) -> GrossProfitProcessRow {
+    GrossProfitProcessRow {
+        parent_invoice: if indent == 0.0 {
+            String::new()
+        } else {
+            invoice.to_string()
+        },
+        parenttype: "Sales Invoice".to_string(),
+        indent,
+        parent: (indent != 0.0).then(|| invoice.to_string()),
+        invoice_or_item: item_code.unwrap_or(invoice).to_string(),
+        posting_date: "2026-05-15".to_string(),
+        monthly: String::new(),
+        item_code: item_code.map(str::to_string),
+        warehouse: item_code.map(|_| "Stores - TC".to_string()),
+        qty: (indent != 0.0).then_some(2.0),
+        item_row: item_code.map(|code| format!("{invoice}-{code}-ROW")),
+        update_stock: false,
+        dn_detail: None,
+        delivery_note: None,
+        delivered_by_supplier: false,
+        base_net_amount: if indent == 0.0 { 0.0 } else { 200.0 },
+        base_amount: 0.0,
+        buying_amount: 0.0,
+        buying_rate: None,
+        base_rate: None,
+        gross_profit: 0.0,
+        gross_profit_percent: 0.0,
     }
 }
 
@@ -617,6 +649,112 @@ fn gross_profit_buying_amount_query_plans_match_erpnext_delivered_supplier_and_s
         ]
     );
     assert_eq!(so_dn.group_by, vec!["delivery_note_item.item_code"]);
+}
+
+#[test]
+fn gross_profit_process_rows_sets_invoice_header_from_child_totals_like_erpnext() {
+    let rows = vec![
+        process_row("SINV-0001", None, 0.0),
+        process_row("SINV-0001", Some("ITEM-001"), 1.0),
+        GrossProfitProcessRow {
+            base_net_amount: 150.0,
+            qty: Some(3.0),
+            ..process_row("SINV-0001", Some("ITEM-002"), 1.0)
+        },
+    ];
+
+    let processed = process_gross_profit_rows(
+        &rows,
+        &filters("Invoice"),
+        &[
+            ("SINV-0001-ITEM-001-ROW", 120.0),
+            ("SINV-0001-ITEM-002-ROW", 75.0),
+        ],
+        &[],
+        &mut [],
+    );
+
+    assert_eq!(processed[0].base_amount, 350.0);
+    assert_eq!(processed[0].buying_amount, 195.0);
+    assert_eq!(processed[0].gross_profit, 155.0);
+    assert_eq!(processed[0].gross_profit_percent, 44.286);
+    assert_eq!(processed[0].base_rate, None);
+    assert_eq!(processed[0].buying_rate, None);
+
+    assert_eq!(processed[1].base_rate, Some(100.0));
+    assert_eq!(processed[1].buying_rate, Some(60.0));
+    assert_eq!(processed[2].base_rate, Some(50.0));
+    assert_eq!(processed[2].buying_rate, Some(25.0));
+}
+
+#[test]
+fn gross_profit_process_rows_applies_return_adjustment_before_invoice_header_total() {
+    let rows = vec![
+        process_row("SINV-0001", None, 0.0),
+        GrossProfitProcessRow {
+            base_net_amount: 500.0,
+            qty: Some(5.0),
+            ..process_row("SINV-0001", Some("ITEM-001"), 1.0)
+        },
+    ];
+    let mut returns = vec![ReturnedInvoiceItem {
+        return_against: "SINV-0001".to_string(),
+        item_code: "ITEM-001".to_string(),
+        qty: -2.0,
+        base_amount: -180.0,
+    }];
+
+    let processed = process_gross_profit_rows(
+        &rows,
+        &filters("Invoice"),
+        &[("SINV-0001-ITEM-001-ROW", 300.0)],
+        &[],
+        &mut returns,
+    );
+
+    assert_eq!(processed[1].qty, Some(3.0));
+    assert_eq!(processed[1].base_amount, 320.0);
+    assert_eq!(processed[1].buying_amount, 180.0);
+    assert_eq!(processed[1].gross_profit, 140.0);
+    assert_eq!(processed[0].base_amount, 320.0);
+    assert_eq!(processed[0].buying_amount, 180.0);
+    assert_eq!(returns[0].qty, 0.0);
+}
+
+#[test]
+fn gross_profit_process_rows_applies_delivery_note_packed_item_override_like_erpnext() {
+    let row = GrossProfitProcessRow {
+        parent_invoice: "BUNDLE-001".to_string(),
+        parent: None,
+        invoice_or_item: "COMP-001".to_string(),
+        item_code: Some("COMP-001".to_string()),
+        item_row: Some("OLD-ROW".to_string()),
+        dn_detail: Some("DN-ROW-1".to_string()),
+        delivery_note: Some("DN-0001".to_string()),
+        qty: Some(1.0),
+        base_net_amount: 0.0,
+        ..process_row("SINV-0001", Some("COMP-001"), 2.0)
+    };
+
+    let processed = process_gross_profit_rows(
+        &[row],
+        &filters("Invoice"),
+        &[("DN-ROW-1", 45.0)],
+        &[PackedItemOverride {
+            parent_invoice: "BUNDLE-001".to_string(),
+            item_code: "COMP-001".to_string(),
+            parent_detail_docname: "DN-ROW-1".to_string(),
+            warehouse: "Packed - TC".to_string(),
+            base_amount: 75.5556,
+        }],
+        &mut [],
+    );
+
+    assert_eq!(processed[0].item_row.as_deref(), Some("DN-ROW-1"));
+    assert_eq!(processed[0].warehouse.as_deref(), Some("Packed - TC"));
+    assert_eq!(processed[0].base_amount, 75.556);
+    assert_eq!(processed[0].buying_amount, 45.0);
+    assert_eq!(processed[0].gross_profit, 30.556);
 }
 
 #[test]

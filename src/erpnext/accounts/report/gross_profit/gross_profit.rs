@@ -159,6 +159,41 @@ pub struct DeliveryNoteSummary {
     pub total_incoming_value: f64,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct PackedItemOverride {
+    pub parent_invoice: String,
+    pub item_code: String,
+    pub parent_detail_docname: String,
+    pub warehouse: String,
+    pub base_amount: f64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct GrossProfitProcessRow {
+    pub parent_invoice: String,
+    pub parenttype: String,
+    pub indent: f64,
+    pub parent: Option<String>,
+    pub invoice_or_item: String,
+    pub posting_date: String,
+    pub monthly: String,
+    pub item_code: Option<String>,
+    pub warehouse: Option<String>,
+    pub qty: Option<f64>,
+    pub item_row: Option<String>,
+    pub update_stock: bool,
+    pub dn_detail: Option<String>,
+    pub delivery_note: Option<String>,
+    pub delivered_by_supplier: bool,
+    pub base_net_amount: f64,
+    pub base_amount: f64,
+    pub buying_amount: f64,
+    pub buying_rate: Option<f64>,
+    pub base_rate: Option<f64>,
+    pub gross_profit: f64,
+    pub gross_profit_percent: f64,
+}
+
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct GrossProfitCalculatedRow {
     pub invoice_or_item: String,
@@ -1089,6 +1124,70 @@ pub fn get_buying_amount_from_product_bundle(
     round_to(total, currency_precision)
 }
 
+pub fn process_gross_profit_rows(
+    rows: &[GrossProfitProcessRow],
+    filters: &GrossProfitFilters,
+    buying_amounts: &[(&str, f64)],
+    packed_overrides: &[PackedItemOverride],
+    returned_items: &mut [ReturnedInvoiceItem],
+) -> Vec<GrossProfitProcessRow> {
+    let mut processed = rows.to_vec();
+    let grouped_by_invoice = filters.group_by == "Invoice";
+    let mut invoice_buying_amount = 0.0;
+    let mut invoice_base_amount = 0.0;
+
+    for row in processed.iter_mut().rev() {
+        if filters.group_by == "Monthly" {
+            row.monthly = format_month_year(&row.posting_date);
+        }
+
+        row.base_amount = round_to(row.base_net_amount, filters.currency_precision);
+
+        if let Some(dn_detail) = row.dn_detail.clone() {
+            row.item_row = Some(dn_detail);
+            apply_packed_item_override(row, packed_overrides, filters.currency_precision);
+        }
+
+        row.buying_amount = round_to(
+            row.item_row
+                .as_deref()
+                .and_then(|item_row| buying_amount_for_row(item_row, buying_amounts))
+                .unwrap_or(0.0),
+            filters.currency_precision,
+        );
+
+        if grouped_by_invoice && row.indent == 0.0 {
+            row.buying_amount = invoice_buying_amount;
+            row.base_amount = invoice_base_amount;
+            row.buying_rate = None;
+            row.base_rate = None;
+            invoice_buying_amount = 0.0;
+            invoice_base_amount = 0.0;
+        }
+
+        set_process_rates(row, filters);
+        update_return_for_process_row(row, returned_items, filters);
+
+        if grouped_by_invoice && row.indent == 1.0 {
+            invoice_buying_amount += row.buying_amount;
+            invoice_base_amount += row.base_amount;
+        }
+
+        row.gross_profit = calculate_gross_profit(
+            row.base_amount,
+            row.buying_amount,
+            filters.currency_precision,
+        );
+        row.gross_profit_percent = calculate_gross_profit_percent(
+            row.gross_profit,
+            row.base_amount,
+            filters.currency_precision,
+        );
+    }
+
+    processed
+}
+
 pub fn group_rows(
     source_rows: &[GrossProfitSourceRow],
     filters: &GrossProfitFilters,
@@ -1172,6 +1271,123 @@ fn invoice_portion(row: &GrossProfitSourceRow) -> f64 {
         row.payment_amount * 100.0 / row.base_net_amount
     } else {
         0.0
+    }
+}
+
+fn buying_amount_for_row(item_row: &str, buying_amounts: &[(&str, f64)]) -> Option<f64> {
+    buying_amounts
+        .iter()
+        .find_map(|(row_name, amount)| (*row_name == item_row).then_some(*amount))
+}
+
+fn apply_packed_item_override(
+    row: &mut GrossProfitProcessRow,
+    packed_overrides: &[PackedItemOverride],
+    currency_precision: u32,
+) {
+    if row.parent.is_some() {
+        return;
+    }
+
+    let Some(item_code) = row.item_code.as_deref() else {
+        return;
+    };
+    let Some(item_row) = row.item_row.as_deref() else {
+        return;
+    };
+
+    if let Some(packed_item) = packed_overrides.iter().find(|packed_item| {
+        packed_item.parent_invoice == row.parent_invoice
+            && packed_item.item_code == item_code
+            && packed_item.parent_detail_docname == item_row
+    }) {
+        row.warehouse = Some(packed_item.warehouse.clone());
+        row.base_amount = round_to(packed_item.base_amount, currency_precision);
+    }
+}
+
+fn set_process_rates(row: &mut GrossProfitProcessRow, filters: &GrossProfitFilters) {
+    match row.qty {
+        Some(qty) if qty != 0.0 => {
+            row.buying_rate = if row.delivered_by_supplier {
+                None
+            } else {
+                Some(round_to(row.buying_amount / qty, filters.float_precision))
+            };
+            row.base_rate = Some(round_to(row.base_amount / qty, filters.float_precision));
+        }
+        _ if is_not_invoice_process_row(row, filters) => {
+            row.buying_rate = Some(0.0);
+            row.base_rate = Some(0.0);
+        }
+        _ => {}
+    }
+}
+
+fn update_return_for_process_row(
+    row: &mut GrossProfitProcessRow,
+    returned_items: &mut [ReturnedInvoiceItem],
+    filters: &GrossProfitFilters,
+) {
+    if !is_not_invoice_process_row(row, filters) {
+        return;
+    }
+    let (Some(parent), Some(item_code), Some(qty)) =
+        (row.parent.clone(), row.item_code.clone(), row.qty)
+    else {
+        return;
+    };
+
+    let mut adjusted = ReturnAdjustedRow {
+        parent,
+        item_code,
+        qty,
+        base_amount: row.base_amount,
+        buying_rate: row.buying_rate.unwrap_or(0.0),
+        buying_amount: row.buying_amount,
+        delivered_by_supplier: row.delivered_by_supplier,
+    };
+    update_return_invoices(&mut adjusted, returned_items, filters.currency_precision);
+    row.qty = Some(adjusted.qty);
+    row.base_amount = adjusted.base_amount;
+    row.buying_amount = adjusted.buying_amount;
+}
+
+fn is_not_invoice_process_row(row: &GrossProfitProcessRow, filters: &GrossProfitFilters) -> bool {
+    is_not_invoice_process_row_for_group(row, &filters.group_by)
+}
+
+fn is_not_invoice_process_row_for_group(row: &GrossProfitProcessRow, group_by: &str) -> bool {
+    (group_by == "Invoice" && row.indent != 0.0) || group_by != "Invoice"
+}
+
+fn format_month_year(date: &str) -> String {
+    let mut parts = date.split('-');
+    let year = parts.next().unwrap_or_default();
+    let month = parts
+        .next()
+        .and_then(|value| value.parse::<usize>().ok())
+        .unwrap_or(0);
+    let month_name = match month {
+        1 => "Jan",
+        2 => "Feb",
+        3 => "Mar",
+        4 => "Apr",
+        5 => "May",
+        6 => "Jun",
+        7 => "Jul",
+        8 => "Aug",
+        9 => "Sep",
+        10 => "Oct",
+        11 => "Nov",
+        12 => "Dec",
+        _ => "",
+    };
+
+    if month_name.is_empty() || year.is_empty() {
+        String::new()
+    } else {
+        format!("{month_name} {year}")
     }
 }
 
