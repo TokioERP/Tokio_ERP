@@ -47,6 +47,12 @@ pub struct QueryPlan {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct InvoiceItemLoadQueryPlans {
+    pub normal: QueryPlan,
+    pub returns: QueryPlan,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ReportColumn {
     pub label: &'static str,
     pub fieldname: &'static str,
@@ -164,6 +170,12 @@ pub struct StockLedgerEntry {
     pub voucher_detail_no: String,
     pub stock_value: f64,
     pub qty: f64,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct StockLedgerCache {
+    pub entries: BTreeMap<(String, String), Vec<StockLedgerEntry>>,
+    pub requests: Vec<QueryPlan>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -331,6 +343,17 @@ pub fn prepare_return_invoice_query_plan(
     plan
 }
 
+pub fn load_invoice_items_query_plans(
+    filters: &GrossProfitFilters,
+    normal_rows: &[GrossProfitInvoiceRow],
+) -> InvoiceItemLoadQueryPlans {
+    let normal = prepare_invoice_query_plan(filters);
+    let vouchers_to_ignore = prepare_vouchers_to_ignore(normal_rows);
+    let returns = prepare_return_invoice_query_plan(filters, &vouchers_to_ignore);
+
+    InvoiceItemLoadQueryPlans { normal, returns }
+}
+
 pub fn get_returned_invoice_items_query_plan(filters: &GrossProfitFilters) -> QueryPlan {
     QueryPlan {
         source: "Sales Invoice",
@@ -452,6 +475,30 @@ pub fn get_stock_ledger_query_plan(item_code: &str, warehouse: &str, company: &s
             "stock_ledger_entry.creation desc",
         ],
         ..QueryPlan::default()
+    }
+}
+
+impl StockLedgerCache {
+    pub fn get_entries(
+        &mut self,
+        item_code: &str,
+        warehouse: &str,
+        company: &str,
+        loaded_entries: &[StockLedgerEntry],
+    ) -> Vec<StockLedgerEntry> {
+        if item_code.is_empty() || warehouse.is_empty() {
+            return Vec::new();
+        }
+
+        let key = (item_code.to_string(), warehouse.to_string());
+        if let Some(entries) = self.entries.get(&key) {
+            return entries.clone();
+        }
+
+        self.requests
+            .push(get_stock_ledger_query_plan(item_code, warehouse, company));
+        self.entries.insert(key.clone(), loaded_entries.to_vec());
+        self.entries.get(&key).cloned().unwrap_or_default()
     }
 }
 

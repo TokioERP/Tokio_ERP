@@ -7,15 +7,15 @@ use tokio_erp::erpnext::accounts::report::gross_profit::gross_profit::{
     get_delivery_notes_query_plan, get_group_wise_columns, get_grouped_by_invoice_total_row,
     get_invoice_row, get_last_purchase_rate_query_plan, get_product_bundle_query_plan,
     get_report_columns, get_returned_invoice_items_query_plan, get_stock_ledger_query_plan,
-    group_items_by_invoice, group_product_bundles, group_rows, load_non_stock_items_query_plan,
-    prepare_delivered_by_supplier_purchase_query_plan, prepare_invoice_query_plan,
-    prepare_return_invoice_query_plan, prepare_vouchers_to_ignore, process_gross_profit_rows,
-    should_skip_row, update_return_invoices, AccountingDimensionFilter, DeliveryNoteSummary,
-    GrossProfitBuyingAmountContext, GrossProfitBuyingAmountRow, GrossProfitFilters,
-    GrossProfitInvoiceRow, GrossProfitProcessRow, GrossProfitSourceRow, IncomingRateCache,
-    IncomingRateRequest, MasterNameSettings, PackedItemOverride, ProductBundleItem,
-    ProductBundleLoadRow, ReportCell, ReportColumn, ReturnAdjustedRow, ReturnedInvoiceItem,
-    StockLedgerEntry,
+    group_items_by_invoice, group_product_bundles, group_rows, load_invoice_items_query_plans,
+    load_non_stock_items_query_plan, prepare_delivered_by_supplier_purchase_query_plan,
+    prepare_invoice_query_plan, prepare_return_invoice_query_plan, prepare_vouchers_to_ignore,
+    process_gross_profit_rows, should_skip_row, update_return_invoices, AccountingDimensionFilter,
+    DeliveryNoteSummary, GrossProfitBuyingAmountContext, GrossProfitBuyingAmountRow,
+    GrossProfitFilters, GrossProfitInvoiceRow, GrossProfitProcessRow, GrossProfitSourceRow,
+    IncomingRateCache, IncomingRateRequest, MasterNameSettings, PackedItemOverride,
+    ProductBundleItem, ProductBundleLoadRow, ReportCell, ReportColumn, ReturnAdjustedRow,
+    ReturnedInvoiceItem, StockLedgerCache, StockLedgerEntry,
 };
 
 fn filters(group_by: &str) -> GrossProfitFilters {
@@ -1266,6 +1266,28 @@ fn gross_profit_return_invoice_query_plan_matches_erpnext_include_returned_branc
 }
 
 #[test]
+fn gross_profit_load_invoice_items_query_plans_match_erpnext_normal_then_return_queries() {
+    let rows = vec![
+        invoice_item_row("SINV-0001", "ITEM-001"),
+        invoice_item_row("SINV-0002", "ITEM-002"),
+    ];
+
+    let plans = load_invoice_items_query_plans(&filters("Invoice"), &rows);
+
+    assert!(plans
+        .normal
+        .conditions
+        .contains(&"sales_invoice.is_return = 0".to_string()));
+    assert!(plans.returns.conditions.contains(
+        &"(sales_invoice.is_return = 1 and sales_invoice.return_against is not null)".to_string()
+    ));
+    assert!(plans
+        .returns
+        .conditions
+        .contains(&"sales_invoice.return_against not in [SINV-0001, SINV-0002]".to_string()));
+}
+
+#[test]
 fn gross_profit_auxiliary_query_plans_match_erpnext_shapes() {
     assert_eq!(
         get_delivery_notes_query_plan(&["SINV-0001".to_string(), "SINV-0002".to_string()])
@@ -1319,6 +1341,35 @@ fn gross_profit_auxiliary_query_plans_match_erpnext_shapes() {
         .conditions
         .contains(&"purchase_invoice_item.cost_center = Main - TC".to_string()));
     assert_eq!(last_purchase.limit, Some(1));
+}
+
+#[test]
+fn gross_profit_stock_ledger_entries_cache_and_blank_guard_match_erpnext() {
+    let mut cache = StockLedgerCache::default();
+    let entries = vec![StockLedgerEntry {
+        voucher_type: "Sales Invoice".to_string(),
+        voucher_no: "SINV-0001".to_string(),
+        voucher_detail_no: "SINV-ROW-1".to_string(),
+        stock_value: 100.0,
+        qty: -1.0,
+    }];
+
+    assert!(cache
+        .get_entries("", "Stores - TC", "_Test Company", &entries)
+        .is_empty());
+    assert_eq!(
+        cache.get_entries("ITEM-001", "Stores - TC", "_Test Company", &entries),
+        entries
+    );
+    assert_eq!(
+        cache.get_entries("ITEM-001", "Stores - TC", "_Test Company", &[]),
+        entries
+    );
+    assert_eq!(cache.requests.len(), 1);
+    assert_eq!(
+        cache.requests[0].conditions[1],
+        "stock_ledger_entry.item_code = ITEM-001"
+    );
 }
 
 #[test]
