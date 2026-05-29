@@ -36,6 +36,9 @@ pub struct AccountDetail {
     pub is_group: bool,
     pub account_currency: String,
     pub account_type: Option<String>,
+    pub parent_account: Option<String>,
+    pub lft: i32,
+    pub rgt: i32,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -45,6 +48,7 @@ pub struct GeneralLedgerInput {
     pub accounts: BTreeMap<String, AccountDetail>,
     pub valid_parties: BTreeMap<String, Vec<String>>,
     pub party_names: BTreeMap<String, BTreeMap<String, String>>,
+    pub party_currencies: BTreeMap<String, BTreeMap<String, String>>,
     pub supplier_invoice_details: BTreeMap<String, String>,
     pub gl_entries: Vec<GlEntry>,
 }
@@ -78,6 +82,7 @@ pub struct GlEntry {
     pub presentation_currency: Option<String>,
     pub remarks: Option<String>,
     pub bill_no: Option<String>,
+    pub finance_book: Option<String>,
     pub balance: f64,
     pub is_cancelled: bool,
     pub is_blank: bool,
@@ -138,6 +143,7 @@ impl GlEntry {
             presentation_currency: None,
             remarks: None,
             bill_no: None,
+            finance_book: None,
             balance: 0.0,
             is_cancelled: false,
             is_blank: false,
@@ -173,6 +179,7 @@ impl GlEntry {
             presentation_currency: None,
             remarks: None,
             bill_no: None,
+            finance_book: None,
             balance: 0.0,
             is_cancelled: false,
             is_blank: true,
@@ -315,6 +322,19 @@ pub fn validate_filters(
         return Err("From Date must be before To Date".to_string());
     }
 
+    if filters.include_default_book_entries {
+        if let (Some(finance_book), Some(company_fb)) =
+            (filters.finance_book.as_ref(), filters.company_fb.as_ref())
+        {
+            if !company_fb.is_empty() && finance_book != company_fb {
+                return Err(
+                    "To use a different finance book, please uncheck 'Include Default FB Entries'"
+                        .to_string(),
+                );
+            }
+        }
+    }
+
     Ok(())
 }
 
@@ -362,6 +382,28 @@ pub fn set_account_currency(
             }) {
                 account_currency = Some(first);
             }
+        } else if let (Some(party_type), Some(party)) =
+            (filters.party_type.as_ref(), filters.party.first())
+        {
+            account_currency = input
+                .gl_entries
+                .iter()
+                .find(|entry| {
+                    entry.party_type.as_ref() == Some(party_type)
+                        && entry.party.as_ref() == Some(party)
+                })
+                .and_then(|entry| entry.account_currency.clone())
+                .or_else(|| {
+                    if matches!(party_type.as_str(), "Employee" | "Shareholder" | "Member") {
+                        None
+                    } else {
+                        input
+                            .party_currencies
+                            .get(party_type)
+                            .and_then(|parties| parties.get(party))
+                            .cloned()
+                    }
+                });
         }
 
         let account_currency = account_currency.unwrap_or_else(|| input.company_currency.clone());
@@ -440,18 +482,20 @@ pub fn get_conditions(filters: &GeneralLedgerFilters) -> Vec<String> {
 }
 
 pub fn get_gl_entries(filters: &GeneralLedgerFilters, input: &GeneralLedgerInput) -> Vec<GlEntry> {
+    let account_filter = account_filter_with_children(&filters.account, input);
     let mut rows = input
         .gl_entries
         .iter()
         .filter(|entry| filters.show_cancelled_entries || !entry.is_cancelled)
         .filter(|entry| {
-            filters.account.is_empty()
+            account_filter.is_empty()
                 || entry
                     .account
                     .as_ref()
-                    .map(|account| filters.account.iter().any(|item| item == account))
+                    .map(|account| account_filter.iter().any(|item| item == account))
                     .unwrap_or(false)
         })
+        .filter(|entry| finance_book_matches(entry, filters))
         .filter(|entry| {
             filters
                 .voucher_no
@@ -525,6 +569,47 @@ pub fn get_gl_entries(filters: &GeneralLedgerFilters, input: &GeneralLedgerInput
     }
 
     rows
+}
+
+fn account_filter_with_children(accounts: &[String], input: &GeneralLedgerInput) -> Vec<String> {
+    let mut expanded = Vec::new();
+    for account in accounts {
+        if !expanded.iter().any(|item| item == account) {
+            expanded.push(account.clone());
+        }
+        let Some(parent) = input.accounts.get(account) else {
+            continue;
+        };
+        if !parent.is_group {
+            continue;
+        }
+        for (candidate_name, candidate) in &input.accounts {
+            if candidate.lft >= parent.lft
+                && candidate.rgt <= parent.rgt
+                && !expanded.iter().any(|item| item == candidate_name)
+            {
+                expanded.push(candidate_name.clone());
+            }
+        }
+    }
+    expanded
+}
+
+fn finance_book_matches(entry: &GlEntry, filters: &GeneralLedgerFilters) -> bool {
+    let entry_book = entry.finance_book.as_deref().unwrap_or("");
+    if filters.include_default_book_entries {
+        if let Some(finance_book) = filters.finance_book.as_deref() {
+            entry_book.is_empty() || entry_book == finance_book
+        } else if let Some(company_fb) = filters.company_fb.as_deref() {
+            entry_book.is_empty() || entry_book == company_fb
+        } else {
+            entry_book.is_empty()
+        }
+    } else if let Some(finance_book) = filters.finance_book.as_deref() {
+        entry_book.is_empty() || entry_book == finance_book
+    } else {
+        entry_book.is_empty()
+    }
 }
 
 pub fn get_data_with_opening_closing(

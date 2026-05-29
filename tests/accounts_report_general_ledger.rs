@@ -2,8 +2,8 @@ use std::collections::BTreeMap;
 
 use tokio_erp::erpnext::accounts::report::general_ledger::general_ledger::{
     execute, get_balance, get_columns, get_conditions, get_data_with_opening_closing,
-    get_group_by_field, get_result_as_list, set_account_currency, validate_filters, AccountDetail,
-    GeneralLedgerFilters, GeneralLedgerInput, GlEntry,
+    get_gl_entries, get_group_by_field, get_result_as_list, set_account_currency, validate_filters,
+    AccountDetail, GeneralLedgerFilters, GeneralLedgerInput, GlEntry,
 };
 
 fn filters() -> GeneralLedgerFilters {
@@ -49,6 +49,9 @@ fn input() -> GeneralLedgerInput {
                     is_group: false,
                     account_currency: "USD".to_string(),
                     account_type: Some("Cash".to_string()),
+                    parent_account: Some("Assets - A".to_string()),
+                    lft: 2,
+                    rgt: 3,
                 },
             ),
             (
@@ -57,6 +60,9 @@ fn input() -> GeneralLedgerInput {
                     is_group: false,
                     account_currency: "USD".to_string(),
                     account_type: Some("Receivable".to_string()),
+                    parent_account: Some("Assets - A".to_string()),
+                    lft: 4,
+                    rgt: 5,
                 },
             ),
             (
@@ -65,6 +71,9 @@ fn input() -> GeneralLedgerInput {
                     is_group: true,
                     account_currency: "USD".to_string(),
                     account_type: None,
+                    parent_account: None,
+                    lft: 1,
+                    rgt: 6,
                 },
             ),
         ]),
@@ -75,6 +84,10 @@ fn input() -> GeneralLedgerInput {
         party_names: BTreeMap::from([(
             "Customer".to_string(),
             BTreeMap::from([("CUST-1".to_string(), "Customer One".to_string())]),
+        )]),
+        party_currencies: BTreeMap::from([(
+            "Customer".to_string(),
+            BTreeMap::from([("CUST-1".to_string(), "EUR".to_string())]),
         )]),
         supplier_invoice_details: BTreeMap::from([("PINV-1".to_string(), "BILL-1".to_string())]),
         gl_entries: vec![
@@ -146,6 +159,95 @@ fn input() -> GeneralLedgerInput {
             .with_against("Purchase Invoice", "PINV-2"),
         ],
     }
+}
+
+#[test]
+fn general_ledger_party_only_currency_uses_gl_entry_currency_then_party_default() {
+    let mut input = input();
+    input.gl_entries[1].account_currency = Some("GBP".to_string());
+
+    let mut f = filters();
+    f.account.clear();
+    f.party_type = Some("Customer".to_string());
+    f.party = vec!["CUST-1".to_string()];
+
+    let f = set_account_currency(f, &input).unwrap();
+    assert_eq!(f.account_currency.as_deref(), Some("GBP"));
+    assert_eq!(f.presentation_currency.as_deref(), Some("GBP"));
+
+    input.gl_entries[1].account_currency = None;
+    let mut f = filters();
+    f.account.clear();
+    f.party_type = Some("Customer".to_string());
+    f.party = vec!["CUST-1".to_string()];
+
+    let f = set_account_currency(f, &input).unwrap();
+    assert_eq!(f.account_currency.as_deref(), Some("EUR"));
+    assert_eq!(f.presentation_currency.as_deref(), Some("EUR"));
+}
+
+#[test]
+fn general_ledger_group_account_filter_includes_child_accounts() {
+    let mut input = input();
+    input.gl_entries.push(GlEntry::new(
+        "GLE-RECEIVABLE",
+        "2026-08-01",
+        "Receivable - A",
+        30.0,
+        0.0,
+        "No",
+        "Sales Invoice",
+        "SINV-RECEIVABLE",
+    ));
+
+    let mut f = filters();
+    f.account = vec!["Assets - A".to_string()];
+
+    let entries = get_gl_entries(&f, &input);
+    assert!(entries
+        .iter()
+        .any(|row| row.gl_entry.as_deref() == Some("GLE-RECEIVABLE")));
+}
+
+#[test]
+fn general_ledger_finance_book_filter_matches_erpnext_default_book_rules() {
+    let mut input = input();
+    input.gl_entries[1].finance_book = Some("IFRS".to_string());
+    input.gl_entries[2].finance_book = Some("Local GAAP".to_string());
+    input.gl_entries.push(GlEntry::new(
+        "GLE-EMPTY-FB",
+        "2026-08-01",
+        "Cash - A",
+        10.0,
+        0.0,
+        "No",
+        "Journal Entry",
+        "JV-EMPTY-FB",
+    ));
+
+    let mut f = filters();
+    f.finance_book = Some("IFRS".to_string());
+    f.company_fb = Some("IFRS".to_string());
+    f.include_default_book_entries = true;
+
+    let entries = get_gl_entries(&f, &input);
+    assert!(entries
+        .iter()
+        .any(|row| row.gl_entry.as_deref() == Some("GLE-1")));
+    assert!(entries
+        .iter()
+        .any(|row| row.gl_entry.as_deref() == Some("GLE-EMPTY-FB")));
+    assert!(!entries
+        .iter()
+        .any(|row| row.gl_entry.as_deref() == Some("GLE-2")));
+
+    let mut different_book = f;
+    different_book.finance_book = Some("Tax".to_string());
+    different_book.company_fb = Some("IFRS".to_string());
+    assert_eq!(
+        validate_filters(&mut different_book, &input).unwrap_err(),
+        "To use a different finance book, please uncheck 'Include Default FB Entries'"
+    );
 }
 
 #[test]
