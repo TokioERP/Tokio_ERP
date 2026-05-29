@@ -41,6 +41,12 @@ pub struct AccountDetail {
     pub rgt: i32,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CostCenterDetail {
+    pub lft: i32,
+    pub rgt: i32,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct GeneralLedgerInput {
     pub company_currency: String,
@@ -49,6 +55,7 @@ pub struct GeneralLedgerInput {
     pub valid_parties: BTreeMap<String, Vec<String>>,
     pub party_names: BTreeMap<String, BTreeMap<String, String>>,
     pub party_currencies: BTreeMap<String, BTreeMap<String, String>>,
+    pub cost_centers: BTreeMap<String, CostCenterDetail>,
     pub supplier_invoice_details: BTreeMap<String, String>,
     pub gl_entries: Vec<GlEntry>,
 }
@@ -483,6 +490,7 @@ pub fn get_conditions(filters: &GeneralLedgerFilters) -> Vec<String> {
 
 pub fn get_gl_entries(filters: &GeneralLedgerFilters, input: &GeneralLedgerInput) -> Vec<GlEntry> {
     let account_filter = account_filter_with_children(&filters.account, input);
+    let cost_center_filter = cost_center_filter_with_children(&filters.cost_center, input);
     let mut rows = input
         .gl_entries
         .iter()
@@ -536,11 +544,11 @@ pub fn get_gl_entries(filters: &GeneralLedgerFilters, input: &GeneralLedgerInput
                     .unwrap_or(false)
         })
         .filter(|entry| {
-            filters.cost_center.is_empty()
+            cost_center_filter.is_empty()
                 || entry
                     .cost_center
                     .as_ref()
-                    .map(|cost_center| filters.cost_center.iter().any(|item| item == cost_center))
+                    .map(|cost_center| cost_center_filter.iter().any(|item| item == cost_center))
                     .unwrap_or(false)
         })
         .cloned()
@@ -584,6 +592,30 @@ fn account_filter_with_children(accounts: &[String], input: &GeneralLedgerInput)
             continue;
         }
         for (candidate_name, candidate) in &input.accounts {
+            if candidate.lft >= parent.lft
+                && candidate.rgt <= parent.rgt
+                && !expanded.iter().any(|item| item == candidate_name)
+            {
+                expanded.push(candidate_name.clone());
+            }
+        }
+    }
+    expanded
+}
+
+fn cost_center_filter_with_children(
+    cost_centers: &[String],
+    input: &GeneralLedgerInput,
+) -> Vec<String> {
+    let mut expanded = Vec::new();
+    for cost_center in cost_centers {
+        if !expanded.iter().any(|item| item == cost_center) {
+            expanded.push(cost_center.clone());
+        }
+        let Some(parent) = input.cost_centers.get(cost_center) else {
+            continue;
+        };
+        for (candidate_name, candidate) in &input.cost_centers {
             if candidate.lft >= parent.lft
                 && candidate.rgt <= parent.rgt
                 && !expanded.iter().any(|item| item == candidate_name)

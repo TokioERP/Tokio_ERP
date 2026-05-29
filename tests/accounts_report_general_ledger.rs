@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use tokio_erp::erpnext::accounts::report::general_ledger::general_ledger::{
     execute, get_balance, get_columns, get_conditions, get_data_with_opening_closing,
     get_gl_entries, get_group_by_field, get_result_as_list, set_account_currency, validate_filters,
-    AccountDetail, GeneralLedgerFilters, GeneralLedgerInput, GlEntry,
+    AccountDetail, CostCenterDetail, GeneralLedgerFilters, GeneralLedgerInput, GlEntry,
 };
 
 fn filters() -> GeneralLedgerFilters {
@@ -89,6 +89,10 @@ fn input() -> GeneralLedgerInput {
             "Customer".to_string(),
             BTreeMap::from([("CUST-1".to_string(), "EUR".to_string())]),
         )]),
+        cost_centers: BTreeMap::from([
+            ("Main - A".to_string(), CostCenterDetail { lft: 1, rgt: 4 }),
+            ("Sales - A".to_string(), CostCenterDetail { lft: 2, rgt: 3 }),
+        ]),
         supplier_invoice_details: BTreeMap::from([("PINV-1".to_string(), "BILL-1".to_string())]),
         gl_entries: vec![
             GlEntry::new(
@@ -159,6 +163,31 @@ fn input() -> GeneralLedgerInput {
             .with_against("Purchase Invoice", "PINV-2"),
         ],
     }
+}
+
+#[test]
+fn general_ledger_group_cost_center_filter_includes_child_cost_centers() {
+    let mut input = input();
+    let mut child_cost_center = GlEntry::new(
+        "GLE-CHILD-COST-CENTER",
+        "2026-08-01",
+        "Cash - A",
+        40.0,
+        0.0,
+        "No",
+        "Journal Entry",
+        "JV-CHILD-CC",
+    );
+    child_cost_center.cost_center = Some("Sales - A".to_string());
+    input.gl_entries.push(child_cost_center);
+
+    let mut f = filters();
+    f.cost_center = vec!["Main - A".to_string()];
+
+    let entries = get_gl_entries(&f, &input);
+    assert!(entries
+        .iter()
+        .any(|row| row.gl_entry.as_deref() == Some("GLE-CHILD-COST-CENTER")));
 }
 
 #[test]
