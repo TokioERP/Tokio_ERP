@@ -3238,7 +3238,7 @@
     {
       "source": "accounts/report/purchase_register/purchase_register.py",
       "target": "accounts/report/purchase_register/purchase_register.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/purchase_register/test_purchase_register.py",
