@@ -5,13 +5,14 @@ use tokio_erp::erpnext::accounts::report::gross_profit::gross_profit::{
     get_delivery_notes_query_plan, get_group_wise_columns, get_invoice_row,
     get_last_purchase_rate_query_plan, get_product_bundle_query_plan,
     get_returned_invoice_items_query_plan, get_stock_ledger_query_plan, group_items_by_invoice,
-    group_rows, prepare_delivered_by_supplier_purchase_query_plan, prepare_invoice_query_plan,
+    group_product_bundles, group_rows, load_non_stock_items_query_plan,
+    prepare_delivered_by_supplier_purchase_query_plan, prepare_invoice_query_plan,
     prepare_return_invoice_query_plan, prepare_vouchers_to_ignore, process_gross_profit_rows,
     should_skip_row, update_return_invoices, AccountingDimensionFilter, DeliveryNoteSummary,
     GrossProfitBuyingAmountContext, GrossProfitBuyingAmountRow, GrossProfitFilters,
     GrossProfitInvoiceRow, GrossProfitProcessRow, GrossProfitSourceRow, MasterNameSettings,
-    PackedItemOverride, ProductBundleItem, ReportCell, ReportColumn, ReturnAdjustedRow,
-    ReturnedInvoiceItem, StockLedgerEntry,
+    PackedItemOverride, ProductBundleItem, ProductBundleLoadRow, ReportCell, ReportColumn,
+    ReturnAdjustedRow, ReturnedInvoiceItem, StockLedgerEntry,
 };
 
 fn filters(group_by: &str) -> GrossProfitFilters {
@@ -1069,6 +1070,79 @@ fn gross_profit_auxiliary_query_plans_match_erpnext_shapes() {
         .conditions
         .contains(&"purchase_invoice_item.cost_center = Main - TC".to_string()));
     assert_eq!(last_purchase.limit, Some(1));
+}
+
+#[test]
+fn gross_profit_load_non_stock_items_query_plan_matches_erpnext_sql_list() {
+    let plan = load_non_stock_items_query_plan();
+
+    assert_eq!(plan.source, "Item");
+    assert_eq!(plan.selects, vec!["item.name"]);
+    assert_eq!(plan.conditions, vec!["item.is_stock_item = 0"]);
+}
+
+#[test]
+fn gross_profit_group_product_bundles_nests_parenttype_parent_and_parent_item_like_erpnext() {
+    let rows = vec![
+        ProductBundleLoadRow {
+            parenttype: "Sales Invoice".to_string(),
+            parent: "SINV-0001".to_string(),
+            parent_item: "BUNDLE-001".to_string(),
+            item: ProductBundleItem {
+                item_code: "COMP-001".to_string(),
+                item_name: "Component 1".to_string(),
+                description: "Component 1 desc".to_string(),
+                warehouse: Some("Stores - TC".to_string()),
+                total_qty: 2.0,
+                parent_detail_docname: "ROW-1".to_string(),
+                serial_and_batch_bundle: Some("SBB-1".to_string()),
+            },
+        },
+        ProductBundleLoadRow {
+            parenttype: "Sales Invoice".to_string(),
+            parent: "SINV-0001".to_string(),
+            parent_item: "BUNDLE-001".to_string(),
+            item: ProductBundleItem {
+                item_code: "COMP-002".to_string(),
+                item_name: "Component 2".to_string(),
+                description: "Component 2 desc".to_string(),
+                warehouse: Some("Stores - TC".to_string()),
+                total_qty: 3.0,
+                parent_detail_docname: "ROW-1".to_string(),
+                serial_and_batch_bundle: None,
+            },
+        },
+        ProductBundleLoadRow {
+            parenttype: "Delivery Note".to_string(),
+            parent: "DN-0001".to_string(),
+            parent_item: "BUNDLE-002".to_string(),
+            item: ProductBundleItem {
+                item_code: "COMP-003".to_string(),
+                item_name: "Component 3".to_string(),
+                description: "Component 3 desc".to_string(),
+                warehouse: Some("Transit - TC".to_string()),
+                total_qty: 4.0,
+                parent_detail_docname: "DN-ROW-1".to_string(),
+                serial_and_batch_bundle: None,
+            },
+        },
+    ];
+
+    let grouped = group_product_bundles(&rows);
+
+    assert_eq!(
+        grouped["Sales Invoice"]["SINV-0001"]["BUNDLE-001"]
+            .iter()
+            .map(|item| item.item_code.as_str())
+            .collect::<Vec<_>>(),
+        vec!["COMP-001", "COMP-002"]
+    );
+    assert_eq!(
+        grouped["Delivery Note"]["DN-0001"]["BUNDLE-002"][0]
+            .warehouse
+            .as_deref(),
+        Some("Transit - TC")
+    );
 }
 
 #[test]

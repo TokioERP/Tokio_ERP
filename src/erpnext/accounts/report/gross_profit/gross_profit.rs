@@ -126,6 +126,17 @@ pub struct ProductBundleItem {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct ProductBundleLoadRow {
+    pub parenttype: String,
+    pub parent: String,
+    pub parent_item: String,
+    pub item: ProductBundleItem,
+}
+
+pub type ProductBundles =
+    BTreeMap<String, BTreeMap<String, BTreeMap<String, Vec<ProductBundleItem>>>>;
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct ReturnAdjustedRow {
     pub parent: String,
     pub item_code: String,
@@ -362,6 +373,32 @@ pub fn get_product_bundle_query_plan() -> QueryPlan {
         conditions: vec!["packed_item.docstatus = 1".to_string()],
         ..QueryPlan::default()
     }
+}
+
+pub fn load_non_stock_items_query_plan() -> QueryPlan {
+    QueryPlan {
+        source: "Item",
+        selects: vec!["item.name"],
+        conditions: vec!["item.is_stock_item = 0".to_string()],
+        ..QueryPlan::default()
+    }
+}
+
+pub fn group_product_bundles(rows: &[ProductBundleLoadRow]) -> ProductBundles {
+    let mut product_bundles: ProductBundles = BTreeMap::new();
+
+    for row in rows {
+        product_bundles
+            .entry(row.parenttype.clone())
+            .or_default()
+            .entry(row.parent.clone())
+            .or_default()
+            .entry(row.parent_item.clone())
+            .or_default()
+            .push(row.item.clone());
+    }
+
+    product_bundles
 }
 
 pub fn get_stock_ledger_query_plan(item_code: &str, warehouse: &str, company: &str) -> QueryPlan {
