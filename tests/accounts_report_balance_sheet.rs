@@ -249,3 +249,51 @@ fn balance_sheet_execute_appends_unclosed_and_provisional_rows_like_erpnext() {
         .delegated_to_financial_report_engine
     );
 }
+
+#[test]
+fn balance_sheet_erpnext_test_fixture_keeps_income_out_and_reports_balance_sheet_totals() {
+    let asset = vec![
+        BalanceSheetRow::account("My Bank", &[("fy_2026", 1100.0)]),
+        BalanceSheetRow::account("Application of Funds (Assets)", &[("fy_2026", 1100.0)]),
+        BalanceSheetRow::empty(),
+    ];
+    let liability = vec![
+        BalanceSheetRow::account("VAT Liabilities", &[("fy_2026", 10.0)]),
+        BalanceSheetRow::account("Advance VAT Paid", &[("fy_2026", -10.0)]),
+        BalanceSheetRow::account("Duties and Taxes", &[("fy_2026", 0.0)]),
+        BalanceSheetRow::empty(),
+    ];
+    let equity = vec![
+        BalanceSheetRow::account("Capital Stock", &[("fy_2026", 1000.0)]),
+        BalanceSheetRow::account("Equity", &[("fy_2026", 1000.0)]),
+        BalanceSheetRow::empty(),
+    ];
+
+    let report = execute(
+        &filters(),
+        vec!["Account".to_string()],
+        vec![BalanceSheetPeriod::new("fy_2026", "2026")],
+        asset,
+        liability,
+        equity,
+        2,
+    );
+    let name_and_total = report
+        .rows
+        .iter()
+        .filter(|row| !row.account_name.is_empty())
+        .map(|row| (row.account_name.as_str(), row.total))
+        .collect::<std::collections::BTreeMap<_, _>>();
+
+    assert!(!name_and_total.contains_key("Sales"));
+    assert_eq!(name_and_total["My Bank"], 1100.0);
+    assert_eq!(name_and_total["VAT Liabilities"], 10.0);
+    assert_eq!(name_and_total["Advance VAT Paid"], -10.0);
+    assert_eq!(name_and_total["Duties and Taxes"], 0.0);
+    assert_eq!(name_and_total["Application of Funds (Assets)"], 1100.0);
+    assert_eq!(name_and_total["Equity"], 1000.0);
+    assert_eq!(
+        name_and_total["'Provisional Profit / Loss (Credit)'"],
+        100.0
+    );
+}

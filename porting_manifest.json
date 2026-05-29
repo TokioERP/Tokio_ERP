@@ -2873,7 +2873,7 @@
     {
       "source": "accounts/report/balance_sheet/test_balance_sheet.py",
       "target": "accounts/report/balance_sheet/test_balance_sheet.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/bank_clearance_summary/__init__.py",
