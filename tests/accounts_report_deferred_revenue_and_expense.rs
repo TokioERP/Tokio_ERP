@@ -35,6 +35,11 @@ fn revenue_entry(
 ) -> DeferredEntry {
     DeferredEntry {
         doc: "SINV-1".to_string(),
+        company: "Acme".to_string(),
+        docstatus: 1,
+        is_cancelled: false,
+        enable_deferred_revenue: true,
+        enable_deferred_expense: false,
         posting_date: "2026-01-01".to_string(),
         item: item.to_string(),
         item_name: item.to_string(),
@@ -59,6 +64,11 @@ fn expense_entry(
 ) -> DeferredEntry {
     DeferredEntry {
         doc: "PINV-1".to_string(),
+        company: "Acme".to_string(),
+        docstatus: 1,
+        is_cancelled: false,
+        enable_deferred_revenue: false,
+        enable_deferred_expense: true,
         posting_date: "2026-01-01".to_string(),
         item: item.to_string(),
         item_name: item.to_string(),
@@ -218,4 +228,62 @@ fn deferred_report_execute_returns_columns_rows_total_and_chart() {
     assert_eq!(report.chart.data.datasets[0].name, "Actual Posting");
     assert_eq!(report.chart.data.datasets[0].values, vec![100.0, 90.0, 0.0]);
     assert_eq!(report.chart.data.datasets.len(), 1);
+}
+
+#[test]
+fn deferred_report_filters_company_type_status_cancelled_and_service_window_like_erpnext_query() {
+    let mut wrong_company = revenue_entry("WRONG-COMPANY", "2026-01-31", 999.0, 0.0, true);
+    wrong_company.company = "Other Co".to_string();
+    let mut draft = revenue_entry("DRAFT", "2026-01-31", 999.0, 0.0, true);
+    draft.docstatus = 0;
+    let mut cancelled = revenue_entry("CANCELLED", "2026-01-31", 999.0, 0.0, true);
+    cancelled.is_cancelled = true;
+    let mut not_deferred = revenue_entry("NOT-DEFERRED", "2026-01-31", 999.0, 0.0, true);
+    not_deferred.enable_deferred_revenue = false;
+    let wrong_type = expense_entry("EXPENSE", "2026-01-31", 0.0, 999.0, true);
+    let mut outside_period = revenue_entry("OUTSIDE", "2025-12-31", 999.0, 0.0, true);
+    outside_period.service_start_date = "2025-10-01".to_string();
+    outside_period.service_end_date = "2025-12-31".to_string();
+    let valid = revenue_entry("VALID", "2026-01-31", 100.0, 0.0, true);
+
+    let report = execute(
+        filters(BookingBasis::Days, false),
+        periods(),
+        vec![
+            wrong_company,
+            draft,
+            cancelled,
+            not_deferred,
+            wrong_type,
+            outside_period,
+            valid,
+        ],
+    )
+    .expect("report");
+
+    assert_eq!(report.data[0].name, "SINV-1");
+    assert_eq!(report.data[1].name, "VALID");
+    assert_eq!(report.data[1].periods["jan_2026"], 100.0);
+    assert_eq!(report.chart.data.datasets[0].values, vec![100.0, 0.0, 0.0]);
+}
+
+#[test]
+fn deferred_report_expense_filter_keeps_only_deferred_purchase_entries() {
+    let mut expense_filters = filters(BookingBasis::Days, true);
+    expense_filters.deferred_type = DeferredType::Expense;
+    let report = execute(
+        expense_filters,
+        periods(),
+        vec![
+            revenue_entry("REVENUE", "2026-01-31", 100.0, 0.0, true),
+            expense_entry("EXPENSE", "2026-01-31", 0.0, 80.0, true),
+        ],
+    )
+    .expect("report");
+
+    assert_eq!(report.data[0].name, "PINV-1");
+    assert_eq!(report.data[1].name, "EXPENSE");
+    assert_eq!(report.data.last().unwrap().name, "Total Deferred Expense");
+    assert_eq!(report.chart.data.datasets[0].values, vec![-80.0, 0.0, 0.0]);
+    assert_eq!(report.chart.data.datasets[1].name, "Expected");
 }

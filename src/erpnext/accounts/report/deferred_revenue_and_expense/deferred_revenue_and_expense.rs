@@ -29,6 +29,11 @@ pub struct DeferredFilters {
 #[derive(Clone, Debug, PartialEq)]
 pub struct DeferredEntry {
     pub doc: String,
+    pub company: String,
+    pub docstatus: i32,
+    pub is_cancelled: bool,
+    pub enable_deferred_revenue: bool,
+    pub enable_deferred_expense: bool,
     pub posting_date: String,
     pub item: String,
     pub item_name: String,
@@ -295,6 +300,11 @@ impl DeferredItem {
     pub fn make_dummy_gle(&self, name: &str, date: &str, amount: f64) -> DeferredEntry {
         let mut entry = DeferredEntry {
             doc: self.parent.clone(),
+            company: self.filters.company.clone(),
+            docstatus: 1,
+            is_cancelled: false,
+            enable_deferred_revenue: false,
+            enable_deferred_expense: false,
             posting_date: date.to_string(),
             item: self.name.clone(),
             item_name: self.item_name.clone(),
@@ -312,10 +322,12 @@ impl DeferredItem {
         match self.item_type {
             DeferredItemType::Sale => {
                 entry.deferred_revenue_account = Some(self.deferred_account.clone());
+                entry.enable_deferred_revenue = true;
                 entry.debit = amount;
             }
             DeferredItemType::Purchase => {
                 entry.deferred_expense_account = Some(self.deferred_account.clone());
+                entry.enable_deferred_expense = true;
                 entry.credit = amount;
             }
         }
@@ -530,18 +542,46 @@ impl DeferredRevenueAndExpenseReport {
             let items = self
                 .entries
                 .iter()
-                .filter(|entry| entry.doc == doc)
+                .filter(|entry| entry.doc == doc && self.entry_matches_filters(entry))
                 .cloned()
                 .collect::<Vec<_>>();
-            self.deferred_invoices.push(DeferredInvoice::new(
-                &doc,
-                items,
-                self.filters.clone(),
-                self.period_list.clone(),
-            )?);
+            if !items.is_empty() {
+                self.deferred_invoices.push(DeferredInvoice::new(
+                    &doc,
+                    items,
+                    self.filters.clone(),
+                    self.period_list.clone(),
+                )?);
+            }
         }
 
         Ok(())
+    }
+
+    fn entry_matches_filters(&self, entry: &DeferredEntry) -> bool {
+        if entry.docstatus != 1 || entry.company != self.filters.company || entry.is_cancelled {
+            return false;
+        }
+
+        match self.filters.deferred_type {
+            DeferredType::Revenue => {
+                if !entry.enable_deferred_revenue || entry.deferred_revenue_account.is_none() {
+                    return false;
+                }
+            }
+            DeferredType::Expense => {
+                if !entry.enable_deferred_expense || entry.deferred_expense_account.is_none() {
+                    return false;
+                }
+            }
+        }
+
+        service_overlaps_periods(
+            &entry.service_start_date,
+            &entry.service_end_date,
+            &self.period_list,
+        )
+        .unwrap_or(false)
     }
 
     fn estimate_future(&mut self) -> Result<(), String> {
@@ -699,6 +739,29 @@ fn monthly_period_list(start: SimpleDate, end: SimpleDate) -> Vec<Period> {
         current = add_days(period_end, 1);
     }
     periods
+}
+
+fn service_overlaps_periods(
+    service_start: &str,
+    service_end: &str,
+    period_list: &[Period],
+) -> Result<bool, String> {
+    let Some(first_period) = period_list.first() else {
+        return Ok(false);
+    };
+    let Some(last_period) = period_list.last() else {
+        return Ok(false);
+    };
+
+    let service_start = SimpleDate::parse(service_start)?;
+    let service_end = SimpleDate::parse(service_end)?;
+    let report_start = SimpleDate::parse(&first_period.from_date)?;
+    let report_end = SimpleDate::parse(&last_period.to_date)?;
+
+    Ok(
+        (report_start >= service_start && service_end >= report_start)
+            || (service_start >= report_start && service_start <= report_end),
+    )
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
