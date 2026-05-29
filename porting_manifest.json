@@ -2938,7 +2938,7 @@
     {
       "source": "accounts/report/cash_flow/cash_flow.py",
       "target": "accounts/report/cash_flow/cash_flow.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/cheques_and_deposits_incorrectly_cleared/__init__.py",
