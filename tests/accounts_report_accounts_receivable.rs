@@ -3,11 +3,11 @@ use std::collections::BTreeMap;
 use tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivable::{
     accounts_receivable_args, allocate_future_payments, build_voucher_dict, get_columns,
     get_currency_fields, group_future_payments, init_voucher_balance, set_ageing,
-    set_invoice_details, update_voucher_balance, AccountType, FuturePayment,
-    FuturePaymentAllocationRow, InvoiceDetails, InvoiceDetailsRow, PaymentLedgerEntry,
-    ReceivablePayableAgeingRow, ReceivablePayableFilters, ReceivablePayableRuntime,
-    ReceivablePayableSettings, ReceivablePayableState, ReportColumn, VoucherBalanceKey,
-    VoucherBalanceRow,
+    set_invoice_details, set_party_details, update_voucher_balance, AccountType, FuturePayment,
+    FuturePaymentAllocationRow, InvoiceDetails, InvoiceDetailsRow, PartyDetails, PartyDetailsRow,
+    PaymentLedgerEntry, ReceivablePayableAgeingRow, ReceivablePayableFilters,
+    ReceivablePayableRuntime, ReceivablePayableSettings, ReceivablePayableState, ReportColumn,
+    VoucherBalanceKey, VoucherBalanceRow,
 };
 
 fn filters() -> ReceivablePayableFilters {
@@ -873,4 +873,104 @@ fn accounts_receivable_set_invoice_details_skips_sales_only_branches_when_disabl
     assert_eq!(row.sales_team, vec!["Ada".to_string()]);
     assert_eq!(row.sales_person, None);
     assert_eq!(row.delivery_notes, None);
+}
+
+#[test]
+fn accounts_receivable_set_party_details_returns_early_without_party_like_erpnext() {
+    let mut row = PartyDetailsRow {
+        party: String::new(),
+        account_currency: "EUR".to_string(),
+        currency: None,
+        customer_name: None,
+        territory: None,
+        customer_group: None,
+        customer_primary_contact: None,
+        default_sales_partner: None,
+        supplier_name: None,
+        supplier_group: None,
+    };
+
+    set_party_details(&mut row, &filters(), "USD", &BTreeMap::new());
+
+    assert_eq!(row.currency, None);
+    assert_eq!(row.customer_name, None);
+}
+
+#[test]
+fn accounts_receivable_set_party_details_updates_customer_and_company_currency_like_erpnext() {
+    let mut row = PartyDetailsRow {
+        party: "CUST-001".to_string(),
+        account_currency: "EUR".to_string(),
+        currency: None,
+        customer_name: None,
+        territory: None,
+        customer_group: None,
+        customer_primary_contact: None,
+        default_sales_partner: None,
+        supplier_name: None,
+        supplier_group: None,
+    };
+    let party_details = BTreeMap::from([(
+        "CUST-001".to_string(),
+        PartyDetails {
+            customer_name: Some("Acme".to_string()),
+            territory: Some("Uzbekistan".to_string()),
+            customer_group: Some("Commercial".to_string()),
+            customer_primary_contact: Some("CONT-001".to_string()),
+            default_sales_partner: Some("Partner A".to_string()),
+            supplier_name: None,
+            supplier_group: None,
+        },
+    )]);
+
+    set_party_details(&mut row, &filters(), "USD", &party_details);
+
+    assert_eq!(row.customer_name, Some("Acme".to_string()));
+    assert_eq!(row.territory, Some("Uzbekistan".to_string()));
+    assert_eq!(row.customer_group, Some("Commercial".to_string()));
+    assert_eq!(row.customer_primary_contact, Some("CONT-001".to_string()));
+    assert_eq!(row.default_sales_partner, Some("Partner A".to_string()));
+    assert_eq!(row.currency, Some("USD".to_string()));
+}
+
+#[test]
+fn accounts_receivable_set_party_details_uses_account_currency_for_party_currency_filters() {
+    let mut row = PartyDetailsRow {
+        party: "SUPP-001".to_string(),
+        account_currency: "EUR".to_string(),
+        currency: None,
+        customer_name: None,
+        territory: None,
+        customer_group: None,
+        customer_primary_contact: None,
+        default_sales_partner: None,
+        supplier_name: None,
+        supplier_group: None,
+    };
+    let party_details = BTreeMap::from([(
+        "SUPP-001".to_string(),
+        PartyDetails {
+            customer_name: None,
+            territory: None,
+            customer_group: None,
+            customer_primary_contact: None,
+            default_sales_partner: None,
+            supplier_name: Some("Supplier A".to_string()),
+            supplier_group: Some("Services".to_string()),
+        },
+    )]);
+
+    set_party_details(
+        &mut row,
+        &ReceivablePayableFilters {
+            party_account: Some("Creditors - TC".to_string()),
+            ..filters()
+        },
+        "USD",
+        &party_details,
+    );
+
+    assert_eq!(row.supplier_name, Some("Supplier A".to_string()));
+    assert_eq!(row.supplier_group, Some("Services".to_string()));
+    assert_eq!(row.currency, Some("EUR".to_string()));
 }

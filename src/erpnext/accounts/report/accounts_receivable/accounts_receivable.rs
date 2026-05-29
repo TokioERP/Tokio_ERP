@@ -175,6 +175,31 @@ pub struct InvoiceDetailsRow {
     pub delivery_notes: Option<String>,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PartyDetails {
+    pub customer_name: Option<String>,
+    pub territory: Option<String>,
+    pub customer_group: Option<String>,
+    pub customer_primary_contact: Option<String>,
+    pub default_sales_partner: Option<String>,
+    pub supplier_name: Option<String>,
+    pub supplier_group: Option<String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PartyDetailsRow {
+    pub party: String,
+    pub account_currency: String,
+    pub currency: Option<String>,
+    pub customer_name: Option<String>,
+    pub territory: Option<String>,
+    pub customer_group: Option<String>,
+    pub customer_primary_contact: Option<String>,
+    pub default_sales_partner: Option<String>,
+    pub supplier_name: Option<String>,
+    pub supplier_group: Option<String>,
+}
+
 impl VoucherBalanceKey {
     pub fn with_account(account: &str, voucher_type: &str, voucher_no: &str, party: &str) -> Self {
         Self(vec![
@@ -636,6 +661,33 @@ fn set_delivery_notes(row: &mut InvoiceDetailsRow, delivery_notes: &BTreeMap<Str
             row.delivery_notes = Some(notes.join(", "));
         }
     }
+}
+
+pub fn set_party_details(
+    row: &mut PartyDetailsRow,
+    filters: &ReceivablePayableFilters,
+    company_currency: &str,
+    party_details: &BTreeMap<String, PartyDetails>,
+) {
+    if row.party.is_empty() {
+        return;
+    }
+
+    if let Some(details) = party_details.get(&row.party) {
+        row.customer_name = details.customer_name.clone();
+        row.territory = details.territory.clone();
+        row.customer_group = details.customer_group.clone();
+        row.customer_primary_contact = details.customer_primary_contact.clone();
+        row.default_sales_partner = details.default_sales_partner.clone();
+        row.supplier_name = details.supplier_name.clone();
+        row.supplier_group = details.supplier_group.clone();
+    }
+
+    row.currency = if filters.in_party_currency || filters.party_account.is_some() {
+        Some(row.account_currency.clone())
+    } else {
+        Some(company_currency.to_string())
+    };
 }
 
 pub fn get_columns(
