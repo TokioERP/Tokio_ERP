@@ -42,6 +42,8 @@ fn input() -> GeneralLedgerInput {
     GeneralLedgerInput {
         company_currency: "USD".to_string(),
         default_company: "Acme".to_string(),
+        immutable_ledger: false,
+        accounting_dimensions: Vec::new(),
         accounts: BTreeMap::from([
             (
                 "Cash - A".to_string(),
@@ -467,6 +469,88 @@ fn general_ledger_consolidates_voucher_rows_and_columns_include_transaction_curr
         .iter()
         .any(|column| column.fieldname == "transaction_currency"));
     assert!(columns.iter().any(|column| column.fieldname == "remarks"));
+}
+
+#[test]
+fn general_ledger_consolidated_voucher_key_keeps_dimension_and_creation_rows_separate() {
+    let mut f = filters();
+    f.categorize_by = Some("Categorize by Voucher (Consolidated)".to_string());
+    f.include_dimensions = true;
+
+    let mut first = GlEntry::new(
+        "GLE-DIM-1",
+        "2026-09-01",
+        "Cash - A",
+        10.0,
+        0.0,
+        "No",
+        "Journal Entry",
+        "JV-DIM",
+    );
+    first.cost_center = Some("Main - A".to_string());
+    first
+        .dimensions
+        .insert("branch".to_string(), "North".to_string());
+
+    let mut second = GlEntry::new(
+        "GLE-DIM-2",
+        "2026-09-01",
+        "Cash - A",
+        25.0,
+        0.0,
+        "No",
+        "Journal Entry",
+        "JV-DIM",
+    );
+    second.cost_center = Some("Main - A".to_string());
+    second
+        .dimensions
+        .insert("branch".to_string(), "South".to_string());
+
+    let mut dim_input = input();
+    dim_input.accounting_dimensions = vec!["branch".to_string()];
+    dim_input.gl_entries = vec![first, second];
+    let data = get_data_with_opening_closing(&f, &dim_input.gl_entries, &dim_input);
+    let entries = data
+        .iter()
+        .filter(|row| row.voucher_no.as_deref() == Some("JV-DIM"))
+        .collect::<Vec<_>>();
+    assert_eq!(entries.len(), 2);
+
+    let mut f = filters();
+    f.categorize_by = Some("Categorize by Voucher (Consolidated)".to_string());
+    let mut first = GlEntry::new(
+        "GLE-CREATE-1",
+        "2026-09-02",
+        "Cash - A",
+        10.0,
+        0.0,
+        "No",
+        "Journal Entry",
+        "JV-CREATE",
+    );
+    first.creation = Some("2026-09-02 10:00:00".to_string());
+    let mut second = GlEntry::new(
+        "GLE-CREATE-2",
+        "2026-09-02",
+        "Cash - A",
+        25.0,
+        0.0,
+        "No",
+        "Journal Entry",
+        "JV-CREATE",
+    );
+    second.creation = Some("2026-09-02 10:01:00".to_string());
+
+    let mut input = input();
+    input.immutable_ledger = true;
+    input.gl_entries = vec![first, second];
+    let data = get_data_with_opening_closing(&f, &input.gl_entries, &input);
+    let entries = data
+        .iter()
+        .filter(|row| row.voucher_no.as_deref() == Some("JV-CREATE"))
+        .collect::<Vec<_>>();
+    assert_eq!(entries.len(), 2);
 }
 
 #[test]

@@ -51,6 +51,8 @@ pub struct CostCenterDetail {
 pub struct GeneralLedgerInput {
     pub company_currency: String,
     pub default_company: String,
+    pub immutable_ledger: bool,
+    pub accounting_dimensions: Vec<String>,
     pub accounts: BTreeMap<String, AccountDetail>,
     pub valid_parties: BTreeMap<String, Vec<String>>,
     pub party_names: BTreeMap<String, BTreeMap<String, String>>,
@@ -71,6 +73,7 @@ pub struct GlEntry {
     pub voucher_type: Option<String>,
     pub voucher_subtype: Option<String>,
     pub voucher_no: Option<String>,
+    pub dimensions: BTreeMap<String, String>,
     pub cost_center: Option<String>,
     pub project: Option<String>,
     pub against_voucher_type: Option<String>,
@@ -132,6 +135,7 @@ impl GlEntry {
             voucher_type: Some(voucher_type.to_string()),
             voucher_subtype: None,
             voucher_no: Some(voucher_no.to_string()),
+            dimensions: BTreeMap::new(),
             cost_center: None,
             project: None,
             against_voucher_type: None,
@@ -168,6 +172,7 @@ impl GlEntry {
             voucher_type: None,
             voucher_subtype: None,
             voucher_no: None,
+            dimensions: BTreeMap::new(),
             cost_center: None,
             project: None,
             against_voucher_type: None,
@@ -906,7 +911,7 @@ fn get_accountwise_gle(
                     bucket.entries.push(gle.clone());
                 }
             } else {
-                let key = consolidated_key(gle);
+                let key = consolidated_key(gle, filters, input);
                 if let Some(existing) = consolidated_gle.get_mut(&key) {
                     accumulate_entry(existing, gle);
                     if filters.add_values_in_transaction_currency {
@@ -1040,16 +1045,35 @@ fn apply_party_names(gl_entries: &mut [GlEntry], input: &GeneralLedgerInput) {
     }
 }
 
-fn consolidated_key(gle: &GlEntry) -> String {
-    [
+fn consolidated_key(
+    gle: &GlEntry,
+    filters: &GeneralLedgerFilters,
+    input: &GeneralLedgerInput,
+) -> String {
+    let mut values = vec![
         gle.posting_date.as_deref().unwrap_or(""),
         gle.voucher_type.as_deref().unwrap_or(""),
         gle.voucher_no.as_deref().unwrap_or(""),
         gle.account.as_deref().unwrap_or(""),
         gle.party_type.as_deref().unwrap_or(""),
         gle.party.as_deref().unwrap_or(""),
-    ]
-    .join("|")
+    ];
+    if input.immutable_ledger {
+        values.push(gle.creation.as_deref().unwrap_or(""));
+    }
+    if filters.include_dimensions {
+        for dimension in &input.accounting_dimensions {
+            values.push(
+                gle.dimensions
+                    .get(dimension)
+                    .map(String::as_str)
+                    .unwrap_or(""),
+            );
+        }
+        values.push(gle.cost_center.as_deref().unwrap_or(""));
+        values.push(gle.project.as_deref().unwrap_or(""));
+    }
+    values.join("|")
 }
 
 fn string_field(gle: &GlEntry, field: &str) -> String {
