@@ -21,6 +21,12 @@ pub struct ReportColumn {
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
+pub struct AssetDepreciationsAndBalancesReport {
+    pub columns: Vec<ReportColumn>,
+    pub rows: Vec<AssetDepreciationsAndBalancesRow>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct AssetDepreciationsAndBalancesRow {
     pub asset_category: Option<String>,
     pub asset: Option<String>,
@@ -103,6 +109,16 @@ pub struct AssetValueAdjustmentRow {
     pub adjustment_till_to_date: f64,
 }
 
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct AssetDepreciationsAndBalancesData {
+    pub category_values: Vec<AssetValueByCategoryRow>,
+    pub category_depreciations: Vec<AssetDepreciationByCategoryRow>,
+    pub category_adjustments: Vec<AssetValueAdjustmentRow>,
+    pub asset_values: Vec<AssetDetailValueRow>,
+    pub asset_depreciations: Vec<AssetDepreciationByAssetRow>,
+    pub asset_adjustments: Vec<AssetValueAdjustmentRow>,
+}
+
 impl ReportColumn {
     pub fn link(
         label: impl Into<String>,
@@ -137,6 +153,35 @@ impl ReportColumn {
             options: "",
             width,
         }
+    }
+}
+
+pub fn execute(
+    filters: &AssetDepreciationsAndBalancesFilters,
+    data: &AssetDepreciationsAndBalancesData,
+) -> AssetDepreciationsAndBalancesReport {
+    AssetDepreciationsAndBalancesReport {
+        columns: get_columns(filters),
+        rows: get_data(filters, data),
+    }
+}
+
+pub fn get_data(
+    filters: &AssetDepreciationsAndBalancesFilters,
+    data: &AssetDepreciationsAndBalancesData,
+) -> Vec<AssetDepreciationsAndBalancesRow> {
+    match filters.group_by.as_str() {
+        "Asset Category" => assemble_group_by_asset_category_data(
+            &data.category_values,
+            &data.category_depreciations,
+            &data.category_adjustments,
+        ),
+        "Asset" => assemble_group_by_asset_data(
+            &data.asset_values,
+            &data.asset_depreciations,
+            &data.asset_adjustments,
+        ),
+        _ => Vec::new(),
     }
 }
 

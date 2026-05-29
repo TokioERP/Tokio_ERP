@@ -1,7 +1,8 @@
 use tokio_erp::erpnext::accounts::report::asset_depreciations_and_balances::asset_depreciations_and_balances::{
     assemble_group_by_asset_category_data, assemble_group_by_asset_data,
-    combine_asset_depreciation_rows, combine_category_depreciation_rows, get_columns,
-    AssetDepreciationByAssetRow, AssetDepreciationByCategoryRow, AssetOpeningDepreciationByAssetRow,
+    combine_asset_depreciation_rows, combine_category_depreciation_rows, execute, get_columns,
+    get_data, AssetDepreciationByAssetRow, AssetDepreciationByCategoryRow,
+    AssetDepreciationsAndBalancesData, AssetOpeningDepreciationByAssetRow,
     AssetOpeningDepreciationByCategoryRow,
     AssetDepreciationsAndBalancesFilters, AssetDepreciationsAndBalancesRow, AssetDetailValueRow,
     AssetValueAdjustmentRow, AssetValueByCategoryRow, ReportColumn,
@@ -260,4 +261,63 @@ fn asset_depreciations_asset_depreciation_combines_gl_and_opening_rows_like_erpn
             },
         ]
     );
+}
+
+#[test]
+fn asset_depreciations_execute_routes_group_by_category_like_erpnext() {
+    let data = AssetDepreciationsAndBalancesData {
+        category_values: vec![AssetValueByCategoryRow {
+            asset_category: "Computers".to_string(),
+            value_as_on_from_date: 1000.0,
+            value_of_new_purchase: 0.0,
+            value_of_sold_asset: 0.0,
+            value_of_scrapped_asset: 0.0,
+            value_of_capitalized_asset: 0.0,
+        }],
+        category_depreciations: vec![AssetDepreciationByCategoryRow {
+            asset_category: "Computers".to_string(),
+            accumulated_depreciation_as_on_from_date: 100.0,
+            depreciation_eliminated_via_reversal: 0.0,
+            depreciation_eliminated_during_the_period: 0.0,
+            depreciation_amount_during_the_period: 10.0,
+        }],
+        ..AssetDepreciationsAndBalancesData::default()
+    };
+
+    let report = execute(&filters("Asset Category"), &data);
+
+    assert_eq!(report.columns, get_columns(&filters("Asset Category")));
+    assert_eq!(report.rows.len(), 1);
+    assert_eq!(report.rows[0].asset_category.as_deref(), Some("Computers"));
+    assert_eq!(report.rows[0].net_asset_value_as_on_to_date, 890.0);
+}
+
+#[test]
+fn asset_depreciations_get_data_routes_group_by_asset_and_unknown_group_like_erpnext() {
+    let data = AssetDepreciationsAndBalancesData {
+        asset_values: vec![AssetDetailValueRow {
+            name: "AST-0001".to_string(),
+            asset_name: "Laptop".to_string(),
+            value_as_on_from_date: 800.0,
+            value_of_new_purchase: 0.0,
+            value_of_sold_asset: 0.0,
+            value_of_scrapped_asset: 0.0,
+            value_of_capitalized_asset: 0.0,
+        }],
+        asset_depreciations: vec![AssetDepreciationByAssetRow {
+            asset: "AST-0001".to_string(),
+            accumulated_depreciation_as_on_from_date: 100.0,
+            depreciation_eliminated_via_reversal: 0.0,
+            depreciation_eliminated_during_the_period: 0.0,
+            depreciation_amount_during_the_period: 25.0,
+        }],
+        ..AssetDepreciationsAndBalancesData::default()
+    };
+
+    let rows = get_data(&filters("Asset"), &data);
+
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].asset.as_deref(), Some("AST-0001"));
+    assert_eq!(rows[0].net_asset_value_as_on_to_date, 675.0);
+    assert!(get_data(&filters("Cost Center"), &data).is_empty());
 }
