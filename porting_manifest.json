@@ -3008,7 +3008,7 @@
     {
       "source": "accounts/report/deferred_revenue_and_expense/deferred_revenue_and_expense.py",
       "target": "accounts/report/deferred_revenue_and_expense/deferred_revenue_and_expense.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/deferred_revenue_and_expense/test_deferred_revenue_and_expense.py",
