@@ -83,6 +83,20 @@ pub struct AssetDepreciationByAssetRow {
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
+pub struct AssetOpeningDepreciationByCategoryRow {
+    pub asset_category: String,
+    pub accumulated_depreciation_as_on_from_date: f64,
+    pub depreciation_eliminated_during_the_period: f64,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct AssetOpeningDepreciationByAssetRow {
+    pub asset: String,
+    pub accumulated_depreciation_as_on_from_date: f64,
+    pub depreciation_eliminated_during_the_period: f64,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct AssetValueAdjustmentRow {
     pub key: String,
     pub adjustment_before_from_date: f64,
@@ -124,6 +138,65 @@ impl ReportColumn {
             width,
         }
     }
+}
+
+pub fn combine_category_depreciation_rows(
+    gl_rows: &[AssetDepreciationByCategoryRow],
+    opening_rows: &[AssetOpeningDepreciationByCategoryRow],
+) -> Vec<AssetDepreciationByCategoryRow> {
+    let mut combined = gl_rows.to_vec();
+
+    for opening in opening_rows {
+        if let Some(row) = combined
+            .iter_mut()
+            .find(|row| row.asset_category == opening.asset_category)
+        {
+            row.accumulated_depreciation_as_on_from_date +=
+                opening.accumulated_depreciation_as_on_from_date;
+            row.depreciation_eliminated_during_the_period +=
+                opening.depreciation_eliminated_during_the_period;
+        } else {
+            combined.push(AssetDepreciationByCategoryRow {
+                asset_category: opening.asset_category.clone(),
+                accumulated_depreciation_as_on_from_date: opening
+                    .accumulated_depreciation_as_on_from_date,
+                depreciation_eliminated_via_reversal: 0.0,
+                depreciation_eliminated_during_the_period: opening
+                    .depreciation_eliminated_during_the_period,
+                depreciation_amount_during_the_period: 0.0,
+            });
+        }
+    }
+
+    combined
+}
+
+pub fn combine_asset_depreciation_rows(
+    gl_rows: &[AssetDepreciationByAssetRow],
+    opening_rows: &[AssetOpeningDepreciationByAssetRow],
+) -> Vec<AssetDepreciationByAssetRow> {
+    let mut combined = gl_rows.to_vec();
+
+    for opening in opening_rows {
+        if let Some(row) = combined.iter_mut().find(|row| row.asset == opening.asset) {
+            row.accumulated_depreciation_as_on_from_date +=
+                opening.accumulated_depreciation_as_on_from_date;
+            row.depreciation_eliminated_during_the_period +=
+                opening.depreciation_eliminated_during_the_period;
+        } else {
+            combined.push(AssetDepreciationByAssetRow {
+                asset: opening.asset.clone(),
+                accumulated_depreciation_as_on_from_date: opening
+                    .accumulated_depreciation_as_on_from_date,
+                depreciation_eliminated_via_reversal: 0.0,
+                depreciation_eliminated_during_the_period: opening
+                    .depreciation_eliminated_during_the_period,
+                depreciation_amount_during_the_period: 0.0,
+            });
+        }
+    }
+
+    combined
 }
 
 pub fn assemble_group_by_asset_category_data(

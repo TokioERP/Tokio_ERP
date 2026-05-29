@@ -1,6 +1,8 @@
 use tokio_erp::erpnext::accounts::report::asset_depreciations_and_balances::asset_depreciations_and_balances::{
-    assemble_group_by_asset_category_data, assemble_group_by_asset_data, get_columns,
-    AssetDepreciationByAssetRow, AssetDepreciationByCategoryRow,
+    assemble_group_by_asset_category_data, assemble_group_by_asset_data,
+    combine_asset_depreciation_rows, combine_category_depreciation_rows, get_columns,
+    AssetDepreciationByAssetRow, AssetDepreciationByCategoryRow, AssetOpeningDepreciationByAssetRow,
+    AssetOpeningDepreciationByCategoryRow,
     AssetDepreciationsAndBalancesFilters, AssetDepreciationsAndBalancesRow, AssetDetailValueRow,
     AssetValueAdjustmentRow, AssetValueByCategoryRow, ReportColumn,
 };
@@ -167,5 +169,95 @@ fn asset_depreciations_asset_rows_default_missing_adjustments_like_erpnext() {
             net_asset_value_as_on_from_date: 375.0,
             net_asset_value_as_on_to_date: 415.0,
         }
+    );
+}
+
+#[test]
+fn asset_depreciations_category_depreciation_combines_gl_and_opening_rows_like_erpnext() {
+    let rows = combine_category_depreciation_rows(
+        &[AssetDepreciationByCategoryRow {
+            asset_category: "Furniture".to_string(),
+            accumulated_depreciation_as_on_from_date: 100.0,
+            depreciation_eliminated_via_reversal: 7.0,
+            depreciation_eliminated_during_the_period: 11.0,
+            depreciation_amount_during_the_period: 13.0,
+        }],
+        &[
+            AssetOpeningDepreciationByCategoryRow {
+                asset_category: "Computers".to_string(),
+                accumulated_depreciation_as_on_from_date: 20.0,
+                depreciation_eliminated_during_the_period: 3.0,
+            },
+            AssetOpeningDepreciationByCategoryRow {
+                asset_category: "Furniture".to_string(),
+                accumulated_depreciation_as_on_from_date: 30.0,
+                depreciation_eliminated_during_the_period: 5.0,
+            },
+        ],
+    );
+
+    assert_eq!(
+        rows,
+        vec![
+            AssetDepreciationByCategoryRow {
+                asset_category: "Furniture".to_string(),
+                accumulated_depreciation_as_on_from_date: 130.0,
+                depreciation_eliminated_via_reversal: 7.0,
+                depreciation_eliminated_during_the_period: 16.0,
+                depreciation_amount_during_the_period: 13.0,
+            },
+            AssetDepreciationByCategoryRow {
+                asset_category: "Computers".to_string(),
+                accumulated_depreciation_as_on_from_date: 20.0,
+                depreciation_eliminated_via_reversal: 0.0,
+                depreciation_eliminated_during_the_period: 3.0,
+                depreciation_amount_during_the_period: 0.0,
+            },
+        ]
+    );
+}
+
+#[test]
+fn asset_depreciations_asset_depreciation_combines_gl_and_opening_rows_like_erpnext() {
+    let rows = combine_asset_depreciation_rows(
+        &[AssetDepreciationByAssetRow {
+            asset: "AST-0002".to_string(),
+            accumulated_depreciation_as_on_from_date: 75.0,
+            depreciation_eliminated_via_reversal: 2.0,
+            depreciation_eliminated_during_the_period: 4.0,
+            depreciation_amount_during_the_period: 9.0,
+        }],
+        &[
+            AssetOpeningDepreciationByAssetRow {
+                asset: "AST-0001".to_string(),
+                accumulated_depreciation_as_on_from_date: 10.0,
+                depreciation_eliminated_during_the_period: 1.0,
+            },
+            AssetOpeningDepreciationByAssetRow {
+                asset: "AST-0002".to_string(),
+                accumulated_depreciation_as_on_from_date: 15.0,
+                depreciation_eliminated_during_the_period: 3.0,
+            },
+        ],
+    );
+
+    assert_eq!(
+        rows,
+        vec![
+            AssetDepreciationByAssetRow {
+                asset: "AST-0002".to_string(),
+                accumulated_depreciation_as_on_from_date: 90.0,
+                depreciation_eliminated_via_reversal: 2.0,
+                depreciation_eliminated_during_the_period: 7.0,
+                depreciation_amount_during_the_period: 9.0,
+            },
+            AssetDepreciationByAssetRow {
+                asset: "AST-0001".to_string(),
+                accumulated_depreciation_as_on_from_date: 10.0,
+                depreciation_eliminated_via_reversal: 0.0,
+                depreciation_eliminated_during_the_period: 1.0,
+                depreciation_amount_during_the_period: 0.0,
+            },
+        ]
     );
 }
