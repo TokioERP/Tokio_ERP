@@ -1296,7 +1296,7 @@ fn gross_profit_invoice_query_plan_matches_erpnext_base_selects_and_filters() {
         plan.conditions,
         vec![
             "sales_invoice.docstatus = 1",
-            "sales_invoice.is_opening != Yes",
+            "sales_invoice.is_opening != \"Yes\"",
             "sales_invoice.company = _Test Company",
             "sales_invoice.posting_date >= 2026-05-01",
             "sales_invoice.posting_date <= 2026-05-31",
@@ -1335,7 +1335,7 @@ fn gross_profit_invoice_query_plan_matches_sales_person_and_payment_term_branche
     assert_eq!(payment_term.left_joins, vec!["Payment Schedule"]);
     assert!(payment_term
         .selects
-        .contains(&"case when sales_invoice.is_return = 1 then Sales Return else coalesce(payment_schedule.payment_term, No Terms) end as payment_term"));
+        .contains(&"case when sales_invoice.is_return = 1 then \"Sales Return\" else coalesce(payment_schedule.payment_term, \"No Terms\") end as payment_term"));
     assert!(payment_term
         .selects
         .contains(&"payment_schedule.invoice_portion"));
@@ -1484,6 +1484,9 @@ fn gross_profit_auxiliary_query_plans_match_erpnext_shapes() {
     assert!(last_purchase
         .conditions
         .contains(&"purchase_invoice_item.cost_center = Main - TC".to_string()));
+    assert!(last_purchase
+        .conditions
+        .contains(&"purchase_invoice_item.parenttype = \"Purchase Invoice\"".to_string()));
     assert_eq!(last_purchase.limit, Some(1));
 }
 

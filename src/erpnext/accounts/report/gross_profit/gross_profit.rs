@@ -566,7 +566,7 @@ pub fn get_last_purchase_rate_query_plan(
             format!("purchase_invoice.posting_date <= {to_date}"),
             format!("purchase_invoice_item.item_code = {item_code}"),
             "purchase_invoice.is_return = 0".to_string(),
-            "purchase_invoice_item.parenttype = Purchase Invoice".to_string(),
+            "purchase_invoice_item.parenttype = \"Purchase Invoice\"".to_string(),
         ],
         order_by: vec!["purchase_invoice.posting_date desc"],
         limit: Some(1),
@@ -931,7 +931,7 @@ fn base_invoice_query_plan(filters: &GrossProfitFilters) -> QueryPlan {
         selects: invoice_query_selects(),
         conditions: vec![
             "sales_invoice.docstatus = 1".to_string(),
-            "sales_invoice.is_opening != Yes".to_string(),
+            "sales_invoice.is_opening != \"Yes\"".to_string(),
         ],
         order_by: vec![
             "sales_invoice.posting_date desc",
@@ -953,7 +953,7 @@ fn base_invoice_query_plan(filters: &GrossProfitFilters) -> QueryPlan {
         }
         "Payment Term" => {
             plan.selects.extend([
-                "case when sales_invoice.is_return = 1 then Sales Return else coalesce(payment_schedule.payment_term, No Terms) end as payment_term",
+                "case when sales_invoice.is_return = 1 then \"Sales Return\" else coalesce(payment_schedule.payment_term, \"No Terms\") end as payment_term",
                 "payment_schedule.invoice_portion",
                 "payment_schedule.payment_amount",
             ]);
