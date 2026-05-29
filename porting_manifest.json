@@ -2958,7 +2958,7 @@
     {
       "source": "accounts/report/consolidated_financial_statement/consolidated_financial_statement.py",
       "target": "accounts/report/consolidated_financial_statement/consolidated_financial_statement.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/consolidated_trial_balance/__init__.py",
