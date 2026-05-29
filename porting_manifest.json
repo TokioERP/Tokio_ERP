@@ -2993,7 +2993,7 @@
     {
       "source": "accounts/report/customer_ledger_summary/customer_ledger_summary.py",
       "target": "accounts/report/customer_ledger_summary/customer_ledger_summary.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/customer_ledger_summary/test_customer_ledger_summary.py",
