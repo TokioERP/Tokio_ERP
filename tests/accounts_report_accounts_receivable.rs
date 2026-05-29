@@ -5,9 +5,10 @@ use tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivab
     get_currency_fields, group_future_payments, init_voucher_balance, set_ageing,
     set_invoice_details, set_party_details, update_voucher_balance, AccountType, FuturePayment,
     FuturePaymentAllocationRow, InvoiceDetails, InvoiceDetailsRow, PartyDetails, PartyDetailsRow,
-    PaymentLedgerEntry, ReceivablePayableAgeingRow, ReceivablePayableFilters,
-    ReceivablePayableRuntime, ReceivablePayableSettings, ReceivablePayableState, ReportColumn,
-    VoucherBalanceKey, VoucherBalanceRow,
+    PaymentLedgerEntry, PaymentTermAllocationRow, PaymentTermDetail, PaymentTermRow,
+    ReceivablePayableAgeingRow, ReceivablePayableFilters, ReceivablePayableRuntime,
+    ReceivablePayableSettings, ReceivablePayableState, ReportColumn, VoucherBalanceKey,
+    VoucherBalanceRow,
 };
 
 fn filters() -> ReceivablePayableFilters {
@@ -973,4 +974,137 @@ fn accounts_receivable_set_party_details_uses_account_currency_for_party_currenc
     assert_eq!(row.supplier_name, Some("Supplier A".to_string()));
     assert_eq!(row.supplier_group, Some("Services".to_string()));
     assert_eq!(row.currency, Some("EUR".to_string()));
+}
+
+fn payment_term_detail(due_date: &str, base_payment_amount: f64) -> PaymentTermDetail {
+    PaymentTermDetail {
+        party_account_currency: "USD".to_string(),
+        currency: "USD".to_string(),
+        total_advance: 0.0,
+        due_date: due_date.to_string(),
+        payment_term: "Net 30".to_string(),
+        payment_amount: base_payment_amount,
+        base_payment_amount,
+        description: None,
+        paid_amount: 0.0,
+        base_paid_amount: 0.0,
+        discounted_amount: 0.0,
+    }
+}
+
+#[test]
+fn accounts_receivable_payment_terms_single_term_uses_base_currency_and_description_like_erpnext() {
+    let mut row = PaymentTermAllocationRow {
+        invoiced: 1000.0,
+        paid: 200.0,
+        credit_note: 0.0,
+        payment_terms: Vec::new(),
+    };
+    let mut detail = payment_term_detail("2026-06-30", 600.0);
+    detail.total_advance = 50.0;
+    detail.description = Some("Milestone".to_string());
+    detail.base_paid_amount = 80.0;
+    detail.paid_amount = 90.0;
+    detail.discounted_amount = 5.0;
+
+    tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivable::allocate_outstanding_based_on_payment_terms(
+        &mut row,
+        &ReceivablePayableFilters {
+            in_party_currency: true,
+            ..filters()
+        },
+        &[detail],
+        "USD",
+    );
+
+    assert_eq!(row.paid, 65.0);
+    assert_eq!(
+        row.payment_terms,
+        vec![PaymentTermRow {
+            due_date: "2026-06-30".to_string(),
+            invoiced: 600.0,
+            invoice_grand_total: 1000.0,
+            payment_term: "Milestone".to_string(),
+            paid: 85.0,
+            credit_note: 0.0,
+            outstanding: 515.0,
+        }]
+    );
+}
+
+#[test]
+fn accounts_receivable_payment_terms_uses_party_currency_only_when_invoice_and_account_match() {
+    let mut row = PaymentTermAllocationRow {
+        invoiced: 1000.0,
+        paid: 0.0,
+        credit_note: 0.0,
+        payment_terms: Vec::new(),
+    };
+    let mut detail = payment_term_detail("2026-06-30", 600.0);
+    detail.currency = "EUR".to_string();
+    detail.party_account_currency = "EUR".to_string();
+    detail.payment_amount = 700.0;
+    detail.base_paid_amount = 80.0;
+    detail.paid_amount = 90.0;
+
+    tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivable::allocate_outstanding_based_on_payment_terms(
+        &mut row,
+        &ReceivablePayableFilters {
+            in_party_currency: true,
+            ..filters()
+        },
+        &[detail],
+        "USD",
+    );
+
+    assert_eq!(row.payment_terms[0].invoiced, 700.0);
+    assert_eq!(row.payment_terms[0].paid, 90.0);
+    assert_eq!(row.payment_terms[0].outstanding, 610.0);
+}
+
+#[test]
+fn accounts_receivable_payment_terms_allocate_paid_and_credit_note_fifo_like_erpnext() {
+    let mut row = PaymentTermAllocationRow {
+        invoiced: 150.0,
+        paid: 80.0,
+        credit_note: 20.0,
+        payment_terms: Vec::new(),
+    };
+    let mut first = payment_term_detail("2026-07-30", 50.0);
+    first.payment_term = "Second".to_string();
+    let mut second = payment_term_detail("2026-06-30", 100.0);
+    second.payment_term = "First".to_string();
+
+    tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivable::allocate_outstanding_based_on_payment_terms(
+        &mut row,
+        &filters(),
+        &[first, second],
+        "USD",
+    );
+
+    assert_eq!(row.paid, 0.0);
+    assert_eq!(row.credit_note, 0.0);
+    assert_eq!(
+        row.payment_terms,
+        vec![
+            PaymentTermRow {
+                due_date: "2026-06-30".to_string(),
+                invoiced: 100.0,
+                invoice_grand_total: 150.0,
+                payment_term: "First".to_string(),
+                paid: 30.0,
+                credit_note: 20.0,
+                outstanding: 50.0,
+            },
+            PaymentTermRow {
+                due_date: "2026-07-30".to_string(),
+                invoiced: 50.0,
+                invoice_grand_total: 150.0,
+                payment_term: "Second".to_string(),
+                paid: 50.0,
+                credit_note: 0.0,
+                outstanding: 0.0,
+            },
+        ]
+    );
 }

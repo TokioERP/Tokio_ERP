@@ -200,6 +200,40 @@ pub struct PartyDetailsRow {
     pub supplier_group: Option<String>,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct PaymentTermDetail {
+    pub party_account_currency: String,
+    pub currency: String,
+    pub total_advance: f64,
+    pub due_date: String,
+    pub payment_term: String,
+    pub payment_amount: f64,
+    pub base_payment_amount: f64,
+    pub description: Option<String>,
+    pub paid_amount: f64,
+    pub base_paid_amount: f64,
+    pub discounted_amount: f64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct PaymentTermRow {
+    pub due_date: String,
+    pub invoiced: f64,
+    pub invoice_grand_total: f64,
+    pub payment_term: String,
+    pub paid: f64,
+    pub credit_note: f64,
+    pub outstanding: f64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct PaymentTermAllocationRow {
+    pub invoiced: f64,
+    pub paid: f64,
+    pub credit_note: f64,
+    pub payment_terms: Vec<PaymentTermRow>,
+}
+
 impl VoucherBalanceKey {
     pub fn with_account(account: &str, voucher_type: &str, voucher_no: &str, party: &str) -> Self {
         Self(vec![
@@ -688,6 +722,109 @@ pub fn set_party_details(
     } else {
         Some(company_currency.to_string())
     };
+}
+
+pub fn allocate_outstanding_based_on_payment_terms(
+    row: &mut PaymentTermAllocationRow,
+    filters: &ReceivablePayableFilters,
+    payment_terms_details: &[PaymentTermDetail],
+    company_currency: &str,
+) {
+    get_payment_terms(row, filters, payment_terms_details, company_currency);
+
+    for term in &mut row.payment_terms {
+        if term.paid == 0.0 {
+            allocate_closing_to_term(&mut row.paid, term, "paid");
+        }
+
+        if term.outstanding != 0.0 {
+            allocate_closing_to_term(&mut row.credit_note, term, "credit_note");
+        }
+    }
+
+    row.payment_terms
+        .sort_by(|left, right| left.due_date.cmp(&right.due_date));
+}
+
+fn get_payment_terms(
+    row: &mut PaymentTermAllocationRow,
+    filters: &ReceivablePayableFilters,
+    payment_terms_details: &[PaymentTermDetail],
+    company_currency: &str,
+) {
+    row.payment_terms.clear();
+    let Some(first) = payment_terms_details.first() else {
+        return;
+    };
+
+    row.paid -= first.total_advance;
+
+    for detail in payment_terms_details {
+        append_payment_term(row, filters, detail, company_currency);
+        if payment_terms_details.len() == 1 && !detail.payment_term.is_empty() {
+            break;
+        }
+    }
+}
+
+fn append_payment_term(
+    row: &mut PaymentTermAllocationRow,
+    filters: &ReceivablePayableFilters,
+    detail: &PaymentTermDetail,
+    company_currency: &str,
+) {
+    let mut invoiced = detail.base_payment_amount;
+    let mut paid_amount = detail.base_paid_amount;
+    let mut in_party_currency = filters.in_party_currency;
+
+    if company_currency == detail.currency && company_currency == detail.party_account_currency {
+        in_party_currency = false;
+    }
+    if in_party_currency && detail.currency != detail.party_account_currency {
+        in_party_currency = false;
+    }
+
+    if in_party_currency {
+        invoiced = detail.payment_amount;
+        paid_amount = detail.paid_amount;
+    }
+
+    row.payment_terms.push(PaymentTermRow {
+        due_date: detail.due_date.clone(),
+        invoiced,
+        invoice_grand_total: row.invoiced,
+        payment_term: detail
+            .description
+            .clone()
+            .filter(|description| !description.is_empty())
+            .unwrap_or_else(|| detail.payment_term.clone()),
+        paid: paid_amount + detail.discounted_amount,
+        credit_note: 0.0,
+        outstanding: invoiced - paid_amount - detail.discounted_amount,
+    });
+
+    if paid_amount != 0.0 {
+        row.paid -= paid_amount + detail.discounted_amount;
+    }
+}
+
+fn allocate_closing_to_term(row_amount: &mut f64, term: &mut PaymentTermRow, key: &str) {
+    let term_amount = match key {
+        "paid" => &mut term.paid,
+        "credit_note" => &mut term.credit_note,
+        _ => return,
+    };
+
+    if *row_amount != 0.0 {
+        if *row_amount > term.outstanding {
+            *term_amount = term.outstanding;
+            *row_amount -= term.outstanding;
+        } else {
+            *term_amount = *row_amount;
+            *row_amount = 0.0;
+        }
+    }
+    term.outstanding -= *term_amount;
 }
 
 pub fn get_columns(
