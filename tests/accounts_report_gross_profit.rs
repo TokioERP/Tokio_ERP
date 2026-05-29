@@ -1,11 +1,14 @@
 use tokio_erp::erpnext::accounts::report::gross_profit::gross_profit::{
-    calculate_row, get_bundle_item_row, get_column_names, get_columns,
+    calculate_buying_amount_from_delivery_note, calculate_buying_amount_from_sle, calculate_row,
+    get_bundle_item_row, get_buying_amount_from_product_bundle,
+    get_buying_amount_from_so_dn_query_plan, get_column_names, get_columns,
     get_delivery_notes_query_plan, get_group_wise_columns, get_invoice_row,
     get_last_purchase_rate_query_plan, get_product_bundle_query_plan, get_stock_ledger_query_plan,
-    group_items_by_invoice, group_rows, prepare_invoice_query_plan,
-    prepare_return_invoice_query_plan, should_skip_row, AccountingDimensionFilter,
-    GrossProfitFilters, GrossProfitInvoiceRow, GrossProfitSourceRow, MasterNameSettings,
-    ProductBundleItem, ReportCell, ReportColumn,
+    group_items_by_invoice, group_rows, prepare_delivered_by_supplier_purchase_query_plan,
+    prepare_invoice_query_plan, prepare_return_invoice_query_plan, should_skip_row,
+    update_return_invoices, AccountingDimensionFilter, DeliveryNoteSummary, GrossProfitFilters,
+    GrossProfitInvoiceRow, GrossProfitSourceRow, MasterNameSettings, ProductBundleItem, ReportCell,
+    ReportColumn, ReturnAdjustedRow, ReturnedInvoiceItem, StockLedgerEntry,
 };
 
 fn filters(group_by: &str) -> GrossProfitFilters {
@@ -400,6 +403,220 @@ fn gross_profit_payment_term_grouping_applies_invoice_portion_like_erpnext() {
     assert_eq!(rows[1][2], ReportCell::Number(-40.0));
     assert_eq!(rows[1][3], ReportCell::Number(-40.0));
     assert_eq!(rows[1][4], ReportCell::Number(-50.0));
+}
+
+#[test]
+fn gross_profit_update_return_invoices_consumes_matching_return_rows_like_erpnext() {
+    let mut row = ReturnAdjustedRow {
+        parent: "SINV-0001".to_string(),
+        item_code: "ITEM-001".to_string(),
+        qty: 5.0,
+        base_amount: 500.0,
+        buying_rate: 60.0,
+        buying_amount: 300.0,
+        delivered_by_supplier: false,
+    };
+    let mut returned = vec![
+        ReturnedInvoiceItem {
+            return_against: "SINV-0001".to_string(),
+            item_code: "ITEM-001".to_string(),
+            qty: -2.0,
+            base_amount: -180.0,
+        },
+        ReturnedInvoiceItem {
+            return_against: "SINV-0002".to_string(),
+            item_code: "ITEM-001".to_string(),
+            qty: -1.0,
+            base_amount: -90.0,
+        },
+    ];
+
+    update_return_invoices(&mut row, &mut returned, 3);
+
+    assert_eq!(row.qty, 3.0);
+    assert_eq!(row.base_amount, 320.0);
+    assert_eq!(row.buying_amount, 180.0);
+    assert_eq!(returned[0].qty, 0.0);
+    assert_eq!(returned[0].base_amount, 0.0);
+    assert_eq!(returned[1].qty, -1.0);
+}
+
+#[test]
+fn gross_profit_update_return_invoices_preserves_delivered_by_supplier_buying_amount() {
+    let mut row = ReturnAdjustedRow {
+        parent: "SINV-0001".to_string(),
+        item_code: "ITEM-001".to_string(),
+        qty: 1.0,
+        base_amount: 100.0,
+        buying_rate: 60.0,
+        buying_amount: 999.0,
+        delivered_by_supplier: true,
+    };
+    let mut returned = vec![ReturnedInvoiceItem {
+        return_against: "SINV-0001".to_string(),
+        item_code: "ITEM-001".to_string(),
+        qty: -3.0,
+        base_amount: -300.0,
+    }];
+
+    update_return_invoices(&mut row, &mut returned, 3);
+
+    assert_eq!(row.qty, 0.0);
+    assert_eq!(row.base_amount, 0.0);
+    assert_eq!(row.buying_amount, 999.0);
+    assert_eq!(returned[0].qty, -3.0);
+    assert_eq!(returned[0].base_amount, -300.0);
+}
+
+#[test]
+fn gross_profit_calculate_buying_amount_from_sle_matches_stock_value_delta_and_average_fallback() {
+    let sles = vec![
+        StockLedgerEntry {
+            voucher_type: "Delivery Note".to_string(),
+            voucher_no: "DN-0001".to_string(),
+            voucher_detail_no: "DN-ROW-1".to_string(),
+            stock_value: 900.0,
+            qty: -3.0,
+        },
+        StockLedgerEntry {
+            voucher_type: "Delivery Note".to_string(),
+            voucher_no: "DN-0000".to_string(),
+            voucher_detail_no: "OTHER".to_string(),
+            stock_value: 600.0,
+            qty: -2.0,
+        },
+    ];
+
+    assert_eq!(
+        calculate_buying_amount_from_sle(2.0, &sles, "Delivery Note", "DN-0001", "DN-ROW-1", 45.0),
+        200.0
+    );
+
+    let no_previous = vec![StockLedgerEntry {
+        voucher_type: "Sales Invoice".to_string(),
+        voucher_no: "SINV-0001".to_string(),
+        voucher_detail_no: "SINV-ROW-1".to_string(),
+        stock_value: 500.0,
+        qty: -2.0,
+    }];
+    assert_eq!(
+        calculate_buying_amount_from_sle(
+            2.0,
+            &no_previous,
+            "Sales Invoice",
+            "SINV-0001",
+            "SINV-ROW-1",
+            45.0
+        ),
+        90.0
+    );
+}
+
+#[test]
+fn gross_profit_delivery_note_buying_amount_matches_incoming_value_or_average_rate() {
+    assert_eq!(
+        calculate_buying_amount_from_delivery_note(
+            3.0,
+            &DeliveryNoteSummary {
+                total_qty: 6.0,
+                total_incoming_value: 240.0,
+            },
+            75.0
+        ),
+        120.0
+    );
+    assert_eq!(
+        calculate_buying_amount_from_delivery_note(
+            3.0,
+            &DeliveryNoteSummary {
+                total_qty: 0.0,
+                total_incoming_value: 0.0,
+            },
+            75.0
+        ),
+        225.0
+    );
+}
+
+#[test]
+fn gross_profit_product_bundle_buying_amount_sums_matching_parent_detail_rows() {
+    let bundle = vec![
+        ProductBundleItem {
+            item_code: "COMP-001".to_string(),
+            item_name: "Component".to_string(),
+            description: "Component desc".to_string(),
+            warehouse: Some("Stores - TC".to_string()),
+            total_qty: -2.0,
+            parent_detail_docname: "ROW-1".to_string(),
+            serial_and_batch_bundle: None,
+        },
+        ProductBundleItem {
+            item_code: "COMP-002".to_string(),
+            item_name: "Component 2".to_string(),
+            description: "Component desc 2".to_string(),
+            warehouse: Some("Stores - TC".to_string()),
+            total_qty: -3.0,
+            parent_detail_docname: "ROW-1".to_string(),
+            serial_and_batch_bundle: None,
+        },
+        ProductBundleItem {
+            item_code: "COMP-IGNORED".to_string(),
+            item_name: "Ignored".to_string(),
+            description: "Ignored".to_string(),
+            warehouse: Some("Stores - TC".to_string()),
+            total_qty: -5.0,
+            parent_detail_docname: "OTHER-ROW".to_string(),
+            serial_and_batch_bundle: None,
+        },
+    ];
+
+    assert_eq!(
+        get_buying_amount_from_product_bundle(
+            "ROW-1",
+            &bundle,
+            &[
+                ("COMP-001", 10.0),
+                ("COMP-002", 20.0),
+                ("COMP-IGNORED", 100.0)
+            ],
+            3
+        ),
+        80.0
+    );
+}
+
+#[test]
+fn gross_profit_buying_amount_query_plans_match_erpnext_delivered_supplier_and_so_dn() {
+    let delivered = prepare_delivered_by_supplier_purchase_query_plan(&[
+        "PO-ITEM-1".to_string(),
+        "PO-ITEM-2".to_string(),
+    ]);
+    assert_eq!(delivered.source, "Purchase Invoice Item");
+    assert_eq!(
+        delivered.selects,
+        vec!["sum(purchase_invoice_item.qty * purchase_invoice_item.base_net_rate)"]
+    );
+    assert_eq!(
+        delivered.conditions,
+        vec![
+            "purchase_invoice_item.po_detail in [PO-ITEM-1, PO-ITEM-2]",
+            "purchase_invoice_item.docstatus = 1",
+        ]
+    );
+
+    let so_dn = get_buying_amount_from_so_dn_query_plan("SO-0001", "SO-ROW-1", "ITEM-001");
+    assert_eq!(so_dn.source, "Delivery Note Item");
+    assert_eq!(so_dn.selects, vec!["avg(delivery_note_item.incoming_rate)"]);
+    assert_eq!(
+        so_dn.conditions,
+        vec![
+            "delivery_note_item.docstatus = 1",
+            "delivery_note_item.item_code = ITEM-001",
+            "delivery_note_item.against_sales_order = SO-0001",
+            "delivery_note_item.so_detail = SO-ROW-1",
+        ]
+    );
+    assert_eq!(so_dn.group_by, vec!["delivery_note_item.item_code"]);
 }
 
 #[test]

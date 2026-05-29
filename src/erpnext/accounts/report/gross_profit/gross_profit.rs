@@ -125,6 +125,40 @@ pub struct ProductBundleItem {
     pub serial_and_batch_bundle: Option<String>,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct ReturnAdjustedRow {
+    pub parent: String,
+    pub item_code: String,
+    pub qty: f64,
+    pub base_amount: f64,
+    pub buying_rate: f64,
+    pub buying_amount: f64,
+    pub delivered_by_supplier: bool,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ReturnedInvoiceItem {
+    pub return_against: String,
+    pub item_code: String,
+    pub qty: f64,
+    pub base_amount: f64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct StockLedgerEntry {
+    pub voucher_type: String,
+    pub voucher_no: String,
+    pub voucher_detail_no: String,
+    pub stock_value: f64,
+    pub qty: f64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct DeliveryNoteSummary {
+    pub total_qty: f64,
+    pub total_incoming_value: f64,
+}
+
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct GrossProfitCalculatedRow {
     pub invoice_or_item: String,
@@ -297,6 +331,40 @@ pub fn get_last_purchase_rate_query_plan(
     }
 
     plan
+}
+
+pub fn prepare_delivered_by_supplier_purchase_query_plan(po_details: &[String]) -> QueryPlan {
+    QueryPlan {
+        source: "Purchase Invoice Item",
+        selects: vec!["sum(purchase_invoice_item.qty * purchase_invoice_item.base_net_rate)"],
+        conditions: vec![
+            format!(
+                "purchase_invoice_item.po_detail in [{}]",
+                po_details.join(", ")
+            ),
+            "purchase_invoice_item.docstatus = 1".to_string(),
+        ],
+        ..QueryPlan::default()
+    }
+}
+
+pub fn get_buying_amount_from_so_dn_query_plan(
+    sales_order: &str,
+    so_detail: &str,
+    item_code: &str,
+) -> QueryPlan {
+    QueryPlan {
+        source: "Delivery Note Item",
+        selects: vec!["avg(delivery_note_item.incoming_rate)"],
+        conditions: vec![
+            "delivery_note_item.docstatus = 1".to_string(),
+            format!("delivery_note_item.item_code = {item_code}"),
+            format!("delivery_note_item.against_sales_order = {sales_order}"),
+            format!("delivery_note_item.so_detail = {so_detail}"),
+        ],
+        group_by: vec!["delivery_note_item.item_code"],
+        ..QueryPlan::default()
+    }
 }
 
 impl Default for MasterNameSettings {
@@ -929,6 +997,96 @@ pub fn should_skip_row(row: &GrossProfitCalculatedRow, group_by: &str) -> bool {
     }
 
     row_text_value(row, scrub(group_by).as_str()).is_some_and(|value| value.is_empty())
+}
+
+pub fn update_return_invoices(
+    row: &mut ReturnAdjustedRow,
+    returned_items: &mut [ReturnedInvoiceItem],
+    currency_precision: u32,
+) {
+    for returned_item in returned_items.iter_mut().filter(|returned_item| {
+        returned_item.return_against == row.parent && returned_item.item_code == row.item_code
+    }) {
+        if returned_item.qty != 0.0 {
+            if row.qty >= returned_item.qty.abs() {
+                row.qty += returned_item.qty;
+                row.base_amount += round_to(returned_item.base_amount, currency_precision);
+                returned_item.qty = 0.0;
+                returned_item.base_amount = 0.0;
+            } else {
+                row.qty = 0.0;
+                row.base_amount = 0.0;
+                returned_item.qty += row.qty;
+                returned_item.base_amount += row.base_amount;
+            }
+        }
+    }
+
+    if !row.delivered_by_supplier {
+        row.buying_amount = round_to(row.qty * row.buying_rate, currency_precision);
+    }
+}
+
+pub fn calculate_buying_amount_from_sle(
+    row_qty: f64,
+    stock_ledger_entries: &[StockLedgerEntry],
+    parenttype: &str,
+    parent: &str,
+    item_row: &str,
+    average_buying_rate: f64,
+) -> f64 {
+    for (index, sle) in stock_ledger_entries.iter().enumerate() {
+        if sle.voucher_type == parenttype
+            && sle.voucher_no == parent
+            && sle.voucher_detail_no == item_row
+        {
+            let previous_stock_value = stock_ledger_entries
+                .get(index + 1)
+                .map(|next| next.stock_value)
+                .unwrap_or(0.0);
+            if previous_stock_value != 0.0 {
+                return (previous_stock_value - sle.stock_value).abs() * row_qty / sle.qty.abs();
+            }
+            return row_qty * average_buying_rate;
+        }
+    }
+
+    0.0
+}
+
+pub fn calculate_buying_amount_from_delivery_note(
+    row_qty: f64,
+    delivery_note: &DeliveryNoteSummary,
+    average_buying_rate: f64,
+) -> f64 {
+    if delivery_note.total_qty != 0.0 {
+        row_qty * delivery_note.total_incoming_value / delivery_note.total_qty
+    } else {
+        row_qty * average_buying_rate
+    }
+}
+
+pub fn get_buying_amount_from_product_bundle(
+    item_row: &str,
+    product_bundle: &[ProductBundleItem],
+    incoming_rates: &[(&str, f64)],
+    currency_precision: u32,
+) -> f64 {
+    let total = product_bundle
+        .iter()
+        .filter(|packed_item| packed_item.parent_detail_docname == item_row)
+        .map(|packed_item| {
+            let incoming_rate = incoming_rates
+                .iter()
+                .find_map(|(item_code, rate)| {
+                    (*item_code == packed_item.item_code).then_some(*rate)
+                })
+                .unwrap_or(0.0);
+            packed_item.total_qty * -1.0 * incoming_rate
+        })
+        .sum();
+
+    round_to(total, currency_precision)
 }
 
 pub fn group_rows(
