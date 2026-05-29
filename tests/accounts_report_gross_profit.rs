@@ -2,17 +2,18 @@ use tokio_erp::erpnext::accounts::report::gross_profit::gross_profit::{
     calculate_buying_amount_from_delivery_note, calculate_buying_amount_from_sle, calculate_row,
     get_bundle_item_row, get_buying_amount, get_buying_amount_from_product_bundle,
     get_buying_amount_from_so_dn_query_plan, get_column_names, get_columns,
-    get_columns_for_grouped_by_invoice, get_delivery_notes_query_plan, get_group_wise_columns,
-    get_grouped_by_invoice_total_row, get_invoice_row, get_last_purchase_rate_query_plan,
-    get_product_bundle_query_plan, get_returned_invoice_items_query_plan,
-    get_stock_ledger_query_plan, group_items_by_invoice, group_product_bundles, group_rows,
-    load_non_stock_items_query_plan, prepare_delivered_by_supplier_purchase_query_plan,
-    prepare_invoice_query_plan, prepare_return_invoice_query_plan, prepare_vouchers_to_ignore,
-    process_gross_profit_rows, should_skip_row, update_return_invoices, AccountingDimensionFilter,
-    DeliveryNoteSummary, GrossProfitBuyingAmountContext, GrossProfitBuyingAmountRow,
-    GrossProfitFilters, GrossProfitInvoiceRow, GrossProfitProcessRow, GrossProfitSourceRow,
-    MasterNameSettings, PackedItemOverride, ProductBundleItem, ProductBundleLoadRow, ReportCell,
-    ReportColumn, ReturnAdjustedRow, ReturnedInvoiceItem, StockLedgerEntry,
+    get_columns_for_grouped_by_invoice, get_data_when_grouped_by_invoice,
+    get_delivery_notes_query_plan, get_group_wise_columns, get_grouped_by_invoice_total_row,
+    get_invoice_row, get_last_purchase_rate_query_plan, get_product_bundle_query_plan,
+    get_returned_invoice_items_query_plan, get_stock_ledger_query_plan, group_items_by_invoice,
+    group_product_bundles, group_rows, load_non_stock_items_query_plan,
+    prepare_delivered_by_supplier_purchase_query_plan, prepare_invoice_query_plan,
+    prepare_return_invoice_query_plan, prepare_vouchers_to_ignore, process_gross_profit_rows,
+    should_skip_row, update_return_invoices, AccountingDimensionFilter, DeliveryNoteSummary,
+    GrossProfitBuyingAmountContext, GrossProfitBuyingAmountRow, GrossProfitFilters,
+    GrossProfitInvoiceRow, GrossProfitProcessRow, GrossProfitSourceRow, MasterNameSettings,
+    PackedItemOverride, ProductBundleItem, ProductBundleLoadRow, ReportCell, ReportColumn,
+    ReturnAdjustedRow, ReturnedInvoiceItem, StockLedgerEntry,
 };
 
 fn filters(group_by: &str) -> GrossProfitFilters {
@@ -115,9 +116,16 @@ fn process_row(invoice: &str, item_code: Option<&str>, indent: f64) -> GrossProf
         indent,
         parent: (indent != 0.0).then(|| invoice.to_string()),
         invoice_or_item: item_code.unwrap_or(invoice).to_string(),
+        customer: "CUST-001".to_string(),
+        customer_group: "Retail".to_string(),
+        customer_name: "Customer One".to_string(),
         posting_date: "2026-05-15".to_string(),
         monthly: String::new(),
         item_code: item_code.map(str::to_string),
+        item_name: item_code.map(|code| format!("{code} name")),
+        item_group: item_code.map(|_| "Products".to_string()),
+        brand: item_code.map(|_| "Brand A".to_string()),
+        description: item_code.map(|_| "Item description".to_string()),
         warehouse: item_code.map(|_| "Stores - TC".to_string()),
         qty: (indent != 0.0).then_some(2.0),
         item_row: item_code.map(|code| format!("{invoice}-{code}-ROW")),
@@ -1005,6 +1013,63 @@ fn gross_profit_grouped_by_invoice_total_row_sums_indent_one_rows_like_erpnext()
             ReportCell::Number(44.286),
         ]
     );
+}
+
+#[test]
+fn gross_profit_grouped_by_invoice_data_rows_map_column_names_like_erpnext() {
+    let processed = vec![
+        GrossProfitProcessRow {
+            base_amount: 350.0,
+            buying_amount: 195.0,
+            gross_profit: 155.0,
+            gross_profit_percent: 44.286,
+            ..process_row("SINV-0001", None, 0.0)
+        },
+        GrossProfitProcessRow {
+            base_amount: 200.0,
+            buying_amount: 120.0,
+            buying_rate: Some(60.0),
+            base_rate: Some(100.0),
+            gross_profit: 80.0,
+            gross_profit_percent: 40.0,
+            ..process_row("SINV-0001", Some("ITEM-001"), 1.0)
+        },
+    ];
+
+    let data = get_data_when_grouped_by_invoice(&processed, &filters("Invoice"));
+
+    assert_eq!(data[0]["indent"], ReportCell::Number(0.0));
+    assert_eq!(data[0]["parent_invoice"], ReportCell::Text(String::new()));
+    assert_eq!(data[0]["currency"], ReportCell::Text("USD".to_string()));
+    assert_eq!(
+        data[0]["sales_invoice"],
+        ReportCell::Text("SINV-0001".to_string())
+    );
+    assert_eq!(
+        data[0]["customer"],
+        ReportCell::Text("CUST-001".to_string())
+    );
+    assert_eq!(data[0]["selling_amount"], ReportCell::Number(350.0));
+
+    assert_eq!(data[1]["indent"], ReportCell::Number(1.0));
+    assert_eq!(
+        data[1]["parent_invoice"],
+        ReportCell::Text("SINV-0001".to_string())
+    );
+    assert_eq!(
+        data[1]["item_code"],
+        ReportCell::Text("ITEM-001".to_string())
+    );
+    assert_eq!(data[1]["avg._selling_rate"], ReportCell::Number(100.0));
+    assert_eq!(data[1]["valuation_rate"], ReportCell::Number(60.0));
+
+    let total = data.last().expect("total row");
+    assert_eq!(
+        total["sales_invoice"],
+        ReportCell::Text("Total".to_string())
+    );
+    assert_eq!(total["selling_amount"], ReportCell::Number(200.0));
+    assert_eq!(total["buying_amount"], ReportCell::Number(120.0));
 }
 
 #[test]

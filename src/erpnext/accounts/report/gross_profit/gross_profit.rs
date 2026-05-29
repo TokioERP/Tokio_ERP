@@ -1,5 +1,7 @@
 use std::collections::BTreeMap;
 
+pub type ReportRow = BTreeMap<String, ReportCell>;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct GrossProfitFilters {
     pub company: String,
@@ -216,9 +218,16 @@ pub struct GrossProfitProcessRow {
     pub indent: f64,
     pub parent: Option<String>,
     pub invoice_or_item: String,
+    pub customer: String,
+    pub customer_group: String,
+    pub customer_name: String,
     pub posting_date: String,
     pub monthly: String,
     pub item_code: Option<String>,
+    pub item_name: Option<String>,
+    pub item_group: Option<String>,
+    pub brand: Option<String>,
+    pub description: Option<String>,
     pub warehouse: Option<String>,
     pub qty: Option<f64>,
     pub item_row: Option<String>,
@@ -1395,6 +1404,44 @@ pub fn get_grouped_by_invoice_total_row(
     ]
 }
 
+pub fn get_data_when_grouped_by_invoice(
+    rows: &[GrossProfitProcessRow],
+    filters: &GrossProfitFilters,
+) -> Vec<ReportRow> {
+    let mut data: Vec<ReportRow> = rows
+        .iter()
+        .map(|src| {
+            let mut row = ReportRow::new();
+            row.insert("indent".to_string(), ReportCell::Number(src.indent));
+            row.insert(
+                "parent_invoice".to_string(),
+                ReportCell::Text(src.parent_invoice.clone()),
+            );
+            row.insert(
+                "currency".to_string(),
+                ReportCell::Text(filters.currency.clone()),
+            );
+
+            for col in get_group_wise_columns()
+                .get("invoice")
+                .into_iter()
+                .flatten()
+            {
+                let fieldname = get_column_names()
+                    .get(col)
+                    .copied()
+                    .expect("invoice column has fieldname");
+                row.insert(fieldname.to_string(), process_row_cell_value(src, col));
+            }
+
+            row
+        })
+        .collect();
+
+    data.push(grouped_by_invoice_total_report_row(rows, filters));
+    data
+}
+
 pub fn group_rows(
     source_rows: &[GrossProfitSourceRow],
     filters: &GrossProfitFilters,
@@ -1596,6 +1643,58 @@ fn format_month_year(date: &str) -> String {
     } else {
         format!("{month_name} {year}")
     }
+}
+
+fn process_row_cell_value(row: &GrossProfitProcessRow, col: &str) -> ReportCell {
+    match col {
+        "invoice_or_item" => ReportCell::Text(row.invoice_or_item.clone()),
+        "customer" => ReportCell::Text(row.customer.clone()),
+        "customer_group" => ReportCell::Text(row.customer_group.clone()),
+        "customer_name" => ReportCell::Text(row.customer_name.clone()),
+        "posting_date" => ReportCell::Text(row.posting_date.clone()),
+        "item_code" => option_text_cell(row.item_code.as_deref()),
+        "item_name" => option_text_cell(row.item_name.as_deref()),
+        "item_group" => option_text_cell(row.item_group.as_deref()),
+        "brand" => option_text_cell(row.brand.as_deref()),
+        "description" => option_text_cell(row.description.as_deref()),
+        "warehouse" => option_text_cell(row.warehouse.as_deref()),
+        "qty" => option_number_cell(row.qty),
+        "base_rate" => option_number_cell(row.base_rate),
+        "buying_rate" => option_number_cell(row.buying_rate),
+        "base_amount" => ReportCell::Number(row.base_amount),
+        "buying_amount" => ReportCell::Number(row.buying_amount),
+        "gross_profit" => ReportCell::Number(row.gross_profit),
+        "gross_profit_percent" => ReportCell::Number(row.gross_profit_percent),
+        "project" => ReportCell::Empty,
+        _ => ReportCell::Empty,
+    }
+}
+
+fn grouped_by_invoice_total_report_row(
+    rows: &[GrossProfitProcessRow],
+    filters: &GrossProfitFilters,
+) -> ReportRow {
+    let cells = get_grouped_by_invoice_total_row(rows, filters);
+    let mut row = ReportRow::new();
+    row.insert("sales_invoice".to_string(), cells[0].clone());
+    row.insert("qty".to_string(), cells[1].clone());
+    row.insert("avg._selling_rate".to_string(), cells[2].clone());
+    row.insert("valuation_rate".to_string(), cells[2].clone());
+    row.insert("selling_amount".to_string(), cells[3].clone());
+    row.insert("buying_amount".to_string(), cells[4].clone());
+    row.insert("gross_profit".to_string(), cells[5].clone());
+    row.insert("gross_profit_%".to_string(), cells[6].clone());
+    row
+}
+
+fn option_text_cell(value: Option<&str>) -> ReportCell {
+    value
+        .map(|value| ReportCell::Text(value.to_string()))
+        .unwrap_or(ReportCell::Empty)
+}
+
+fn option_number_cell(value: Option<f64>) -> ReportCell {
+    value.map(ReportCell::Number).unwrap_or(ReportCell::Empty)
 }
 
 fn apply_payment_term_portion_first(row: &mut GrossProfitCalculatedRow, portion: f64) {
