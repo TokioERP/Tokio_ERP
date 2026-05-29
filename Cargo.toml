@@ -2,6 +2,12 @@
 name = "tokio_erp"
 version = "0.1.0"
 edition = "2021"
+license = "GPL-3.0-only"
+description = "Tokio ERP: an independent GPLv3 Rust rewrite of ERPNext-compatible core logic."
+readme = "README.md"
+repository = "https://github.com/TokioERP/Tokio_ERP"
+homepage = "https://github.com/TokioERP/Tokio_ERP"
+keywords = ["erp", "erpnext", "rust", "accounting"]
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }

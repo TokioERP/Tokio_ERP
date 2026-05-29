@@ -1,6 +1,7 @@
 /target/
 /.env
 /.DS_Store
+/.codex/
 /.worktrees/
 /worktrees/
 tools/porting-progress-mac/.build/

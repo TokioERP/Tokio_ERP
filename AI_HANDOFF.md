@@ -10,8 +10,8 @@ The goal is not an MVP. The goal is a careful file-by-file port where folder nam
 
 The current strategy is:
 
-- Keep ERPNext source in `/Volumes/Samsung990P/rust_erp/erpnext`.
-- Keep Rust rewrite in `/Volumes/Samsung990P/rust_erp/tokio_erp`.
+- Keep ERPNext source in a sibling checkout such as `../erpnext`.
+- Keep Rust rewrite in `tokio_erp`.
 - Work inside `tokio_erp`, not the root folder.
 - Use `porting_manifest.json` as the tracking source for file status.
 - For each completed Python file, mark its manifest entry as `parity_tested`.
@@ -39,7 +39,7 @@ For every code port:
    `git status --short --branch`
 
 2. Inspect ERPNext source:
-   `sed -n '1,260p' /Volumes/Samsung990P/rust_erp/erpnext/apps/erpnext/erpnext/<source-file>`
+   `sed -n '1,260p' ../erpnext/apps/erpnext/erpnext/<source-file>`
 
 3. Inspect nearby Rust modules and tests:
    `rg --files src/erpnext tests | rg '<module-or-report-name>'`
@@ -75,7 +75,7 @@ For every code port:
 
 Repo:
 
-`/Volumes/Samsung990P/rust_erp/tokio_erp`
+`tokio_erp`
 
 Branch:
 
@@ -182,7 +182,7 @@ Reason:
 Before implementing it, inspect:
 
 ```bash
-sed -n '1,260p' /Volumes/Samsung990P/rust_erp/erpnext/apps/erpnext/erpnext/accounts/report/billed_items_to_be_received/billed_items_to_be_received.py
+sed -n '1,260p' ../erpnext/apps/erpnext/erpnext/accounts/report/billed_items_to_be_received/billed_items_to_be_received.py
 sed -n '1,120p' src/erpnext/accounts/report/billed_items_to_be_received/mod.rs
 rg -n "billed_items_to_be_received|Purchase Invoice|per_received" src tests porting_manifest.json
 ```
@@ -230,7 +230,7 @@ Full suite result:
 Use this prompt to continue with another AI agent:
 
 ```text
-You are continuing Wikki's Tokio ERP rewrite in /Volumes/Samsung990P/rust_erp/tokio_erp.
+You are continuing Wikki's Tokio ERP rewrite in the `tokio_erp` repository.
 
 Read AI_HANDOFF.md first and follow it exactly.
 

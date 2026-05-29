@@ -19,25 +19,25 @@ Build the `.app` without opening it:
 The generated app is:
 
 ```text
-/Volumes/Samsung990P/rust_erp/tokio_erp/tools/porting-progress-mac/dist/Tokio ERP Progress.app
+tools/porting-progress-mac/dist/Tokio ERP Progress.app
 ```
 
 The app icon is bundled from:
 
 ```text
-/Volumes/Samsung990P/rust_erp/tokio_erp/tools/porting-progress-mac/Resources/AppIcon.icns
+tools/porting-progress-mac/Resources/AppIcon.icns
 ```
 
 The terminal-only SwiftPM runner still works from this folder:
 
 ```bash
-swift run PortingProgressApp --repo /Volumes/Samsung990P/rust_erp/tokio_erp
+swift run PortingProgressApp --repo ../..
 ```
 
 To verify the same calculation without opening the window:
 
 ```bash
-swift run PortingProgressApp --repo /Volumes/Samsung990P/rust_erp/tokio_erp --print
+swift run PortingProgressApp --repo ../.. --print
 ```
 
 The app reads:

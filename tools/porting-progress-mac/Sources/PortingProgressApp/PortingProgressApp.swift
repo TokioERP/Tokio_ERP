@@ -76,7 +76,7 @@ final class DashboardModel: ObservableObject {
 
 enum RepositoryResolver {
     private static let defaultRepoRoot = URL(
-        fileURLWithPath: "/Volumes/Samsung990P/rust_erp/tokio_erp",
+        fileURLWithPath: ".",
         isDirectory: true
     )
 
