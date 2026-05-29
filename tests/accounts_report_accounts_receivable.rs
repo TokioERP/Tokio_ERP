@@ -6,16 +6,16 @@ use tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivab
     add_supplier_filter_conditions, allocate_extra_payments_or_credits, allocate_future_payments,
     build_chart_data, build_delivery_note_map, build_exchange_rate_revaluations_plan,
     build_return_entries_plan, build_sales_person_records, build_voucher_dict, get_columns,
-    get_currency_fields, group_future_payments, init_voucher_balance, is_invoice_type,
-    payment_term_template_filter_conditions, prepare_conditions_plan, prepare_ple_query_plan,
-    prepare_voucher_balance_rows, set_ageing, set_invoice_details, set_party_details,
-    update_voucher_balance, AccountType, AccountingDimension, ChartInputRow,
-    DeliveryNoteAgainstSalesInvoice, FuturePayment, FuturePaymentAllocationRow, InvoiceDetails,
-    InvoiceDetailsRow, PartyDetails, PartyDetailsRow, PaymentLedgerEntry, PaymentTermAllocationRow,
-    PaymentTermDetail, PaymentTermRow, ReceivablePayableAgeingRow, ReceivablePayableFilters,
-    ReceivablePayableRuntime, ReceivablePayableSettings, ReceivablePayableState, ReportColumn,
-    SalesInvoiceDeliveryNote, SalesPersonRecord, SubtotalDataRow, VoucherBalanceKey,
-    VoucherBalanceRow,
+    get_currency_fields, get_party_group_with_children, group_future_payments,
+    init_voucher_balance, is_invoice_type, payment_term_template_filter_conditions,
+    prepare_conditions_plan, prepare_ple_query_plan, prepare_voucher_balance_rows, set_ageing,
+    set_invoice_details, set_party_details, update_voucher_balance, AccountType,
+    AccountingDimension, ChartInputRow, DeliveryNoteAgainstSalesInvoice, FuturePayment,
+    FuturePaymentAllocationRow, InvoiceDetails, InvoiceDetailsRow, PartyDetails, PartyDetailsRow,
+    PaymentLedgerEntry, PaymentTermAllocationRow, PaymentTermDetail, PaymentTermRow,
+    ReceivablePayableAgeingRow, ReceivablePayableFilters, ReceivablePayableRuntime,
+    ReceivablePayableSettings, ReceivablePayableState, ReportColumn, SalesInvoiceDeliveryNote,
+    SalesPersonRecord, SubtotalDataRow, VoucherBalanceKey, VoucherBalanceRow,
 };
 
 fn filters() -> ReceivablePayableFilters {
@@ -1912,4 +1912,40 @@ fn accounts_receivable_exchange_rate_revaluations_plan_matches_erpnext_filters()
             "voucher_type IN ('Exchange Rate Revaluation', 'Exchange Gain Or Loss')",
         ]
     );
+}
+
+#[test]
+fn accounts_receivable_get_party_group_with_children_matches_split_dedupe_and_party_guard() {
+    let children_by_group = BTreeMap::from([
+        (
+            "Retail".to_string(),
+            vec!["Retail".to_string(), "Online".to_string()],
+        ),
+        (
+            "Wholesale".to_string(),
+            vec!["Wholesale".to_string(), "Online".to_string()],
+        ),
+    ]);
+
+    assert_eq!(
+        get_party_group_with_children("Customer", " Retail, Wholesale ", &children_by_group)
+            .unwrap(),
+        vec![
+            "Online".to_string(),
+            "Retail".to_string(),
+            "Wholesale".to_string()
+        ]
+    );
+    assert!(
+        get_party_group_with_children("Employee", "Retail", &children_by_group)
+            .unwrap()
+            .is_empty()
+    );
+}
+
+#[test]
+fn accounts_receivable_get_party_group_with_children_errors_like_erpnext_for_missing_group() {
+    let err = get_party_group_with_children("Supplier", "Missing", &BTreeMap::new()).unwrap_err();
+
+    assert_eq!(err, "Supplier Group: Missing does not exist");
 }

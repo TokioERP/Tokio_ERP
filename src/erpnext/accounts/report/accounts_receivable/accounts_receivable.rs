@@ -1471,6 +1471,31 @@ pub fn build_exchange_rate_revaluations_plan(
     }
 }
 
+pub fn get_party_group_with_children(
+    party: &str,
+    party_groups: &str,
+    children_by_group: &BTreeMap<String, Vec<String>>,
+) -> Result<Vec<String>, String> {
+    if party != "Customer" && party != "Supplier" {
+        return Ok(Vec::new());
+    }
+
+    let group_dtype = format!("{party} Group");
+    let mut all_party_groups = BTreeSet::new();
+    for group in party_groups
+        .split(',')
+        .map(str::trim)
+        .filter(|group| !group.is_empty())
+    {
+        let Some(children) = children_by_group.get(group) else {
+            return Err(format!("{group_dtype}: {group} does not exist"));
+        };
+        all_party_groups.extend(children.iter().cloned());
+    }
+
+    Ok(all_party_groups.into_iter().collect())
+}
+
 pub fn get_columns(
     filters: &ReceivablePayableFilters,
     runtime: &ReceivablePayableRuntime,
