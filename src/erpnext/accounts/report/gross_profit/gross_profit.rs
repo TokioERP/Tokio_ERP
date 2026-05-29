@@ -962,6 +962,28 @@ pub fn get_columns(
     columns
 }
 
+pub fn get_columns_for_grouped_by_invoice(
+    columns: &[ReportColumn],
+    master_settings: &MasterNameSettings,
+) -> Vec<ReportColumn> {
+    let mut columns = columns.to_vec();
+    if let Some(first) = columns.first_mut() {
+        first.fieldname = "sales_invoice";
+        first.options = "Item";
+        first.width = 300;
+    }
+
+    if hides_customer_name(master_settings) {
+        if columns.len() >= 6 {
+            columns.drain(4..6);
+        }
+    } else if columns.len() >= 7 {
+        columns.drain(5..7);
+    }
+
+    columns
+}
+
 pub fn calculate_row(
     row: &GrossProfitSourceRow,
     filters: &GrossProfitFilters,
@@ -1335,6 +1357,42 @@ pub fn process_gross_profit_rows(
     }
 
     processed
+}
+
+pub fn get_grouped_by_invoice_total_row(
+    rows: &[GrossProfitProcessRow],
+    filters: &GrossProfitFilters,
+) -> Vec<ReportCell> {
+    let total_base_amount: f64 = rows
+        .iter()
+        .filter(|row| row.indent == 1.0)
+        .map(|row| row.base_amount)
+        .sum();
+    let total_buying_amount: f64 = rows
+        .iter()
+        .filter(|row| row.indent == 1.0)
+        .map(|row| row.buying_amount)
+        .sum();
+    let total_gross_profit = calculate_gross_profit(
+        total_base_amount,
+        total_buying_amount,
+        filters.currency_precision,
+    );
+    let total_percent = calculate_gross_profit_percent(
+        total_gross_profit,
+        total_base_amount,
+        filters.currency_precision,
+    );
+
+    vec![
+        ReportCell::Text("Total".to_string()),
+        ReportCell::Empty,
+        ReportCell::Empty,
+        ReportCell::Number(round_to(total_base_amount, filters.currency_precision)),
+        ReportCell::Number(round_to(total_buying_amount, filters.currency_precision)),
+        ReportCell::Number(total_gross_profit),
+        ReportCell::Number(total_percent),
+    ]
 }
 
 pub fn group_rows(

@@ -2,17 +2,17 @@ use tokio_erp::erpnext::accounts::report::gross_profit::gross_profit::{
     calculate_buying_amount_from_delivery_note, calculate_buying_amount_from_sle, calculate_row,
     get_bundle_item_row, get_buying_amount, get_buying_amount_from_product_bundle,
     get_buying_amount_from_so_dn_query_plan, get_column_names, get_columns,
-    get_delivery_notes_query_plan, get_group_wise_columns, get_invoice_row,
-    get_last_purchase_rate_query_plan, get_product_bundle_query_plan,
-    get_returned_invoice_items_query_plan, get_stock_ledger_query_plan, group_items_by_invoice,
-    group_product_bundles, group_rows, load_non_stock_items_query_plan,
-    prepare_delivered_by_supplier_purchase_query_plan, prepare_invoice_query_plan,
-    prepare_return_invoice_query_plan, prepare_vouchers_to_ignore, process_gross_profit_rows,
-    should_skip_row, update_return_invoices, AccountingDimensionFilter, DeliveryNoteSummary,
-    GrossProfitBuyingAmountContext, GrossProfitBuyingAmountRow, GrossProfitFilters,
-    GrossProfitInvoiceRow, GrossProfitProcessRow, GrossProfitSourceRow, MasterNameSettings,
-    PackedItemOverride, ProductBundleItem, ProductBundleLoadRow, ReportCell, ReportColumn,
-    ReturnAdjustedRow, ReturnedInvoiceItem, StockLedgerEntry,
+    get_columns_for_grouped_by_invoice, get_delivery_notes_query_plan, get_group_wise_columns,
+    get_grouped_by_invoice_total_row, get_invoice_row, get_last_purchase_rate_query_plan,
+    get_product_bundle_query_plan, get_returned_invoice_items_query_plan,
+    get_stock_ledger_query_plan, group_items_by_invoice, group_product_bundles, group_rows,
+    load_non_stock_items_query_plan, prepare_delivered_by_supplier_purchase_query_plan,
+    prepare_invoice_query_plan, prepare_return_invoice_query_plan, prepare_vouchers_to_ignore,
+    process_gross_profit_rows, should_skip_row, update_return_invoices, AccountingDimensionFilter,
+    DeliveryNoteSummary, GrossProfitBuyingAmountContext, GrossProfitBuyingAmountRow,
+    GrossProfitFilters, GrossProfitInvoiceRow, GrossProfitProcessRow, GrossProfitSourceRow,
+    MasterNameSettings, PackedItemOverride, ProductBundleItem, ProductBundleLoadRow, ReportCell,
+    ReportColumn, ReturnAdjustedRow, ReturnedInvoiceItem, StockLedgerEntry,
 };
 
 fn filters(group_by: &str) -> GrossProfitFilters {
@@ -276,6 +276,81 @@ fn gross_profit_columns_keep_customer_name_when_master_settings_do_not_hide_it()
         Some(&ReportColumn::hidden_link(
             "Currency", "currency", "Currency"
         ))
+    );
+}
+
+#[test]
+fn gross_profit_grouped_by_invoice_columns_match_erpnext_item_display_shape() {
+    let columns = get_columns_for_grouped_by_invoice(
+        &get_columns(&filters("Invoice"), &MasterNameSettings::default()),
+        &MasterNameSettings::default(),
+    );
+
+    assert_eq!(
+        columns[0],
+        ReportColumn::link("Sales Invoice", "sales_invoice", "Item", 300)
+    );
+    assert_eq!(
+        columns
+            .iter()
+            .map(|column| column.fieldname)
+            .collect::<Vec<_>>(),
+        vec![
+            "sales_invoice",
+            "customer",
+            "customer_group",
+            "customer_name",
+            "posting_date",
+            "item_group",
+            "brand",
+            "description",
+            "warehouse",
+            "qty",
+            "avg._selling_rate",
+            "valuation_rate",
+            "selling_amount",
+            "buying_amount",
+            "gross_profit",
+            "gross_profit_%",
+            "project",
+            "currency",
+        ]
+    );
+}
+
+#[test]
+fn gross_profit_grouped_by_invoice_columns_delete_item_columns_after_customer_name_is_hidden() {
+    let settings = MasterNameSettings {
+        supplier_master_name: "Supplier Name".to_string(),
+        customer_master_name: "Customer Name".to_string(),
+    };
+    let columns =
+        get_columns_for_grouped_by_invoice(&get_columns(&filters("Invoice"), &settings), &settings);
+
+    assert_eq!(
+        columns
+            .iter()
+            .map(|column| column.fieldname)
+            .collect::<Vec<_>>(),
+        vec![
+            "sales_invoice",
+            "customer",
+            "customer_group",
+            "posting_date",
+            "item_group",
+            "brand",
+            "description",
+            "warehouse",
+            "qty",
+            "avg._selling_rate",
+            "valuation_rate",
+            "selling_amount",
+            "buying_amount",
+            "gross_profit",
+            "gross_profit_%",
+            "project",
+            "currency",
+        ]
     );
 }
 
@@ -891,6 +966,45 @@ fn gross_profit_process_rows_applies_delivery_note_packed_item_override_like_erp
     assert_eq!(processed[0].base_amount, 75.556);
     assert_eq!(processed[0].buying_amount, 45.0);
     assert_eq!(processed[0].gross_profit, 30.556);
+}
+
+#[test]
+fn gross_profit_grouped_by_invoice_total_row_sums_indent_one_rows_like_erpnext() {
+    let rows = vec![
+        GrossProfitProcessRow {
+            base_amount: 999.0,
+            buying_amount: 888.0,
+            ..process_row("SINV-0001", None, 0.0)
+        },
+        GrossProfitProcessRow {
+            base_amount: 200.0,
+            buying_amount: 120.0,
+            ..process_row("SINV-0001", Some("ITEM-001"), 1.0)
+        },
+        GrossProfitProcessRow {
+            base_amount: 90.0,
+            buying_amount: -30.0,
+            ..process_row("SINV-0001", Some("COMP-001"), 2.0)
+        },
+        GrossProfitProcessRow {
+            base_amount: 150.0,
+            buying_amount: 75.0,
+            ..process_row("SINV-0002", Some("ITEM-002"), 1.0)
+        },
+    ];
+
+    assert_eq!(
+        get_grouped_by_invoice_total_row(&rows, &filters("Invoice")),
+        vec![
+            ReportCell::Text("Total".to_string()),
+            ReportCell::Empty,
+            ReportCell::Empty,
+            ReportCell::Number(350.0),
+            ReportCell::Number(195.0),
+            ReportCell::Number(155.0),
+            ReportCell::Number(44.286),
+        ]
+    );
 }
 
 #[test]
