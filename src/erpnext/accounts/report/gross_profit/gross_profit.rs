@@ -218,6 +218,7 @@ pub struct GrossProfitProcessRow {
     pub indent: f64,
     pub parent: Option<String>,
     pub invoice_or_item: String,
+    pub project: String,
     pub customer: String,
     pub customer_group: String,
     pub customer_name: String,
@@ -1665,7 +1666,7 @@ fn process_row_cell_value(row: &GrossProfitProcessRow, col: &str) -> ReportCell 
         "buying_amount" => ReportCell::Number(row.buying_amount),
         "gross_profit" => ReportCell::Number(row.gross_profit),
         "gross_profit_percent" => ReportCell::Number(row.gross_profit_percent),
-        "project" => ReportCell::Empty,
+        "project" => ReportCell::Text(row.project.clone()),
         _ => ReportCell::Empty,
     }
 }

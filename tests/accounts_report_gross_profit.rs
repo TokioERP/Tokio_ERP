@@ -116,6 +116,7 @@ fn process_row(invoice: &str, item_code: Option<&str>, indent: f64) -> GrossProf
         indent,
         parent: (indent != 0.0).then(|| invoice.to_string()),
         invoice_or_item: item_code.unwrap_or(invoice).to_string(),
+        project: "PROJ-001".to_string(),
         customer: "CUST-001".to_string(),
         customer_group: "Retail".to_string(),
         customer_name: "Customer One".to_string(),
@@ -1049,6 +1050,7 @@ fn gross_profit_grouped_by_invoice_data_rows_map_column_names_like_erpnext() {
         data[0]["customer"],
         ReportCell::Text("CUST-001".to_string())
     );
+    assert_eq!(data[0]["project"], ReportCell::Text("PROJ-001".to_string()));
     assert_eq!(data[0]["selling_amount"], ReportCell::Number(350.0));
 
     assert_eq!(data[1]["indent"], ReportCell::Number(1.0));
