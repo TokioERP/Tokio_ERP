@@ -3293,7 +3293,7 @@
     {
       "source": "accounts/report/sales_register/sales_register.py",
       "target": "accounts/report/sales_register/sales_register.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/sales_register/test_sales_register.py",
