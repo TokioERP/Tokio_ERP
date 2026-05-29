@@ -77,6 +77,15 @@ pub struct ReportColumn {
     pub width: u16,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PleQueryPlan {
+    pub selected_fields: Vec<&'static str>,
+    pub delinked_zero: bool,
+    pub date_condition: String,
+    pub remarks_selection: Option<String>,
+    pub order_by: Vec<&'static str>,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct VoucherBalanceKey(Vec<String>);
 
@@ -595,6 +604,58 @@ pub fn prepare_voucher_balance_rows(
             must_consider.then_some(row)
         })
         .collect()
+}
+
+pub fn prepare_ple_query_plan(
+    filters: &ReceivablePayableFilters,
+    show_remarks: bool,
+    remarks_length: Option<u32>,
+) -> PleQueryPlan {
+    let report_date = filters.report_date.as_deref().unwrap_or_default();
+    let date_condition = if filters.show_future_payments {
+        format!(
+            "posting_date <= '{report_date}' OR (voucher_no = against_voucher_no AND DATE(creation) <= '{report_date}')"
+        )
+    } else {
+        format!("posting_date <= '{report_date}'")
+    };
+    let remarks_selection = if show_remarks {
+        Some(match remarks_length {
+            Some(length) => format!("SUBSTRING(remarks, 1, {length})"),
+            None => "remarks".to_string(),
+        })
+    } else {
+        None
+    };
+    let order_by = if filters.group_by_party {
+        vec!["party", "posting_date"]
+    } else {
+        vec!["posting_date", "party"]
+    };
+
+    PleQueryPlan {
+        selected_fields: vec![
+            "name",
+            "account",
+            "voucher_type",
+            "voucher_no",
+            "against_voucher_type",
+            "against_voucher_no",
+            "party_type",
+            "cost_center",
+            "project",
+            "party",
+            "posting_date",
+            "due_date",
+            "account_currency",
+            "amount",
+            "amount_in_account_currency",
+        ],
+        delinked_zero: true,
+        date_condition,
+        remarks_selection,
+        order_by,
+    }
 }
 
 pub fn set_ageing(

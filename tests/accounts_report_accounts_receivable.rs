@@ -2,13 +2,13 @@ use std::collections::BTreeMap;
 
 use tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivable::{
     accounts_receivable_args, allocate_future_payments, build_voucher_dict, get_columns,
-    get_currency_fields, group_future_payments, init_voucher_balance, prepare_voucher_balance_rows,
-    set_ageing, set_invoice_details, set_party_details, update_voucher_balance, AccountType,
-    FuturePayment, FuturePaymentAllocationRow, InvoiceDetails, InvoiceDetailsRow, PartyDetails,
-    PartyDetailsRow, PaymentLedgerEntry, PaymentTermAllocationRow, PaymentTermDetail,
-    PaymentTermRow, ReceivablePayableAgeingRow, ReceivablePayableFilters, ReceivablePayableRuntime,
-    ReceivablePayableSettings, ReceivablePayableState, ReportColumn, SubtotalDataRow,
-    VoucherBalanceKey, VoucherBalanceRow,
+    get_currency_fields, group_future_payments, init_voucher_balance, prepare_ple_query_plan,
+    prepare_voucher_balance_rows, set_ageing, set_invoice_details, set_party_details,
+    update_voucher_balance, AccountType, FuturePayment, FuturePaymentAllocationRow, InvoiceDetails,
+    InvoiceDetailsRow, PartyDetails, PartyDetailsRow, PaymentLedgerEntry, PaymentTermAllocationRow,
+    PaymentTermDetail, PaymentTermRow, ReceivablePayableAgeingRow, ReceivablePayableFilters,
+    ReceivablePayableRuntime, ReceivablePayableSettings, ReceivablePayableState, ReportColumn,
+    SubtotalDataRow, VoucherBalanceKey, VoucherBalanceRow,
 };
 
 fn filters() -> ReceivablePayableFilters {
@@ -1288,4 +1288,83 @@ fn accounts_receivable_prepare_voucher_balance_rows_revaluation_uses_either_curr
     assert_eq!(prepared.len(), 1);
     assert_eq!(prepared[0].outstanding, 0.0);
     assert_eq!(prepared[0].outstanding_in_account_currency, 5.0);
+}
+
+#[test]
+fn accounts_receivable_prepare_ple_query_plan_matches_standard_date_order_and_fields() {
+    let plan = prepare_ple_query_plan(
+        &ReceivablePayableFilters {
+            report_date: Some("2026-05-29".to_string()),
+            ..filters()
+        },
+        false,
+        None,
+    );
+
+    assert_eq!(
+        plan.selected_fields,
+        vec![
+            "name",
+            "account",
+            "voucher_type",
+            "voucher_no",
+            "against_voucher_type",
+            "against_voucher_no",
+            "party_type",
+            "cost_center",
+            "project",
+            "party",
+            "posting_date",
+            "due_date",
+            "account_currency",
+            "amount",
+            "amount_in_account_currency",
+        ]
+    );
+    assert_eq!(
+        plan.date_condition,
+        "posting_date <= '2026-05-29'".to_string()
+    );
+    assert_eq!(plan.order_by, vec!["posting_date", "party"]);
+    assert_eq!(plan.remarks_selection, None);
+    assert!(plan.delinked_zero);
+}
+
+#[test]
+fn accounts_receivable_prepare_ple_query_plan_matches_future_payment_date_condition_like_erpnext() {
+    let plan = prepare_ple_query_plan(
+        &ReceivablePayableFilters {
+            report_date: Some("2026-05-29".to_string()),
+            show_future_payments: true,
+            group_by_party: true,
+            show_remarks: true,
+            ..filters()
+        },
+        true,
+        Some(80),
+    );
+
+    assert_eq!(
+        plan.date_condition,
+        "posting_date <= '2026-05-29' OR (voucher_no = against_voucher_no AND DATE(creation) <= '2026-05-29')"
+    );
+    assert_eq!(plan.order_by, vec!["party", "posting_date"]);
+    assert_eq!(
+        plan.remarks_selection,
+        Some("SUBSTRING(remarks, 1, 80)".to_string())
+    );
+}
+
+#[test]
+fn accounts_receivable_prepare_ple_query_plan_selects_full_remarks_when_length_missing() {
+    let plan = prepare_ple_query_plan(
+        &ReceivablePayableFilters {
+            show_remarks: true,
+            ..filters()
+        },
+        true,
+        None,
+    );
+
+    assert_eq!(plan.remarks_selection, Some("remarks".to_string()));
 }
