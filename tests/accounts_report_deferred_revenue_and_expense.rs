@@ -262,8 +262,10 @@ fn deferred_report_filters_company_type_status_cancelled_and_service_window_like
     .expect("report");
 
     assert_eq!(report.data[0].name, "SINV-1");
-    assert_eq!(report.data[1].name, "VALID");
-    assert_eq!(report.data[1].periods["jan_2026"], 100.0);
+    assert_eq!(report.data[1].name, "CANCELLED");
+    assert_eq!(report.data[1].periods["jan_2026"], 0.0);
+    assert_eq!(report.data[2].name, "VALID");
+    assert_eq!(report.data[2].periods["jan_2026"], 100.0);
     assert_eq!(report.chart.data.datasets[0].values, vec![100.0, 0.0, 0.0]);
 }
 
@@ -286,4 +288,22 @@ fn deferred_report_expense_filter_keeps_only_deferred_purchase_entries() {
     assert_eq!(report.data.last().unwrap().name, "Total Deferred Expense");
     assert_eq!(report.chart.data.datasets[0].values, vec![-80.0, 0.0, 0.0]);
     assert_eq!(report.chart.data.datasets[1].name, "Expected");
+}
+
+#[test]
+fn deferred_report_keeps_invoice_item_when_only_gl_row_is_cancelled() {
+    let mut cancelled = revenue_entry("CANCELLED-GL", "2026-01-31", 100.0, 0.0, true);
+    cancelled.is_cancelled = true;
+
+    let report = execute(
+        filters(BookingBasis::Days, false),
+        periods(),
+        vec![cancelled],
+    )
+    .expect("report");
+
+    assert_eq!(report.data[0].name, "SINV-1");
+    assert_eq!(report.data[1].name, "CANCELLED-GL");
+    assert_eq!(report.data[1].periods["jan_2026"], 0.0);
+    assert_eq!(report.chart.data.datasets[0].values, vec![0.0, 0.0, 0.0]);
 }

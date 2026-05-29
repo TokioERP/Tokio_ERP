@@ -559,7 +559,7 @@ impl DeferredRevenueAndExpenseReport {
     }
 
     fn entry_matches_filters(&self, entry: &DeferredEntry) -> bool {
-        if entry.docstatus != 1 || entry.company != self.filters.company || entry.is_cancelled {
+        if entry.docstatus != 1 || entry.company != self.filters.company {
             return false;
         }
 
@@ -719,6 +719,10 @@ impl DeferredRevenueAndExpenseReport {
 }
 
 fn amount_for_type(item_type: &DeferredItemType, entry: &DeferredEntry) -> f64 {
+    if entry.is_cancelled {
+        return 0.0;
+    }
+
     match item_type {
         DeferredItemType::Sale => entry.debit - entry.credit,
         DeferredItemType::Purchase => -(entry.credit - entry.debit),
