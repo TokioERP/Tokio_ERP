@@ -2968,7 +2968,7 @@
     {
       "source": "accounts/report/consolidated_trial_balance/consolidated_trial_balance.py",
       "target": "accounts/report/consolidated_trial_balance/consolidated_trial_balance.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/consolidated_trial_balance/test_consolidated_trial_balance.py",
