@@ -1,13 +1,14 @@
 use std::collections::BTreeMap;
 
 use tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivable::{
-    accounts_receivable_args, add_common_filter_conditions, add_customer_filter_conditions,
-    add_project_and_cost_center_conditions, add_supplier_filter_conditions,
-    allocate_future_payments, build_delivery_note_map, build_return_entries_plan,
-    build_sales_person_records, build_voucher_dict, get_columns, get_currency_fields,
-    group_future_payments, init_voucher_balance, payment_term_template_filter_conditions,
-    prepare_ple_query_plan, prepare_voucher_balance_rows, set_ageing, set_invoice_details,
-    set_party_details, update_voucher_balance, AccountType, DeliveryNoteAgainstSalesInvoice,
+    accounting_dimension_filter_conditions, accounts_receivable_args, add_common_filter_conditions,
+    add_customer_filter_conditions, add_project_and_cost_center_conditions,
+    add_supplier_filter_conditions, allocate_future_payments, build_delivery_note_map,
+    build_return_entries_plan, build_sales_person_records, build_voucher_dict, get_columns,
+    get_currency_fields, group_future_payments, init_voucher_balance,
+    payment_term_template_filter_conditions, prepare_conditions_plan, prepare_ple_query_plan,
+    prepare_voucher_balance_rows, set_ageing, set_invoice_details, set_party_details,
+    update_voucher_balance, AccountType, AccountingDimension, DeliveryNoteAgainstSalesInvoice,
     FuturePayment, FuturePaymentAllocationRow, InvoiceDetails, InvoiceDetailsRow, PartyDetails,
     PartyDetailsRow, PaymentLedgerEntry, PaymentTermAllocationRow, PaymentTermDetail,
     PaymentTermRow, ReceivablePayableAgeingRow, ReceivablePayableFilters, ReceivablePayableRuntime,
@@ -27,6 +28,7 @@ fn filters() -> ReceivablePayableFilters {
         payment_terms_template: None,
         cost_center: Vec::new(),
         project: Vec::new(),
+        accounting_dimensions: BTreeMap::new(),
         calculate_ageing_with: None,
         ageing_based_on: None,
         range: None,
@@ -1687,4 +1689,127 @@ fn accounts_receivable_build_sales_person_records_groups_parenttype_when_filter_
 #[test]
 fn accounts_receivable_build_sales_person_records_returns_empty_without_filter() {
     assert!(build_sales_person_records(&filters(), &[]).is_empty());
+}
+
+#[test]
+fn accounts_receivable_accounting_dimension_conditions_match_tree_and_plain_dimensions() {
+    let conditions = accounting_dimension_filter_conditions(
+        &ReceivablePayableFilters {
+            accounting_dimensions: BTreeMap::from([
+                (
+                    "branch".to_string(),
+                    vec!["North".to_string(), "South".to_string()],
+                ),
+                ("department".to_string(), vec!["Sales".to_string()]),
+            ]),
+            ..filters()
+        },
+        &[
+            AccountingDimension {
+                fieldname: "branch".to_string(),
+                document_type: "Branch".to_string(),
+                is_tree: true,
+            },
+            AccountingDimension {
+                fieldname: "department".to_string(),
+                document_type: "Department".to_string(),
+                is_tree: false,
+            },
+            AccountingDimension {
+                fieldname: "region".to_string(),
+                document_type: "Region".to_string(),
+                is_tree: true,
+            },
+        ],
+        &BTreeMap::from([(
+            "branch".to_string(),
+            vec![
+                "North".to_string(),
+                "North Child".to_string(),
+                "South".to_string(),
+            ],
+        )]),
+    );
+
+    assert_eq!(
+        conditions,
+        vec![
+            "branch IN ('North', 'North Child', 'South')",
+            "department IN ('Sales')",
+        ]
+    );
+}
+
+#[test]
+fn accounts_receivable_prepare_conditions_plan_matches_receivable_flow_order() {
+    let conditions = prepare_conditions_plan(
+        AccountType::Receivable,
+        &["Customer"],
+        &ReceivablePayableFilters {
+            company: Some("_Test Company".to_string()),
+            customer_group: Some("Retail".to_string()),
+            project: vec!["PROJ-001".to_string()],
+            accounting_dimensions: BTreeMap::from([(
+                "branch".to_string(),
+                vec!["North".to_string()],
+            )]),
+            ..filters()
+        },
+        &["Debtors - TC".to_string()],
+        &["Retail".to_string()],
+        &[],
+        &[],
+        &[],
+        &["Main - TC".to_string()],
+        &[AccountingDimension {
+            fieldname: "branch".to_string(),
+            document_type: "Branch".to_string(),
+            is_tree: false,
+        }],
+        &BTreeMap::new(),
+    );
+
+    assert_eq!(
+        conditions,
+        vec![
+            "company = '_Test Company'",
+            "account IN ('Debtors - TC')",
+            "party IN Customer WHERE customer_group IN ('Retail')",
+            "party_type != 'Employee'",
+            "project IN ('PROJ-001')",
+            "branch IN ('North')",
+        ]
+    );
+}
+
+#[test]
+fn accounts_receivable_prepare_conditions_plan_matches_payable_flow_order() {
+    let conditions = prepare_conditions_plan(
+        AccountType::Payable,
+        &["Supplier"],
+        &ReceivablePayableFilters {
+            company: Some("_Test Company".to_string()),
+            supplier_group: Some("Services".to_string()),
+            cost_center: vec!["Main - TC".to_string()],
+            ..filters()
+        },
+        &["Creditors - TC".to_string()],
+        &[],
+        &[],
+        &[],
+        &[],
+        &["Main - TC".to_string(), "Sub - TC".to_string()],
+        &[],
+        &BTreeMap::new(),
+    );
+
+    assert_eq!(
+        conditions,
+        vec![
+            "company = '_Test Company'",
+            "account IN ('Creditors - TC')",
+            "party IN Supplier WHERE supplier_group = 'Services'",
+            "cost_center IN ('Main - TC', 'Sub - TC')",
+        ]
+    );
 }

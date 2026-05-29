@@ -24,6 +24,7 @@ pub struct ReceivablePayableFilters {
     pub payment_terms_template: Option<String>,
     pub cost_center: Vec<String>,
     pub project: Vec<String>,
+    pub accounting_dimensions: BTreeMap<String, Vec<String>>,
     pub calculate_ageing_with: Option<String>,
     pub ageing_based_on: Option<String>,
     pub range: Option<String>,
@@ -285,6 +286,13 @@ pub struct DeliveryNoteAgainstSalesInvoice {
 pub struct SalesPersonRecord {
     pub parent: String,
     pub parenttype: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AccountingDimension {
+    pub fieldname: String,
+    pub document_type: String,
+    pub is_tree: bool,
 }
 
 impl SubtotalDataRow {
@@ -953,6 +961,83 @@ pub fn build_sales_person_records(
         .into_iter()
         .map(|(parenttype, parents)| (parenttype, parents.into_iter().collect()))
         .collect()
+}
+
+pub fn accounting_dimension_filter_conditions(
+    filters: &ReceivablePayableFilters,
+    dimensions: &[AccountingDimension],
+    tree_dimension_values: &BTreeMap<String, Vec<String>>,
+) -> Vec<String> {
+    let mut conditions = Vec::new();
+
+    for dimension in dimensions {
+        let Some(values) = filters.accounting_dimensions.get(&dimension.fieldname) else {
+            continue;
+        };
+        if values.is_empty() {
+            continue;
+        }
+
+        let values = if dimension.is_tree {
+            tree_dimension_values
+                .get(&dimension.fieldname)
+                .unwrap_or(values)
+        } else {
+            values
+        };
+        conditions.push(format!(
+            "{} IN ({})",
+            dimension.fieldname,
+            quote_join(values)
+        ));
+    }
+
+    conditions
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn prepare_conditions_plan(
+    account_type: AccountType,
+    party_types: &[&str],
+    filters: &ReceivablePayableFilters,
+    accounts: &[String],
+    customer_group_children: &[String],
+    territory_children: &[String],
+    sales_invoice_payment_template_names: &[String],
+    purchase_invoice_payment_template_names: &[String],
+    cost_center_children: &[String],
+    accounting_dimensions: &[AccountingDimension],
+    tree_dimension_values: &BTreeMap<String, Vec<String>>,
+) -> Vec<String> {
+    let mut conditions = Vec::new();
+
+    for _party_type in party_types {
+        conditions.extend(add_common_filter_conditions(filters, accounts));
+        match account_type {
+            AccountType::Receivable => conditions.extend(add_customer_filter_conditions(
+                filters,
+                customer_group_children,
+                territory_children,
+                sales_invoice_payment_template_names,
+            )),
+            AccountType::Payable => conditions.extend(add_supplier_filter_conditions(
+                filters,
+                purchase_invoice_payment_template_names,
+            )),
+        }
+    }
+
+    conditions.extend(add_project_and_cost_center_conditions(
+        filters,
+        cost_center_children,
+    ));
+    conditions.extend(accounting_dimension_filter_conditions(
+        filters,
+        accounting_dimensions,
+        tree_dimension_values,
+    ));
+
+    conditions
 }
 
 pub fn set_ageing(
