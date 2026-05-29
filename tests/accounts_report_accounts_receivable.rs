@@ -5,7 +5,7 @@ use tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivab
     add_customer_filter_conditions, add_project_and_cost_center_conditions,
     add_supplier_filter_conditions, allocate_future_payments, build_delivery_note_map,
     build_return_entries_plan, build_sales_person_records, build_voucher_dict, get_columns,
-    get_currency_fields, group_future_payments, init_voucher_balance,
+    get_currency_fields, group_future_payments, init_voucher_balance, is_invoice_type,
     payment_term_template_filter_conditions, prepare_conditions_plan, prepare_ple_query_plan,
     prepare_voucher_balance_rows, set_ageing, set_invoice_details, set_party_details,
     update_voucher_balance, AccountType, AccountingDimension, DeliveryNoteAgainstSalesInvoice,
@@ -1812,4 +1812,12 @@ fn accounts_receivable_prepare_conditions_plan_matches_payable_flow_order() {
             "cost_center IN ('Main - TC', 'Sub - TC')",
         ]
     );
+}
+
+#[test]
+fn accounts_receivable_is_invoice_type_matches_erpnext_sales_and_purchase_only() {
+    assert!(is_invoice_type("Sales Invoice"));
+    assert!(is_invoice_type("Purchase Invoice"));
+    assert!(!is_invoice_type("Payment Entry"));
+    assert!(!is_invoice_type("Journal Entry"));
 }

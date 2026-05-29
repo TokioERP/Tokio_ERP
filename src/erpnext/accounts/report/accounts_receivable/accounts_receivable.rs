@@ -1765,7 +1765,7 @@ fn is_self_voucher(ple: &PaymentLedgerEntry) -> bool {
     ple.voucher_type == ple.against_voucher_type && ple.voucher_no == ple.against_voucher_no
 }
 
-fn is_invoice_type(voucher_type: &str) -> bool {
+pub fn is_invoice_type(voucher_type: &str) -> bool {
     voucher_type == "Sales Invoice" || voucher_type == "Purchase Invoice"
 }
 
