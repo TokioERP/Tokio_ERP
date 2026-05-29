@@ -1,7 +1,7 @@
 use tokio_erp::erpnext::accounts::report::balance_sheet::balance_sheet::{
-    check_opening_balance, execute, get_chart_data, get_provisional_profit_loss,
-    get_report_summary, BalanceSheetChart, BalanceSheetChartDataset, BalanceSheetFilters,
-    BalanceSheetPeriod, BalanceSheetReportSummary, BalanceSheetRow,
+    check_opening_balance, compute_growth_view_data, execute, get_chart_data,
+    get_provisional_profit_loss, get_report_summary, BalanceSheetChart, BalanceSheetChartDataset,
+    BalanceSheetFilters, BalanceSheetPeriod, BalanceSheetReportSummary, BalanceSheetRow,
 };
 
 fn periods() -> Vec<BalanceSheetPeriod> {
@@ -41,12 +41,43 @@ fn equity_rows() -> Vec<BalanceSheetRow> {
 fn filters() -> BalanceSheetFilters {
     BalanceSheetFilters {
         company: "_Test Company".to_string(),
+        company_currency: "USD".to_string(),
         presentation_currency: Some("USD".to_string()),
         accumulated_values: false,
         selected_view: None,
         accumulated_in_group_company: false,
         report_template: false,
     }
+}
+
+#[test]
+fn balance_sheet_execute_falls_back_to_company_default_currency_like_erpnext() {
+    let mut filters = filters();
+    filters.company = "_Test Company".to_string();
+    filters.company_currency = "UZS".to_string();
+    filters.presentation_currency = None;
+
+    let report = execute(
+        &filters,
+        vec!["Account".to_string()],
+        periods(),
+        asset_rows(),
+        liability_rows(),
+        equity_rows(),
+        2,
+    );
+
+    assert_eq!(report.chart.as_ref().unwrap().currency, "UZS");
+    assert_eq!(report.report_summary[0].currency, "UZS");
+    assert_eq!(
+        report
+            .rows
+            .iter()
+            .find(|row| row.account == "'Provisional Profit / Loss (Credit)'")
+            .unwrap()
+            .currency,
+        "UZS"
+    );
 }
 
 #[test]
@@ -254,6 +285,15 @@ fn balance_sheet_chart_data_matches_erpnext_dataset_and_chart_type_rules() {
         .chart_type,
         "line"
     );
+}
+
+#[test]
+fn balance_sheet_growth_view_preserves_missing_current_period_like_erpnext_none() {
+    let mut rows = vec![BalanceSheetRow::account("Sparse", &[("jan_2026", 100.0)])];
+
+    compute_growth_view_data(&mut rows, &periods());
+
+    assert!(!rows[0].values.contains_key("feb_2026"));
 }
 
 #[test]

@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BalanceSheetFilters {
     pub company: String,
+    pub company_currency: String,
     pub presentation_currency: Option<String>,
     pub accumulated_values: bool,
     pub selected_view: Option<String>,
@@ -180,7 +181,7 @@ pub fn execute(
     let currency = filters
         .presentation_currency
         .as_deref()
-        .unwrap_or(&filters.company)
+        .unwrap_or(&filters.company_currency)
         .to_string();
     let (mut provisional_profit_loss, total_credit) = get_provisional_profit_loss(
         &asset,
@@ -492,7 +493,12 @@ pub fn compute_growth_view_data(data: &mut [BalanceSheetRow], columns: &[Balance
         for column_idx in 1..columns.len() {
             let previous_period_key = &columns[column_idx - 1].key;
             let current_period_key = &columns[column_idx].key;
-            let current_period_value = data_copy[row_idx].value(current_period_key);
+            let Some(current_period_value) =
+                data_copy[row_idx].values.get(current_period_key).copied()
+            else {
+                row.values.remove(current_period_key);
+                continue;
+            };
             let previous_period_value = data_copy[row_idx].value(previous_period_key);
             let mut annual_growth = 0.0;
 
