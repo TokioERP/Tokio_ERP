@@ -359,7 +359,7 @@ pub fn get_report_summary(
     let mut net_equity = 0.0;
     let mut net_provisional_profit_loss = 0.0;
 
-    let selected_periods = if filters.accumulated_values {
+    let mut selected_periods = if filters.accumulated_values {
         period_list
             .last()
             .map(|period| vec![period])
@@ -367,6 +367,11 @@ pub fn get_report_summary(
     } else {
         period_list.iter().collect::<Vec<_>>()
     };
+
+    if filters.accumulated_in_group_company {
+        selected_periods
+            .retain(|period| period.key == filters.company || period.label == filters.company);
+    }
 
     for period in selected_periods {
         let key = if consolidated {

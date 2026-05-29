@@ -160,6 +160,62 @@ fn balance_sheet_report_summary_matches_erpnext_accumulated_rules() {
 }
 
 #[test]
+fn balance_sheet_report_summary_filters_group_company_period_like_consolidated_erpnext() {
+    let periods = vec![
+        BalanceSheetPeriod::new("Parent Co", "Parent Co"),
+        BalanceSheetPeriod::new("Child Co", "Child Co"),
+    ];
+    let asset = vec![
+        BalanceSheetRow::account("Bank", &[("Parent Co", 1000.0), ("Child Co", 250.0)]),
+        BalanceSheetRow::account("Total Asset", &[("Parent Co", 1000.0), ("Child Co", 250.0)]),
+        BalanceSheetRow::empty(),
+    ];
+    let liability = vec![
+        BalanceSheetRow::account("Payable", &[("Parent Co", 400.0), ("Child Co", 75.0)]),
+        BalanceSheetRow::account(
+            "Total Liability",
+            &[("Parent Co", 400.0), ("Child Co", 75.0)],
+        ),
+        BalanceSheetRow::empty(),
+    ];
+    let equity = vec![
+        BalanceSheetRow::account("Equity", &[("Parent Co", 100.0), ("Child Co", 25.0)]),
+        BalanceSheetRow::account("Total Equity", &[("Parent Co", 100.0), ("Child Co", 25.0)]),
+        BalanceSheetRow::empty(),
+    ];
+    let provisional = get_provisional_profit_loss(
+        &asset,
+        &liability,
+        &equity,
+        &periods,
+        "Parent Co",
+        Some("USD"),
+        true,
+    )
+    .0;
+    let mut filters = filters();
+    filters.company = "Parent Co".to_string();
+    filters.accumulated_in_group_company = true;
+
+    let (summary, primitive) = get_report_summary(
+        &periods,
+        &asset,
+        &liability,
+        &equity,
+        provisional.as_ref(),
+        "USD",
+        &filters,
+        true,
+    );
+
+    assert_eq!(summary[0].value, 1000.0);
+    assert_eq!(summary[1].value, 400.0);
+    assert_eq!(summary[2].value, 100.0);
+    assert_eq!(summary[3].value, 500.0);
+    assert_eq!(primitive, 700.0);
+}
+
+#[test]
 fn balance_sheet_chart_data_matches_erpnext_dataset_and_chart_type_rules() {
     assert_eq!(
         get_chart_data(
