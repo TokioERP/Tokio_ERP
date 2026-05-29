@@ -718,6 +718,30 @@ fn gross_profit_payment_term_grouping_applies_invoice_portion_like_erpnext() {
 }
 
 #[test]
+fn gross_profit_payment_term_grouping_defers_rounding_until_average_rate_like_erpnext() {
+    let mut row1 = source_row("SINV-0001", "ITEM-001", 1.0, 0.333, 0.111);
+    row1.payment_term = "30 Days".to_string();
+    row1.invoice_portion = 50.0;
+
+    let mut row2 = source_row("SINV-0002", "ITEM-002", 1.0, 0.333, 0.111);
+    row2.payment_term = "30 Days".to_string();
+    row2.invoice_portion = 50.0;
+
+    let mut row3 = source_row("SINV-0003", "ITEM-003", 1.0, 0.333, 0.111);
+    row3.payment_term = "30 Days".to_string();
+    row3.invoice_portion = 50.0;
+
+    let rows = group_rows(
+        &[row3, row2, row1],
+        &filters("Payment Term"),
+        &MasterNameSettings::default(),
+    );
+
+    assert_eq!(rows[0][1], ReportCell::Number(0.49950000000000006));
+    assert_eq!(rows[0][2], ReportCell::Number(0.1665));
+}
+
+#[test]
 fn gross_profit_update_return_invoices_consumes_matching_return_rows_like_erpnext() {
     let mut row = ReturnAdjustedRow {
         parent: "SINV-0001".to_string(),
@@ -1416,7 +1440,7 @@ fn gross_profit_auxiliary_query_plans_match_erpnext_shapes() {
             "delivery_note_item.docstatus = 1",
             "delivery_note_item.against_sales_invoice in [SINV-0001, SINV-0002]",
             "delivery_note_item.si_detail is not null",
-            "delivery_note_item.si_detail != ",
+            "delivery_note_item.si_detail != \"\"",
         ]
     );
 

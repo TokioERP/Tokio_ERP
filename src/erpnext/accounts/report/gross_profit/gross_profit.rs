@@ -432,7 +432,7 @@ pub fn get_delivery_notes_query_plan(invoices: &[String]) -> QueryPlan {
                 invoices.join(", ")
             ),
             "delivery_note_item.si_detail is not null".to_string(),
-            "delivery_note_item.si_detail != ".to_string(),
+            "delivery_note_item.si_detail != \"\"".to_string(),
         ],
         group_by: vec!["delivery_note_item.si_detail"],
         ..QueryPlan::default()
@@ -1639,7 +1639,7 @@ pub fn group_rows(
             let portion = invoice_portion(source);
             if let Some(existing) = grouped.get_mut(&key) {
                 existing.qty = round_to(existing.qty + row.qty, filters.float_precision);
-                apply_payment_term_portion(existing, &row, portion, filters);
+                apply_payment_term_portion(existing, &row, portion);
             } else {
                 let mut new_row = row;
                 apply_payment_term_portion_first(&mut new_row, portion);
@@ -1676,10 +1676,13 @@ pub fn group_rows(
     let mut total_buying_amount = 0.0;
 
     for key in order {
-        let row = grouped.get(&key).expect("grouped row");
+        let mut row = grouped.get(&key).expect("grouped row").clone();
+        if filters.group_by == "Payment Term" {
+            set_average_rate(&mut row, filters);
+        }
         total_base_amount += row.base_amount;
         total_buying_amount += row.buying_amount;
-        rows.push(project_row(row, &group_columns, &filters.currency));
+        rows.push(project_row(&row, &group_columns, &filters.currency));
     }
 
     rows.push(total_row(
@@ -1882,21 +1885,10 @@ fn apply_payment_term_portion(
     existing: &mut GrossProfitCalculatedRow,
     row: &GrossProfitCalculatedRow,
     portion: f64,
-    filters: &GrossProfitFilters,
 ) {
-    existing.base_amount = round_to(
-        existing.base_amount + row.base_amount * portion / 100.0,
-        filters.currency_precision,
-    );
-    existing.buying_amount = round_to(
-        existing.buying_amount + row.buying_amount * portion / 100.0,
-        filters.currency_precision,
-    );
-    existing.gross_profit = round_to(
-        existing.gross_profit + row.gross_profit * portion / 100.0,
-        filters.currency_precision,
-    );
-    set_average_rate(existing, filters);
+    existing.base_amount += row.base_amount * portion / 100.0;
+    existing.buying_amount += row.buying_amount * portion / 100.0;
+    existing.gross_profit += row.gross_profit * portion / 100.0;
 }
 
 fn column_map() -> BTreeMap<&'static str, ReportColumn> {
