@@ -116,6 +116,38 @@ fn billed_items_to_be_received_purchase_invoice_branch_preserves_erpnext_per_rec
 }
 
 #[test]
+fn billed_items_to_be_received_purchase_invoice_filter_uses_per_received_value_like_erpnext() {
+    let report_filters = BilledItemsToBeReceivedFilters {
+        purchase_invoice: Some("25".to_string()),
+        ..filters()
+    };
+
+    let report = execute(
+        &report_filters,
+        &[invoice("PINV-0001", 25.0), invoice("PINV-0002", 50.0)],
+        &[item("PINV-0001", "ITEM-001"), item("PINV-0002", "ITEM-002")],
+    );
+
+    assert_eq!(
+        report.rows,
+        vec![BilledItemsToBeReceivedRow {
+            name: "PINV-0001".to_string(),
+            supplier: "SUP-001".to_string(),
+            company: "_Test Company".to_string(),
+            posting_date: "2026-05-23".to_string(),
+            currency: "USD".to_string(),
+            item_code: "ITEM-001".to_string(),
+            item_name: "ITEM-001 name".to_string(),
+            uom: "Nos".to_string(),
+            qty: 10.0,
+            received_qty: 4.0,
+            rate: 25.0,
+            amount: 250.0,
+        }]
+    );
+}
+
+#[test]
 fn billed_items_to_be_received_execute_returns_child_rows_for_matching_purchase_invoices() {
     let mut wrong_company = invoice("PINV-WRONG-COMPANY", 25.0);
     wrong_company.company = "Other Company".to_string();
