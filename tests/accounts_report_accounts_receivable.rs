@@ -3,15 +3,16 @@ use std::collections::BTreeMap;
 use tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivable::{
     accounting_dimension_filter_conditions, accounts_receivable_args, add_common_filter_conditions,
     add_customer_filter_conditions, add_project_and_cost_center_conditions,
-    add_supplier_filter_conditions, allocate_future_payments, build_delivery_note_map,
-    build_return_entries_plan, build_sales_person_records, build_voucher_dict, get_columns,
-    get_currency_fields, group_future_payments, init_voucher_balance, is_invoice_type,
-    payment_term_template_filter_conditions, prepare_conditions_plan, prepare_ple_query_plan,
-    prepare_voucher_balance_rows, set_ageing, set_invoice_details, set_party_details,
-    update_voucher_balance, AccountType, AccountingDimension, DeliveryNoteAgainstSalesInvoice,
-    FuturePayment, FuturePaymentAllocationRow, InvoiceDetails, InvoiceDetailsRow, PartyDetails,
-    PartyDetailsRow, PaymentLedgerEntry, PaymentTermAllocationRow, PaymentTermDetail,
-    PaymentTermRow, ReceivablePayableAgeingRow, ReceivablePayableFilters, ReceivablePayableRuntime,
+    add_supplier_filter_conditions, allocate_extra_payments_or_credits, allocate_future_payments,
+    build_delivery_note_map, build_return_entries_plan, build_sales_person_records,
+    build_voucher_dict, get_columns, get_currency_fields, group_future_payments,
+    init_voucher_balance, is_invoice_type, payment_term_template_filter_conditions,
+    prepare_conditions_plan, prepare_ple_query_plan, prepare_voucher_balance_rows, set_ageing,
+    set_invoice_details, set_party_details, update_voucher_balance, AccountType,
+    AccountingDimension, DeliveryNoteAgainstSalesInvoice, FuturePayment,
+    FuturePaymentAllocationRow, InvoiceDetails, InvoiceDetailsRow, PartyDetails, PartyDetailsRow,
+    PaymentLedgerEntry, PaymentTermAllocationRow, PaymentTermDetail, PaymentTermRow,
+    ReceivablePayableAgeingRow, ReceivablePayableFilters, ReceivablePayableRuntime,
     ReceivablePayableSettings, ReceivablePayableState, ReportColumn, SalesInvoiceDeliveryNote,
     SalesPersonRecord, SubtotalDataRow, VoucherBalanceKey, VoucherBalanceRow,
 };
@@ -1820,4 +1821,41 @@ fn accounts_receivable_is_invoice_type_matches_erpnext_sales_and_purchase_only()
     assert!(is_invoice_type("Purchase Invoice"));
     assert!(!is_invoice_type("Payment Entry"));
     assert!(!is_invoice_type("Journal Entry"));
+}
+
+#[test]
+fn accounts_receivable_allocate_extra_payments_or_credits_builds_additional_row_like_erpnext() {
+    let mut row = PaymentTermAllocationRow {
+        invoiced: 100.0,
+        paid: 15.0,
+        credit_note: 25.0,
+        payment_terms: Vec::new(),
+    };
+
+    let additional = allocate_extra_payments_or_credits(&mut row);
+
+    assert_eq!(
+        additional,
+        Some(PaymentTermRow {
+            due_date: String::new(),
+            invoiced: 0.0,
+            invoice_grand_total: 100.0,
+            payment_term: String::new(),
+            paid: 15.0,
+            credit_note: 25.0,
+            outstanding: -40.0,
+        })
+    );
+}
+
+#[test]
+fn accounts_receivable_allocate_extra_payments_or_credits_returns_none_without_extra_amounts() {
+    let mut row = PaymentTermAllocationRow {
+        invoiced: 100.0,
+        paid: 0.0,
+        credit_note: 0.0,
+        payment_terms: Vec::new(),
+    };
+
+    assert_eq!(allocate_extra_payments_or_credits(&mut row), None);
 }

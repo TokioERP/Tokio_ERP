@@ -1257,6 +1257,41 @@ pub fn allocate_outstanding_based_on_payment_terms(
         .sort_by(|left, right| left.due_date.cmp(&right.due_date));
 }
 
+pub fn allocate_extra_payments_or_credits(
+    row: &mut PaymentTermAllocationRow,
+) -> Option<PaymentTermRow> {
+    let mut additional_row = None;
+
+    for key in ["paid", "credit_note"] {
+        let amount = match key {
+            "paid" => row.paid,
+            "credit_note" => row.credit_note,
+            _ => 0.0,
+        };
+        if amount > 0.0 {
+            let additional = additional_row.get_or_insert_with(|| PaymentTermRow {
+                due_date: String::new(),
+                invoiced: 0.0,
+                invoice_grand_total: row.invoiced,
+                payment_term: String::new(),
+                paid: 0.0,
+                credit_note: 0.0,
+                outstanding: 0.0,
+            });
+            if key == "paid" {
+                additional.paid = amount;
+            } else {
+                additional.credit_note = amount;
+            }
+        }
+    }
+
+    additional_row.map(|mut additional| {
+        additional.outstanding = additional.invoiced - additional.paid - additional.credit_note;
+        additional
+    })
+}
+
 fn get_payment_terms(
     row: &mut PaymentTermAllocationRow,
     filters: &ReceivablePayableFilters,
