@@ -7,8 +7,8 @@ use tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivab
     FuturePaymentAllocationRow, InvoiceDetails, InvoiceDetailsRow, PartyDetails, PartyDetailsRow,
     PaymentLedgerEntry, PaymentTermAllocationRow, PaymentTermDetail, PaymentTermRow,
     ReceivablePayableAgeingRow, ReceivablePayableFilters, ReceivablePayableRuntime,
-    ReceivablePayableSettings, ReceivablePayableState, ReportColumn, VoucherBalanceKey,
-    VoucherBalanceRow,
+    ReceivablePayableSettings, ReceivablePayableState, ReportColumn, SubtotalDataRow,
+    VoucherBalanceKey, VoucherBalanceRow,
 };
 
 fn filters() -> ReceivablePayableFilters {
@@ -1107,4 +1107,66 @@ fn accounts_receivable_payment_terms_allocate_paid_and_credit_note_fifo_like_erp
             },
         ]
     );
+}
+
+#[test]
+fn accounts_receivable_update_sub_total_row_adds_currency_fields_and_currency_like_erpnext() {
+    let mut totals = BTreeMap::from([(
+        "CUST-001".to_string(),
+        SubtotalDataRow::with_values([("invoiced", 10.0), ("paid", 4.0)], "USD"),
+    )]);
+    let row = SubtotalDataRow::with_values(
+        [
+            ("invoiced", 90.0),
+            ("paid", 6.0),
+            ("credit_note", 3.0),
+            ("range1", 20.0),
+            ("future_amount", 7.0),
+        ],
+        "EUR",
+    );
+
+    tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivable::update_sub_total_row(
+        &mut totals,
+        &row,
+        "CUST-001",
+    );
+
+    let total = &totals["CUST-001"];
+    assert_eq!(total.currency_values["invoiced"], 100.0);
+    assert_eq!(total.currency_values["paid"], 10.0);
+    assert_eq!(total.currency_values["credit_note"], 3.0);
+    assert_eq!(total.currency_values["range1"], 20.0);
+    assert_eq!(total.currency_values["future_amount"], 7.0);
+    assert_eq!(total.currency, "EUR");
+}
+
+#[test]
+fn accounts_receivable_append_subtotal_row_appends_separator_and_updates_total_like_erpnext() {
+    let mut totals = BTreeMap::from([
+        (
+            "CUST-001".to_string(),
+            SubtotalDataRow::with_values([("outstanding", 60.0), ("range2", 12.0)], "USD"),
+        ),
+        (
+            "Total".to_string(),
+            SubtotalDataRow::with_values([("outstanding", 40.0)], "USD"),
+        ),
+    ]);
+    let mut data = Vec::new();
+
+    tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivable::append_subtotal_row(
+        &mut data,
+        &mut totals,
+        "CUST-001",
+    );
+
+    assert_eq!(data.len(), 2);
+    assert_eq!(
+        data[0],
+        SubtotalDataRow::with_values([("outstanding", 60.0), ("range2", 12.0)], "USD")
+    );
+    assert!(data[1].is_empty);
+    assert_eq!(totals["Total"].currency_values["outstanding"], 100.0);
+    assert_eq!(totals["Total"].currency_values["range2"], 12.0);
 }

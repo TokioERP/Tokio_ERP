@@ -234,6 +234,34 @@ pub struct PaymentTermAllocationRow {
     pub payment_terms: Vec<PaymentTermRow>,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct SubtotalDataRow {
+    pub currency_values: BTreeMap<String, f64>,
+    pub currency: String,
+    pub is_empty: bool,
+}
+
+impl SubtotalDataRow {
+    pub fn with_values<const N: usize>(values: [(&str, f64); N], currency: &str) -> Self {
+        Self {
+            currency_values: values
+                .into_iter()
+                .map(|(field, value)| (field.to_string(), value))
+                .collect(),
+            currency: currency.to_string(),
+            is_empty: false,
+        }
+    }
+
+    pub fn empty() -> Self {
+        Self {
+            currency_values: BTreeMap::new(),
+            currency: String::new(),
+            is_empty: true,
+        }
+    }
+}
+
 impl VoucherBalanceKey {
     pub fn with_account(account: &str, voucher_type: &str, voucher_no: &str, party: &str) -> Self {
         Self(vec![
@@ -825,6 +853,35 @@ fn allocate_closing_to_term(row_amount: &mut f64, term: &mut PaymentTermRow, key
         }
     }
     term.outstanding -= *term_amount;
+}
+
+pub fn update_sub_total_row(
+    total_row_map: &mut BTreeMap<String, SubtotalDataRow>,
+    row: &SubtotalDataRow,
+    party: &str,
+) {
+    if let Some(total_row) = total_row_map.get_mut(party) {
+        for field in get_currency_fields() {
+            let value = row.currency_values.get(field).copied().unwrap_or_default();
+            *total_row
+                .currency_values
+                .entry(field.to_string())
+                .or_default() += value;
+        }
+        total_row.currency = row.currency.clone();
+    }
+}
+
+pub fn append_subtotal_row(
+    data: &mut Vec<SubtotalDataRow>,
+    total_row_map: &mut BTreeMap<String, SubtotalDataRow>,
+    party: &str,
+) {
+    if let Some(sub_total_row) = total_row_map.get(party).cloned() {
+        data.push(sub_total_row.clone());
+        data.push(SubtotalDataRow::empty());
+        update_sub_total_row(total_row_map, &sub_total_row, "Total");
+    }
 }
 
 pub fn get_columns(
