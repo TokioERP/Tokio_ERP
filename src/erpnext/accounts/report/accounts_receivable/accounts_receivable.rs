@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum AccountType {
     Receivable,
@@ -27,6 +29,8 @@ pub struct ReceivablePayableFilters {
     pub show_sales_person: bool,
     pub show_remarks: bool,
     pub sales_partner: Option<String>,
+    pub ignore_accounts: bool,
+    pub handle_employee_advances: bool,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -69,6 +73,70 @@ pub struct ReportColumn {
     pub fieldtype: &'static str,
     pub options: Option<&'static str>,
     pub width: u16,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub struct VoucherBalanceKey(Vec<String>);
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct PaymentLedgerEntry {
+    pub account: String,
+    pub voucher_type: String,
+    pub voucher_no: String,
+    pub against_voucher_type: String,
+    pub against_voucher_no: String,
+    pub party_type: String,
+    pub party: String,
+    pub posting_date: String,
+    pub due_date: Option<String>,
+    pub account_currency: String,
+    pub remarks: Option<String>,
+    pub cost_center: Option<String>,
+    pub project: Option<String>,
+    pub amount: f64,
+    pub amount_in_account_currency: f64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct VoucherBalanceRow {
+    pub voucher_type: String,
+    pub voucher_no: String,
+    pub party: String,
+    pub party_type: String,
+    pub party_account: String,
+    pub posting_date: String,
+    pub due_date: Option<String>,
+    pub account_currency: String,
+    pub remarks: Option<String>,
+    pub cost_center: Option<String>,
+    pub project: Option<String>,
+    pub invoiced: f64,
+    pub paid: f64,
+    pub credit_note: f64,
+    pub outstanding: f64,
+    pub invoiced_in_account_currency: f64,
+    pub paid_in_account_currency: f64,
+    pub credit_note_in_account_currency: f64,
+    pub outstanding_in_account_currency: f64,
+}
+
+impl VoucherBalanceKey {
+    pub fn with_account(account: &str, voucher_type: &str, voucher_no: &str, party: &str) -> Self {
+        Self(vec![
+            account.to_string(),
+            voucher_type.to_string(),
+            voucher_no.to_string(),
+            party.to_string(),
+        ])
+    }
+
+    pub fn without_account(voucher_type: &str, voucher_no: &str, party: &str) -> Self {
+        Self(vec![
+            voucher_type.to_string(),
+            voucher_no.to_string(),
+            party.to_string(),
+        ])
+    }
 }
 
 impl ReportColumn {
@@ -146,7 +214,10 @@ impl ReportColumn {
 pub fn accounts_receivable_args() -> AccountsReceivableArgs {
     AccountsReceivableArgs {
         account_type: AccountType::Receivable,
-        naming_by: ["Selling Settings".to_string(), "cust_master_name".to_string()],
+        naming_by: [
+            "Selling Settings".to_string(),
+            "cust_master_name".to_string(),
+        ],
     }
 }
 
@@ -164,7 +235,10 @@ impl ReceivablePayableState {
             filters.range = Some("30, 60, 90, 120".to_string());
         }
 
-        let report_date = filters.report_date.clone().unwrap_or_else(|| today.to_string());
+        let report_date = filters
+            .report_date
+            .clone()
+            .unwrap_or_else(|| today.to_string());
         let age_as_on = match filters.calculate_ageing_with.as_deref() {
             None | Some("Today Date") => today.to_string(),
             _ => report_date,
@@ -241,13 +315,127 @@ pub fn get_currency_fields() -> Vec<&'static str> {
     ]
 }
 
+pub fn build_voucher_dict(ple: &PaymentLedgerEntry) -> VoucherBalanceRow {
+    VoucherBalanceRow {
+        voucher_type: ple.voucher_type.clone(),
+        voucher_no: ple.voucher_no.clone(),
+        party: ple.party.clone(),
+        party_type: ple.party_type.clone(),
+        party_account: ple.account.clone(),
+        posting_date: ple.posting_date.clone(),
+        due_date: ple.due_date.clone(),
+        account_currency: ple.account_currency.clone(),
+        remarks: ple.remarks.clone(),
+        cost_center: None,
+        project: None,
+        invoiced: 0.0,
+        paid: 0.0,
+        credit_note: 0.0,
+        outstanding: 0.0,
+        invoiced_in_account_currency: 0.0,
+        paid_in_account_currency: 0.0,
+        credit_note_in_account_currency: 0.0,
+        outstanding_in_account_currency: 0.0,
+    }
+}
+
+pub fn init_voucher_balance(
+    voucher_balance: &mut BTreeMap<VoucherBalanceKey, VoucherBalanceRow>,
+    invoices: &mut Vec<String>,
+    ple: &PaymentLedgerEntry,
+    filters: &ReceivablePayableFilters,
+    advance_payment_doctypes: &[String],
+) {
+    let key = own_voucher_key(ple, filters.ignore_accounts);
+    voucher_balance
+        .entry(key.clone())
+        .or_insert_with(|| build_voucher_dict(ple));
+
+    if is_self_voucher(ple)
+        || ((ple.voucher_type == "Payment Entry" || ple.voucher_type == "Journal Entry")
+            && advance_payment_doctypes
+                .iter()
+                .any(|doctype| doctype == &ple.against_voucher_type))
+    {
+        if let Some(row) = voucher_balance.get_mut(&key) {
+            row.cost_center = ple.cost_center.clone();
+            row.project = ple.project.clone();
+        }
+    }
+
+    if is_invoice_type(&ple.voucher_type) && !invoices.contains(&ple.voucher_no) {
+        invoices.push(ple.voucher_no.clone());
+    }
+}
+
+pub fn update_voucher_balance(
+    voucher_balance: &mut BTreeMap<VoucherBalanceKey, VoucherBalanceRow>,
+    ple: &PaymentLedgerEntry,
+    filters: &ReceivablePayableFilters,
+    return_entries: &BTreeMap<String, String>,
+    _advance_payment_doctypes: &[String],
+) {
+    let Some(key) = voucher_balance_key_for_update(voucher_balance, ple, filters, return_entries)
+    else {
+        return;
+    };
+    let Some(row) = voucher_balance.get_mut(&key) else {
+        return;
+    };
+
+    row.party_type = ple.party_type.clone();
+    let amount = if filters.in_party_currency || filters.party_account.is_some() {
+        ple.amount_in_account_currency
+    } else {
+        ple.amount
+    };
+    let amount_in_account_currency = ple.amount_in_account_currency;
+
+    if ple.amount > 0.0 {
+        if (ple.voucher_type == "Journal Entry" || ple.voucher_type == "Payment Entry")
+            && ple.voucher_no != ple.against_voucher_no
+        {
+            row.paid -= amount;
+            row.paid_in_account_currency -= amount_in_account_currency;
+        } else {
+            row.invoiced += amount;
+            row.invoiced_in_account_currency += amount_in_account_currency;
+        }
+    } else if is_invoice_type(&ple.voucher_type) {
+        if row.voucher_no == ple.voucher_no && ple.voucher_no == ple.against_voucher_no {
+            row.paid -= amount;
+            row.paid_in_account_currency -= amount_in_account_currency;
+        } else {
+            row.credit_note -= amount;
+            row.credit_note_in_account_currency -= amount_in_account_currency;
+        }
+    } else {
+        row.paid -= amount;
+        row.paid_in_account_currency -= amount_in_account_currency;
+    }
+}
+
 pub fn get_columns(
     filters: &ReceivablePayableFilters,
     runtime: &ReceivablePayableRuntime,
 ) -> Vec<ReportColumn> {
     let mut columns = Vec::new();
-    add_column(&mut columns, "Posting Date", Some("posting_date"), "Date", None, 120);
-    add_column(&mut columns, "Party Type", Some("party_type"), "Data", None, 100);
+    add_column(
+        &mut columns,
+        "Posting Date",
+        Some("posting_date"),
+        "Date",
+        None,
+        120,
+    );
+    add_column(
+        &mut columns,
+        "Party Type",
+        Some("party_type"),
+        "Data",
+        None,
+        100,
+    );
     add_column(
         &mut columns,
         "Party",
@@ -272,12 +460,22 @@ pub fn get_columns(
 
     if runtime.party_naming_by == "Naming Series" {
         match runtime.account_type {
-            AccountType::Receivable => {
-                add_column(&mut columns, "Customer Name", Some("customer_name"), "Data", None, 120)
-            }
-            AccountType::Payable => {
-                add_column(&mut columns, "Supplier Name", Some("supplier_name"), "Data", None, 120)
-            }
+            AccountType::Receivable => add_column(
+                &mut columns,
+                "Customer Name",
+                Some("customer_name"),
+                "Data",
+                None,
+                120,
+            ),
+            AccountType::Payable => add_column(
+                &mut columns,
+                "Supplier Name",
+                Some("supplier_name"),
+                "Data",
+                None,
+                120,
+            ),
         }
     }
 
@@ -292,9 +490,30 @@ pub fn get_columns(
         );
     }
 
-    add_column(&mut columns, "Cost Center", Some("cost_center"), "Data", None, 120);
-    add_column(&mut columns, "Project", Some("project"), "Link", Some("Project"), 120);
-    add_column(&mut columns, "Voucher Type", Some("voucher_type"), "Data", None, 120);
+    add_column(
+        &mut columns,
+        "Cost Center",
+        Some("cost_center"),
+        "Data",
+        None,
+        120,
+    );
+    add_column(
+        &mut columns,
+        "Project",
+        Some("project"),
+        "Link",
+        Some("Project"),
+        120,
+    );
+    add_column(
+        &mut columns,
+        "Voucher Type",
+        Some("voucher_type"),
+        "Data",
+        None,
+        120,
+    );
     add_column(
         &mut columns,
         "Voucher No",
@@ -303,15 +522,36 @@ pub fn get_columns(
         Some("voucher_type"),
         180,
     );
-    add_column(&mut columns, "Due Date", Some("due_date"), "Date", None, 120);
+    add_column(
+        &mut columns,
+        "Due Date",
+        Some("due_date"),
+        "Date",
+        None,
+        120,
+    );
 
     if runtime.account_type == AccountType::Payable {
         add_column(&mut columns, "Bill No", Some("bill_no"), "Data", None, 120);
-        add_column(&mut columns, "Bill Date", Some("bill_date"), "Date", None, 120);
+        add_column(
+            &mut columns,
+            "Bill Date",
+            Some("bill_date"),
+            "Date",
+            None,
+            120,
+        );
     }
 
     if filters.based_on_payment_terms {
-        add_column(&mut columns, "Payment Term", Some("payment_term"), "Data", None, 120);
+        add_column(
+            &mut columns,
+            "Payment Term",
+            Some("payment_term"),
+            "Data",
+            None,
+            120,
+        );
         add_column(
             &mut columns,
             "Invoice Grand Total",
@@ -322,13 +562,34 @@ pub fn get_columns(
         );
     }
 
-    add_column(&mut columns, "Invoiced Amount", Some("invoiced"), "Currency", None, 120);
-    add_column(&mut columns, "Paid Amount", Some("paid"), "Currency", None, 120);
+    add_column(
+        &mut columns,
+        "Invoiced Amount",
+        Some("invoiced"),
+        "Currency",
+        None,
+        120,
+    );
+    add_column(
+        &mut columns,
+        "Paid Amount",
+        Some("paid"),
+        "Currency",
+        None,
+        120,
+    );
     let note_label = match runtime.account_type {
         AccountType::Receivable => "Credit Note",
         AccountType::Payable => "Debit Note",
     };
-    add_column(&mut columns, note_label, Some("credit_note"), "Currency", None, 120);
+    add_column(
+        &mut columns,
+        note_label,
+        Some("credit_note"),
+        "Currency",
+        None,
+        120,
+    );
     add_column(
         &mut columns,
         "Outstanding Amount",
@@ -349,7 +610,14 @@ pub fn get_columns(
     );
 
     if filters.show_future_payments {
-        add_column(&mut columns, "Future Payment Ref", Some("future_ref"), "Data", None, 120);
+        add_column(
+            &mut columns,
+            "Future Payment Ref",
+            Some("future_ref"),
+            "Data",
+            None,
+            120,
+        );
         add_column(
             &mut columns,
             "Future Payment Amount",
@@ -369,11 +637,32 @@ pub fn get_columns(
     }
 
     if runtime.account_type == AccountType::Receivable {
-        add_column(&mut columns, "Customer LPO", Some("po_no"), "Data", None, 120);
+        add_column(
+            &mut columns,
+            "Customer LPO",
+            Some("po_no"),
+            "Data",
+            None,
+            120,
+        );
         if filters.show_delivery_notes {
-            add_column(&mut columns, "Delivery Notes", Some("delivery_notes"), "Data", None, 120);
+            add_column(
+                &mut columns,
+                "Delivery Notes",
+                Some("delivery_notes"),
+                "Data",
+                None,
+                120,
+            );
         }
-        add_column(&mut columns, "Territory", Some("territory"), "Link", Some("Territory"), 120);
+        add_column(
+            &mut columns,
+            "Territory",
+            Some("territory"),
+            "Link",
+            Some("Territory"),
+            120,
+        );
         add_column(
             &mut columns,
             "Customer Group",
@@ -383,7 +672,14 @@ pub fn get_columns(
             120,
         );
         if filters.show_sales_person {
-            add_column(&mut columns, "Sales Person", Some("sales_person"), "Data", None, 120);
+            add_column(
+                &mut columns,
+                "Sales Person",
+                Some("sales_person"),
+                "Data",
+                None,
+                120,
+            );
         }
         if filters.sales_partner.is_some() {
             add_column(
@@ -435,6 +731,90 @@ fn setup_ageing_columns(columns: &mut Vec<ReportColumn>, ranges: &[String]) {
             previous = value + 1;
         }
     }
+}
+
+fn voucher_balance_key_for_update(
+    voucher_balance: &mut BTreeMap<VoucherBalanceKey, VoucherBalanceRow>,
+    ple: &PaymentLedgerEntry,
+    filters: &ReceivablePayableFilters,
+    return_entries: &BTreeMap<String, String>,
+) -> Option<VoucherBalanceKey> {
+    let mut against_voucher_no = ple.against_voucher_no.as_str();
+    if is_invoice_type(&ple.against_voucher_type) {
+        if let Some(return_against) = return_entries.get(&ple.against_voucher_no) {
+            if !return_against.is_empty() {
+                against_voucher_no = return_against;
+            }
+        }
+    }
+
+    let linked_key = if filters.ignore_accounts {
+        VoucherBalanceKey::without_account(
+            &ple.against_voucher_type,
+            against_voucher_no,
+            &ple.party,
+        )
+    } else {
+        VoucherBalanceKey::with_account(
+            &ple.account,
+            &ple.against_voucher_type,
+            against_voucher_no,
+            &ple.party,
+        )
+    };
+    if voucher_balance.contains_key(&linked_key) {
+        return Some(linked_key);
+    }
+
+    if ple.against_voucher_type == "Employee Advance" && filters.handle_employee_advances {
+        let key = if filters.ignore_accounts {
+            VoucherBalanceKey::without_account(
+                &ple.against_voucher_type,
+                &ple.against_voucher_no,
+                &ple.party,
+            )
+        } else {
+            VoucherBalanceKey::with_account(
+                &ple.account,
+                &ple.against_voucher_type,
+                &ple.against_voucher_no,
+                &ple.party,
+            )
+        };
+        voucher_balance.entry(key.clone()).or_insert_with(|| {
+            let mut row = build_voucher_dict(ple);
+            row.voucher_type = ple.against_voucher_type.clone();
+            row.voucher_no = ple.against_voucher_no.clone();
+            row
+        });
+        return Some(key);
+    }
+
+    let fallback_key = own_voucher_key(ple, filters.ignore_accounts);
+    voucher_balance
+        .contains_key(&fallback_key)
+        .then_some(fallback_key)
+}
+
+fn own_voucher_key(ple: &PaymentLedgerEntry, ignore_accounts: bool) -> VoucherBalanceKey {
+    if ignore_accounts {
+        VoucherBalanceKey::without_account(&ple.voucher_type, &ple.voucher_no, &ple.party)
+    } else {
+        VoucherBalanceKey::with_account(
+            &ple.account,
+            &ple.voucher_type,
+            &ple.voucher_no,
+            &ple.party,
+        )
+    }
+}
+
+fn is_self_voucher(ple: &PaymentLedgerEntry) -> bool {
+    ple.voucher_type == ple.against_voucher_type && ple.voucher_no == ple.against_voucher_no
+}
+
+fn is_invoice_type(voucher_type: &str) -> bool {
+    voucher_type == "Sales Invoice" || voucher_type == "Purchase Invoice"
 }
 
 fn add_column(

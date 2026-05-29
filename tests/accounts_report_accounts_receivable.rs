@@ -1,7 +1,10 @@
+use std::collections::BTreeMap;
+
 use tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivable::{
-    accounts_receivable_args, get_columns, get_currency_fields, AccountType,
+    accounts_receivable_args, build_voucher_dict, get_columns, get_currency_fields,
+    init_voucher_balance, update_voucher_balance, AccountType, PaymentLedgerEntry,
     ReceivablePayableFilters, ReceivablePayableRuntime, ReceivablePayableSettings,
-    ReceivablePayableState, ReportColumn,
+    ReceivablePayableState, ReportColumn, VoucherBalanceKey, VoucherBalanceRow,
 };
 
 fn filters() -> ReceivablePayableFilters {
@@ -21,6 +24,8 @@ fn filters() -> ReceivablePayableFilters {
         show_sales_person: false,
         show_remarks: false,
         sales_partner: None,
+        ignore_accounts: false,
+        handle_employee_advances: false,
     }
 }
 
@@ -34,6 +39,33 @@ fn settings() -> ReceivablePayableSettings {
     }
 }
 
+fn ple(
+    account: &str,
+    voucher_type: &str,
+    voucher_no: &str,
+    against_voucher_type: &str,
+    against_voucher_no: &str,
+    amount: f64,
+) -> PaymentLedgerEntry {
+    PaymentLedgerEntry {
+        account: account.to_string(),
+        voucher_type: voucher_type.to_string(),
+        voucher_no: voucher_no.to_string(),
+        against_voucher_type: against_voucher_type.to_string(),
+        against_voucher_no: against_voucher_no.to_string(),
+        party_type: "Customer".to_string(),
+        party: "CUST-001".to_string(),
+        posting_date: "2026-05-10".to_string(),
+        due_date: Some("2026-06-09".to_string()),
+        account_currency: "USD".to_string(),
+        remarks: Some("Remark".to_string()),
+        cost_center: Some("Main - TC".to_string()),
+        project: Some("PROJ-001".to_string()),
+        amount,
+        amount_in_account_currency: amount * 2.0,
+    }
+}
+
 #[test]
 fn accounts_receivable_execute_args_match_erpnext_receivable_defaults() {
     let args = accounts_receivable_args();
@@ -41,7 +73,10 @@ fn accounts_receivable_execute_args_match_erpnext_receivable_defaults() {
     assert_eq!(args.account_type, AccountType::Receivable);
     assert_eq!(
         args.naming_by,
-        ["Selling Settings".to_string(), "cust_master_name".to_string()]
+        [
+            "Selling Settings".to_string(),
+            "cust_master_name".to_string()
+        ]
     );
 }
 
@@ -162,7 +197,12 @@ fn accounts_receivable_columns_match_initial_receivable_shape_with_optional_bran
             ReportColumn::dynamic_link("Party", "party", "party_type", 180),
             ReportColumn::link("Receivable Account", "party_account", "Account", 180),
             ReportColumn::data("Customer Name", "customer_name", 120),
-            ReportColumn::link("Customer Contact", "customer_primary_contact", "Contact", 120),
+            ReportColumn::link(
+                "Customer Contact",
+                "customer_primary_contact",
+                "Contact",
+                120
+            ),
             ReportColumn::data("Cost Center", "cost_center", 120),
             ReportColumn::link("Project", "project", "Project", 120),
             ReportColumn::data("Voucher Type", "voucher_type", 120),
@@ -192,4 +232,219 @@ fn accounts_receivable_columns_match_initial_receivable_shape_with_optional_bran
             ReportColumn::text("Remarks", "remarks", 200),
         ]
     );
+}
+
+#[test]
+fn accounts_receivable_build_voucher_dict_matches_erpnext_zero_balance_shape() {
+    let row = build_voucher_dict(&ple(
+        "Debtors - TC",
+        "Sales Invoice",
+        "SINV-0001",
+        "Sales Invoice",
+        "SINV-0001",
+        100.0,
+    ));
+
+    assert_eq!(row.voucher_type, "Sales Invoice");
+    assert_eq!(row.voucher_no, "SINV-0001");
+    assert_eq!(row.party, "CUST-001");
+    assert_eq!(row.party_account, "Debtors - TC");
+    assert_eq!(row.posting_date, "2026-05-10");
+    assert_eq!(row.account_currency, "USD");
+    assert_eq!(row.remarks, Some("Remark".to_string()));
+    assert_eq!(row.invoiced, 0.0);
+    assert_eq!(row.paid, 0.0);
+    assert_eq!(row.credit_note, 0.0);
+    assert_eq!(row.outstanding, 0.0);
+    assert_eq!(row.invoiced_in_account_currency, 0.0);
+    assert_eq!(row.paid_in_account_currency, 0.0);
+    assert_eq!(row.credit_note_in_account_currency, 0.0);
+    assert_eq!(row.outstanding_in_account_currency, 0.0);
+}
+
+#[test]
+fn accounts_receivable_init_voucher_balance_keys_and_invoice_tracking_match_erpnext() {
+    let invoice = ple(
+        "Debtors - TC",
+        "Sales Invoice",
+        "SINV-0001",
+        "Sales Invoice",
+        "SINV-0001",
+        100.0,
+    );
+    let mut balances = BTreeMap::new();
+    let mut invoices = Vec::new();
+
+    init_voucher_balance(
+        &mut balances,
+        &mut invoices,
+        &invoice,
+        &filters(),
+        &["Sales Invoice".to_string(), "Purchase Invoice".to_string()],
+    );
+
+    let key =
+        VoucherBalanceKey::with_account("Debtors - TC", "Sales Invoice", "SINV-0001", "CUST-001");
+    assert!(balances.contains_key(&key));
+    assert_eq!(balances[&key].cost_center, Some("Main - TC".to_string()));
+    assert_eq!(balances[&key].project, Some("PROJ-001".to_string()));
+    assert_eq!(invoices, vec!["SINV-0001".to_string()]);
+
+    let mut ignored_account_balances = BTreeMap::new();
+    init_voucher_balance(
+        &mut ignored_account_balances,
+        &mut Vec::new(),
+        &invoice,
+        &ReceivablePayableFilters {
+            ignore_accounts: true,
+            ..filters()
+        },
+        &[],
+    );
+
+    assert!(
+        ignored_account_balances.contains_key(&VoucherBalanceKey::without_account(
+            "Sales Invoice",
+            "SINV-0001",
+            "CUST-001"
+        ))
+    );
+}
+
+#[test]
+fn accounts_receivable_update_voucher_balance_matches_erpnext_amount_branches() {
+    let invoice = ple(
+        "Debtors - TC",
+        "Sales Invoice",
+        "SINV-0001",
+        "Sales Invoice",
+        "SINV-0001",
+        100.0,
+    );
+    let payment = ple(
+        "Debtors - TC",
+        "Payment Entry",
+        "PAY-0001",
+        "Sales Invoice",
+        "SINV-0001",
+        40.0,
+    );
+    let credit_note = ple(
+        "Debtors - TC",
+        "Sales Invoice",
+        "SINV-RET-0001",
+        "Sales Invoice",
+        "SINV-0001",
+        -15.0,
+    );
+    let mut balances = BTreeMap::from([(
+        VoucherBalanceKey::with_account("Debtors - TC", "Sales Invoice", "SINV-0001", "CUST-001"),
+        build_voucher_dict(&invoice),
+    )]);
+
+    update_voucher_balance(&mut balances, &invoice, &filters(), &BTreeMap::new(), &[]);
+    update_voucher_balance(&mut balances, &payment, &filters(), &BTreeMap::new(), &[]);
+    update_voucher_balance(
+        &mut balances,
+        &credit_note,
+        &filters(),
+        &BTreeMap::new(),
+        &[],
+    );
+
+    let row = &balances[&VoucherBalanceKey::with_account(
+        "Debtors - TC",
+        "Sales Invoice",
+        "SINV-0001",
+        "CUST-001",
+    )];
+    assert_eq!(row.invoiced, 100.0);
+    assert_eq!(row.paid, -40.0);
+    assert_eq!(row.credit_note, 15.0);
+    assert_eq!(row.invoiced_in_account_currency, 200.0);
+    assert_eq!(row.paid_in_account_currency, -80.0);
+    assert_eq!(row.credit_note_in_account_currency, 30.0);
+}
+
+#[test]
+fn accounts_receivable_update_voucher_balance_uses_party_currency_and_return_entry_remap() {
+    let invoice = ple(
+        "Debtors - TC",
+        "Sales Invoice",
+        "SINV-0001",
+        "Sales Invoice",
+        "SINV-0001",
+        100.0,
+    );
+    let mut payment_against_return = ple(
+        "Debtors - TC",
+        "Payment Entry",
+        "PAY-0001",
+        "Sales Invoice",
+        "SINV-RET-0001",
+        10.0,
+    );
+    payment_against_return.amount_in_account_currency = 25.0;
+    let mut balances = BTreeMap::from([(
+        VoucherBalanceKey::with_account("Debtors - TC", "Sales Invoice", "SINV-0001", "CUST-001"),
+        build_voucher_dict(&invoice),
+    )]);
+    let return_entries = BTreeMap::from([("SINV-RET-0001".to_string(), "SINV-0001".to_string())]);
+
+    update_voucher_balance(
+        &mut balances,
+        &payment_against_return,
+        &ReceivablePayableFilters {
+            in_party_currency: true,
+            ..filters()
+        },
+        &return_entries,
+        &[],
+    );
+
+    assert_eq!(
+        balances[&VoucherBalanceKey::with_account(
+            "Debtors - TC",
+            "Sales Invoice",
+            "SINV-0001",
+            "CUST-001"
+        )]
+            .paid,
+        -25.0
+    );
+}
+
+#[test]
+fn accounts_receivable_employee_advance_creates_separate_row_when_enabled_like_erpnext() {
+    let advance_payment = ple(
+        "Debtors - TC",
+        "Payment Entry",
+        "PAY-0001",
+        "Employee Advance",
+        "EMP-ADV-0001",
+        75.0,
+    );
+    let mut balances: BTreeMap<VoucherBalanceKey, VoucherBalanceRow> = BTreeMap::new();
+
+    update_voucher_balance(
+        &mut balances,
+        &advance_payment,
+        &ReceivablePayableFilters {
+            handle_employee_advances: true,
+            ..filters()
+        },
+        &BTreeMap::new(),
+        &[],
+    );
+
+    let key = VoucherBalanceKey::with_account(
+        "Debtors - TC",
+        "Employee Advance",
+        "EMP-ADV-0001",
+        "CUST-001",
+    );
+    assert!(balances.contains_key(&key));
+    assert_eq!(balances[&key].voucher_type, "Employee Advance");
+    assert_eq!(balances[&key].voucher_no, "EMP-ADV-0001");
+    assert_eq!(balances[&key].paid, -75.0);
 }
