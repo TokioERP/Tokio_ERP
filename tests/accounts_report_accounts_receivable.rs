@@ -9,13 +9,14 @@ use tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivab
     get_currency_fields, get_party_group_with_children, group_future_payments,
     init_voucher_balance, is_invoice_type, payment_term_template_filter_conditions,
     prepare_conditions_plan, prepare_ple_query_plan, prepare_voucher_balance_rows, set_ageing,
-    set_invoice_details, set_party_details, update_voucher_balance, AccountType,
-    AccountingDimension, ChartInputRow, DeliveryNoteAgainstSalesInvoice, FuturePayment,
-    FuturePaymentAllocationRow, InvoiceDetails, InvoiceDetailsRow, PartyDetails, PartyDetailsRow,
-    PaymentLedgerEntry, PaymentTermAllocationRow, PaymentTermDetail, PaymentTermRow,
-    ReceivablePayableAgeingRow, ReceivablePayableFilters, ReceivablePayableRuntime,
-    ReceivablePayableSettings, ReceivablePayableState, ReportColumn, SalesInvoiceDeliveryNote,
-    SalesPersonRecord, SubtotalDataRow, VoucherBalanceKey, VoucherBalanceRow,
+    set_invoice_details, set_party_details, update_voucher_balance,
+    update_voucher_balance_with_sales_person_records, AccountType, AccountingDimension,
+    ChartInputRow, DeliveryNoteAgainstSalesInvoice, FuturePayment, FuturePaymentAllocationRow,
+    InvoiceDetails, InvoiceDetailsRow, PartyDetails, PartyDetailsRow, PaymentLedgerEntry,
+    PaymentTermAllocationRow, PaymentTermDetail, PaymentTermRow, ReceivablePayableAgeingRow,
+    ReceivablePayableFilters, ReceivablePayableRuntime, ReceivablePayableSettings,
+    ReceivablePayableState, ReportColumn, SalesInvoiceDeliveryNote, SalesPersonRecord,
+    SubtotalDataRow, VoucherBalanceKey, VoucherBalanceRow,
 };
 
 fn filters() -> ReceivablePayableFilters {
@@ -434,6 +435,81 @@ fn accounts_receivable_update_voucher_balance_uses_party_currency_and_return_ent
         )]
             .paid,
         -25.0
+    );
+}
+
+#[test]
+fn accounts_receivable_update_voucher_balance_filters_sales_person_records_like_erpnext() {
+    let invoice = ple(
+        "Debtors - TC",
+        "Sales Invoice",
+        "SINV-0001",
+        "Sales Invoice",
+        "SINV-0001",
+        100.0,
+    );
+    let payment = ple(
+        "Debtors - TC",
+        "Payment Entry",
+        "PAY-0001",
+        "Sales Invoice",
+        "SINV-0001",
+        40.0,
+    );
+    let mut balances = BTreeMap::from([(
+        VoucherBalanceKey::with_account("Debtors - TC", "Sales Invoice", "SINV-0001", "CUST-001"),
+        build_voucher_dict(&invoice),
+    )]);
+    let sales_person_records =
+        BTreeMap::from([("Sales Invoice".to_string(), vec!["SINV-0002".to_string()])]);
+
+    update_voucher_balance_with_sales_person_records(
+        &mut balances,
+        &payment,
+        &ReceivablePayableFilters {
+            sales_person: Some("Sales User".to_string()),
+            ..filters()
+        },
+        &sales_person_records,
+        &BTreeMap::new(),
+        &[],
+    );
+
+    assert_eq!(
+        balances[&VoucherBalanceKey::with_account(
+            "Debtors - TC",
+            "Sales Invoice",
+            "SINV-0001",
+            "CUST-001"
+        )]
+            .paid,
+        0.0
+    );
+
+    let sales_person_records =
+        BTreeMap::from([("Sales Invoice".to_string(), vec!["SINV-0001".to_string()])]);
+
+    update_voucher_balance_with_sales_person_records(
+        &mut balances,
+        &payment,
+        &ReceivablePayableFilters {
+            sales_person: Some("Sales User".to_string()),
+            ..filters()
+        },
+        &sales_person_records,
+        &BTreeMap::new(),
+        &[],
+    );
+
+    assert_eq!(
+        balances[&VoucherBalanceKey::with_account(
+            "Debtors - TC",
+            "Sales Invoice",
+            "SINV-0001",
+            "CUST-001"
+        )]
+            .paid,
+        -40.0
     );
 }
 

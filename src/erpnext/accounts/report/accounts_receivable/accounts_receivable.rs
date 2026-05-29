@@ -593,6 +593,28 @@ pub fn update_voucher_balance(
     return_entries: &BTreeMap<String, String>,
     _advance_payment_doctypes: &[String],
 ) {
+    update_voucher_balance_with_sales_person_records(
+        voucher_balance,
+        ple,
+        filters,
+        &BTreeMap::new(),
+        return_entries,
+        _advance_payment_doctypes,
+    );
+}
+
+pub fn update_voucher_balance_with_sales_person_records(
+    voucher_balance: &mut BTreeMap<VoucherBalanceKey, VoucherBalanceRow>,
+    ple: &PaymentLedgerEntry,
+    filters: &ReceivablePayableFilters,
+    sales_person_records: &BTreeMap<String, Vec<String>>,
+    return_entries: &BTreeMap<String, String>,
+    _advance_payment_doctypes: &[String],
+) {
+    if !matches_sales_person_filter(filters, sales_person_records, ple) {
+        return;
+    }
+
     let Some(key) = voucher_balance_key_for_update(voucher_balance, ple, filters, return_entries)
     else {
         return;
@@ -631,6 +653,31 @@ pub fn update_voucher_balance(
         row.paid -= amount;
         row.paid_in_account_currency -= amount_in_account_currency;
     }
+}
+
+fn matches_sales_person_filter(
+    filters: &ReceivablePayableFilters,
+    sales_person_records: &BTreeMap<String, Vec<String>>,
+    ple: &PaymentLedgerEntry,
+) -> bool {
+    if filters.sales_person.is_none() {
+        return true;
+    }
+
+    let customer_match = sales_person_records
+        .get("Customer")
+        .map(|parties| parties.iter().any(|party| party == &ple.party))
+        .unwrap_or(false);
+    let invoice_match = sales_person_records
+        .get("Sales Invoice")
+        .map(|invoices| {
+            invoices
+                .iter()
+                .any(|invoice| invoice == &ple.against_voucher_no)
+        })
+        .unwrap_or(false);
+
+    customer_match || invoice_match
 }
 
 pub fn prepare_voucher_balance_rows(
