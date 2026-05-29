@@ -813,6 +813,25 @@ pub fn payment_term_template_filter_conditions(
     conditions
 }
 
+pub fn add_project_and_cost_center_conditions(
+    filters: &ReceivablePayableFilters,
+    cost_center_children: &[String],
+) -> Vec<String> {
+    let mut conditions = Vec::new();
+
+    if !filters.cost_center.is_empty() {
+        conditions.push(format!(
+            "cost_center IN ({})",
+            quote_join(cost_center_children)
+        ));
+    }
+    if !filters.project.is_empty() {
+        conditions.push(format!("project IN ({})", quote_join(&filters.project)));
+    }
+
+    conditions
+}
+
 pub fn set_ageing(
     row: &mut ReceivablePayableAgeingRow,
     filters: &ReceivablePayableFilters,

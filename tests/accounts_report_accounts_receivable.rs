@@ -2,13 +2,14 @@ use std::collections::BTreeMap;
 
 use tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivable::{
     accounts_receivable_args, add_common_filter_conditions, add_customer_filter_conditions,
-    add_supplier_filter_conditions, allocate_future_payments, build_voucher_dict, get_columns,
-    get_currency_fields, group_future_payments, init_voucher_balance,
-    payment_term_template_filter_conditions, prepare_ple_query_plan, prepare_voucher_balance_rows,
-    set_ageing, set_invoice_details, set_party_details, update_voucher_balance, AccountType,
-    FuturePayment, FuturePaymentAllocationRow, InvoiceDetails, InvoiceDetailsRow, PartyDetails,
-    PartyDetailsRow, PaymentLedgerEntry, PaymentTermAllocationRow, PaymentTermDetail,
-    PaymentTermRow, ReceivablePayableAgeingRow, ReceivablePayableFilters, ReceivablePayableRuntime,
+    add_project_and_cost_center_conditions, add_supplier_filter_conditions,
+    allocate_future_payments, build_voucher_dict, get_columns, get_currency_fields,
+    group_future_payments, init_voucher_balance, payment_term_template_filter_conditions,
+    prepare_ple_query_plan, prepare_voucher_balance_rows, set_ageing, set_invoice_details,
+    set_party_details, update_voucher_balance, AccountType, FuturePayment,
+    FuturePaymentAllocationRow, InvoiceDetails, InvoiceDetailsRow, PartyDetails, PartyDetailsRow,
+    PaymentLedgerEntry, PaymentTermAllocationRow, PaymentTermDetail, PaymentTermRow,
+    ReceivablePayableAgeingRow, ReceivablePayableFilters, ReceivablePayableRuntime,
     ReceivablePayableSettings, ReceivablePayableState, ReportColumn, SubtotalDataRow,
     VoucherBalanceKey, VoucherBalanceRow,
 };
@@ -1537,4 +1538,31 @@ fn accounts_receivable_payment_term_template_filter_conditions_match_sales_and_p
             "credit_to = 'Creditors - TC'",
         ]
     );
+}
+
+#[test]
+fn accounts_receivable_project_and_cost_center_conditions_match_prepare_conditions_branches() {
+    let conditions = add_project_and_cost_center_conditions(
+        &ReceivablePayableFilters {
+            project: vec!["PROJ-001".to_string(), "PROJ-002".to_string()],
+            cost_center: vec!["Main - TC".to_string()],
+            ..filters()
+        },
+        &["Main - TC".to_string(), "Sub - TC".to_string()],
+    );
+
+    assert_eq!(
+        conditions,
+        vec![
+            "cost_center IN ('Main - TC', 'Sub - TC')",
+            "project IN ('PROJ-001', 'PROJ-002')",
+        ]
+    );
+}
+
+#[test]
+fn accounts_receivable_project_and_cost_center_conditions_skip_empty_filters() {
+    let conditions = add_project_and_cost_center_conditions(&filters(), &[]);
+
+    assert!(conditions.is_empty());
 }
