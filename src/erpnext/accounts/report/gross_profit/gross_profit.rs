@@ -82,6 +82,49 @@ pub struct GrossProfitSourceRow {
     pub payment_amount: f64,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct GrossProfitInvoiceRow {
+    pub parent_invoice: String,
+    pub parenttype: String,
+    pub indent: f64,
+    pub parent: Option<String>,
+    pub invoice_or_item: String,
+    pub posting_date: String,
+    pub posting_time: String,
+    pub project: String,
+    pub update_stock: bool,
+    pub customer: String,
+    pub customer_group: String,
+    pub customer_name: String,
+    pub item_code: Option<String>,
+    pub item_name: Option<String>,
+    pub description: Option<String>,
+    pub warehouse: Option<String>,
+    pub item_group: Option<String>,
+    pub brand: Option<String>,
+    pub dn_detail: Option<String>,
+    pub delivery_note: Option<String>,
+    pub qty: Option<f64>,
+    pub item_row: Option<String>,
+    pub is_return: bool,
+    pub cost_center: String,
+    pub base_net_amount: f64,
+    pub invoice_base_net_total: f64,
+    pub invoice: Option<String>,
+    pub serial_and_batch_bundle: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ProductBundleItem {
+    pub item_code: String,
+    pub item_name: String,
+    pub description: String,
+    pub warehouse: Option<String>,
+    pub total_qty: f64,
+    pub parent_detail_docname: String,
+    pub serial_and_batch_bundle: Option<String>,
+}
+
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct GrossProfitCalculatedRow {
     pub invoice_or_item: String,
@@ -770,6 +813,124 @@ pub fn calculate_row(
     }
 }
 
+pub fn get_invoice_row(row: &GrossProfitInvoiceRow) -> GrossProfitInvoiceRow {
+    GrossProfitInvoiceRow {
+        parent_invoice: String::new(),
+        parenttype: row.parenttype.clone(),
+        indent: 0.0,
+        parent: None,
+        invoice_or_item: row.parent.clone().unwrap_or_default(),
+        posting_date: row.posting_date.clone(),
+        posting_time: row.posting_time.clone(),
+        project: row.project.clone(),
+        update_stock: row.update_stock,
+        customer: row.customer.clone(),
+        customer_group: row.customer_group.clone(),
+        customer_name: row.customer_name.clone(),
+        item_code: None,
+        item_name: None,
+        description: None,
+        warehouse: None,
+        item_group: None,
+        brand: None,
+        dn_detail: None,
+        delivery_note: None,
+        qty: None,
+        item_row: None,
+        is_return: row.is_return,
+        cost_center: row.cost_center.clone(),
+        base_net_amount: row.invoice_base_net_total,
+        invoice_base_net_total: row.invoice_base_net_total,
+        invoice: None,
+        serial_and_batch_bundle: None,
+    }
+}
+
+pub fn get_bundle_item_row(
+    row: &GrossProfitInvoiceRow,
+    item: &ProductBundleItem,
+) -> GrossProfitInvoiceRow {
+    GrossProfitInvoiceRow {
+        parent_invoice: row.item_code.clone().unwrap_or_default(),
+        parenttype: row.parenttype.clone(),
+        indent: row.indent + 1.0,
+        parent: None,
+        invoice_or_item: item.item_code.clone(),
+        posting_date: row.posting_date.clone(),
+        posting_time: row.posting_time.clone(),
+        project: row.project.clone(),
+        update_stock: row.update_stock,
+        customer: row.customer.clone(),
+        customer_group: row.customer_group.clone(),
+        customer_name: row.customer_name.clone(),
+        item_code: Some(item.item_code.clone()),
+        item_name: Some(item.item_name.clone()),
+        description: Some(item.description.clone()),
+        warehouse: item.warehouse.clone().or_else(|| row.warehouse.clone()),
+        item_group: Some(String::new()),
+        brand: Some(String::new()),
+        dn_detail: row.dn_detail.clone(),
+        delivery_note: row.delivery_note.clone(),
+        qty: Some(item.total_qty * -1.0),
+        item_row: row.item_row.clone(),
+        is_return: row.is_return,
+        cost_center: row.cost_center.clone(),
+        base_net_amount: 0.0,
+        invoice_base_net_total: row.invoice_base_net_total,
+        invoice: row.parent.clone(),
+        serial_and_batch_bundle: row.serial_and_batch_bundle.clone(),
+    }
+}
+
+pub fn group_items_by_invoice(
+    rows: &[GrossProfitInvoiceRow],
+    product_bundles: &[(&str, &str, Vec<ProductBundleItem>)],
+) -> Vec<GrossProfitInvoiceRow> {
+    let mut grouped: BTreeMap<String, Vec<GrossProfitInvoiceRow>> = BTreeMap::new();
+    let mut invoice_order = Vec::new();
+
+    for row in rows {
+        let invoice = row.parent.clone().unwrap_or_default();
+        if !grouped.contains_key(&invoice) {
+            invoice_order.push(invoice.clone());
+            grouped.insert(invoice.clone(), vec![get_invoice_row(row)]);
+        }
+
+        let mut item_row = row.clone();
+        item_row.indent = 1.0;
+        item_row.parent_invoice = invoice.clone();
+        item_row.invoice_or_item = item_row.item_code.clone().unwrap_or_default();
+        grouped
+            .get_mut(&invoice)
+            .expect("invoice group")
+            .push(item_row.clone());
+
+        for (_, _, bundle_items) in product_bundles.iter().filter(|(parent, item, _)| {
+            *parent == invoice && Some(*item) == item_row.item_code.as_deref()
+        }) {
+            for bundle_item in bundle_items {
+                grouped
+                    .get_mut(&invoice)
+                    .expect("invoice group")
+                    .push(get_bundle_item_row(&item_row, bundle_item));
+            }
+        }
+    }
+
+    invoice_order
+        .into_iter()
+        .flat_map(|invoice| grouped.remove(&invoice).unwrap_or_default())
+        .collect()
+}
+
+pub fn should_skip_row(row: &GrossProfitCalculatedRow, group_by: &str) -> bool {
+    if group_by == "Invoice" {
+        return false;
+    }
+
+    row_text_value(row, scrub(group_by).as_str()).is_some_and(|value| value.is_empty())
+}
+
 pub fn group_rows(
     source_rows: &[GrossProfitSourceRow],
     filters: &GrossProfitFilters,
@@ -788,7 +949,19 @@ pub fn group_rows(
             continue;
         }
 
-        if let Some(existing) = grouped.get_mut(&key) {
+        if filters.group_by == "Payment Term" {
+            let portion = invoice_portion(source);
+            if let Some(existing) = grouped.get_mut(&key) {
+                existing.qty = round_to(existing.qty + row.qty, filters.float_precision);
+                apply_payment_term_portion(existing, &row, portion, filters);
+            } else {
+                let mut new_row = row;
+                apply_payment_term_portion_first(&mut new_row, portion);
+                set_average_rate(&mut new_row, filters);
+                order.push(key.clone());
+                grouped.insert(key, new_row);
+            }
+        } else if let Some(existing) = grouped.get_mut(&key) {
             existing.qty = round_to(existing.qty + row.qty, filters.float_precision);
             existing.buying_amount = round_to(
                 existing.buying_amount + row.buying_amount,
@@ -830,6 +1003,45 @@ pub fn group_rows(
         filters,
     ));
     rows
+}
+
+fn invoice_portion(row: &GrossProfitSourceRow) -> f64 {
+    if row.is_return {
+        100.0
+    } else if row.invoice_portion != 0.0 {
+        row.invoice_portion
+    } else if row.payment_amount != 0.0 && row.base_net_amount != 0.0 {
+        row.payment_amount * 100.0 / row.base_net_amount
+    } else {
+        0.0
+    }
+}
+
+fn apply_payment_term_portion_first(row: &mut GrossProfitCalculatedRow, portion: f64) {
+    row.base_amount = row.base_amount * portion / 100.0;
+    row.buying_amount = row.buying_amount * portion / 100.0;
+    row.gross_profit = row.gross_profit * portion / 100.0;
+}
+
+fn apply_payment_term_portion(
+    existing: &mut GrossProfitCalculatedRow,
+    row: &GrossProfitCalculatedRow,
+    portion: f64,
+    filters: &GrossProfitFilters,
+) {
+    existing.base_amount = round_to(
+        existing.base_amount + row.base_amount * portion / 100.0,
+        filters.currency_precision,
+    );
+    existing.buying_amount = round_to(
+        existing.buying_amount + row.buying_amount * portion / 100.0,
+        filters.currency_precision,
+    );
+    existing.gross_profit = round_to(
+        existing.gross_profit + row.gross_profit * portion / 100.0,
+        filters.currency_precision,
+    );
+    set_average_rate(existing, filters);
 }
 
 fn column_map() -> BTreeMap<&'static str, ReportColumn> {

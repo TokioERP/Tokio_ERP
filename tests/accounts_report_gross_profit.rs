@@ -1,9 +1,11 @@
 use tokio_erp::erpnext::accounts::report::gross_profit::gross_profit::{
-    calculate_row, get_column_names, get_columns, get_delivery_notes_query_plan,
-    get_group_wise_columns, get_last_purchase_rate_query_plan, get_product_bundle_query_plan,
-    get_stock_ledger_query_plan, group_rows, prepare_invoice_query_plan,
-    prepare_return_invoice_query_plan, AccountingDimensionFilter, GrossProfitFilters,
-    GrossProfitSourceRow, MasterNameSettings, ReportCell, ReportColumn,
+    calculate_row, get_bundle_item_row, get_column_names, get_columns,
+    get_delivery_notes_query_plan, get_group_wise_columns, get_invoice_row,
+    get_last_purchase_rate_query_plan, get_product_bundle_query_plan, get_stock_ledger_query_plan,
+    group_items_by_invoice, group_rows, prepare_invoice_query_plan,
+    prepare_return_invoice_query_plan, should_skip_row, AccountingDimensionFilter,
+    GrossProfitFilters, GrossProfitInvoiceRow, GrossProfitSourceRow, MasterNameSettings,
+    ProductBundleItem, ReportCell, ReportColumn,
 };
 
 fn filters(group_by: &str) -> GrossProfitFilters {
@@ -59,6 +61,39 @@ fn source_row(
         is_return: false,
         invoice_portion: 0.0,
         payment_amount: 0.0,
+    }
+}
+
+fn invoice_item_row(invoice: &str, item_code: &str) -> GrossProfitInvoiceRow {
+    GrossProfitInvoiceRow {
+        parent_invoice: String::new(),
+        parenttype: "Sales Invoice".to_string(),
+        indent: 0.0,
+        parent: Some(invoice.to_string()),
+        invoice_or_item: item_code.to_string(),
+        posting_date: "2026-05-15".to_string(),
+        posting_time: "10:30:00".to_string(),
+        project: "PROJ-001".to_string(),
+        update_stock: false,
+        customer: "CUST-001".to_string(),
+        customer_group: "Retail".to_string(),
+        customer_name: "Customer One".to_string(),
+        item_code: Some(item_code.to_string()),
+        item_name: Some(format!("{item_code} name")),
+        description: Some("Item description".to_string()),
+        warehouse: Some("Stores - TC".to_string()),
+        item_group: Some("Products".to_string()),
+        brand: Some("Brand A".to_string()),
+        dn_detail: Some("DN-DETAIL-1".to_string()),
+        delivery_note: Some("DN-0001".to_string()),
+        qty: Some(2.0),
+        item_row: Some(format!("{invoice}-{item_code}-ROW")),
+        is_return: false,
+        cost_center: "Main - TC".to_string(),
+        base_net_amount: 200.0,
+        invoice_base_net_total: 500.0,
+        invoice: None,
+        serial_and_batch_bundle: Some("SBB-001".to_string()),
     }
 }
 
@@ -229,6 +264,142 @@ fn gross_profit_group_rows_aggregates_by_group_and_appends_total_like_erpnext() 
     assert_eq!(total[9], ReportCell::Number(210.0));
     assert_eq!(total[10], ReportCell::Number(36.207));
     assert_eq!(total[11], ReportCell::Text("USD".to_string()));
+}
+
+#[test]
+fn gross_profit_invoice_header_row_matches_erpnext_get_invoice_row_shape() {
+    let row = get_invoice_row(&invoice_item_row("SINV-0001", "ITEM-001"));
+
+    assert_eq!(row.parent_invoice, "");
+    assert_eq!(row.indent, 0.0);
+    assert_eq!(row.invoice_or_item, "SINV-0001");
+    assert_eq!(row.parent, None);
+    assert_eq!(row.item_code, None);
+    assert_eq!(row.item_name, None);
+    assert_eq!(row.description, None);
+    assert_eq!(row.warehouse, None);
+    assert_eq!(row.item_group, None);
+    assert_eq!(row.brand, None);
+    assert_eq!(row.dn_detail, None);
+    assert_eq!(row.delivery_note, None);
+    assert_eq!(row.qty, None);
+    assert_eq!(row.item_row, None);
+    assert_eq!(row.base_net_amount, 500.0);
+}
+
+#[test]
+fn gross_profit_bundle_item_row_matches_erpnext_fallbacks_and_negative_qty() {
+    let mut row = invoice_item_row("SINV-0001", "BUNDLE-001");
+    row.indent = 1.0;
+    let bundle = ProductBundleItem {
+        item_code: "COMP-001".to_string(),
+        item_name: "Component".to_string(),
+        description: "Component desc".to_string(),
+        warehouse: None,
+        total_qty: -3.0,
+        parent_detail_docname: "SINV-0001-BUNDLE-001-ROW".to_string(),
+        serial_and_batch_bundle: Some("SBB-COMP".to_string()),
+    };
+
+    let bundle_row = get_bundle_item_row(&row, &bundle);
+
+    assert_eq!(bundle_row.parent_invoice, "BUNDLE-001");
+    assert_eq!(bundle_row.parenttype, "Sales Invoice");
+    assert_eq!(bundle_row.indent, 2.0);
+    assert_eq!(bundle_row.parent, None);
+    assert_eq!(bundle_row.invoice_or_item, "COMP-001");
+    assert_eq!(bundle_row.warehouse.as_deref(), Some("Stores - TC"));
+    assert_eq!(bundle_row.item_group.as_deref(), Some(""));
+    assert_eq!(bundle_row.brand.as_deref(), Some(""));
+    assert_eq!(bundle_row.qty, Some(3.0));
+    assert_eq!(
+        bundle_row.item_row.as_deref(),
+        Some("SINV-0001-BUNDLE-001-ROW")
+    );
+    assert_eq!(bundle_row.invoice.as_deref(), Some("SINV-0001"));
+    assert_eq!(
+        bundle_row.serial_and_batch_bundle.as_deref(),
+        Some("SBB-001")
+    );
+}
+
+#[test]
+fn gross_profit_group_items_by_invoice_inserts_header_children_and_bundle_rows_like_erpnext() {
+    let rows = vec![
+        invoice_item_row("SINV-0001", "BUNDLE-001"),
+        invoice_item_row("SINV-0001", "ITEM-002"),
+        invoice_item_row("SINV-0002", "ITEM-003"),
+    ];
+    let bundle = ProductBundleItem {
+        item_code: "COMP-001".to_string(),
+        item_name: "Component".to_string(),
+        description: "Component desc".to_string(),
+        warehouse: Some("Components - TC".to_string()),
+        total_qty: -2.0,
+        parent_detail_docname: "SINV-0001-BUNDLE-001-ROW".to_string(),
+        serial_and_batch_bundle: None,
+    };
+
+    let grouped = group_items_by_invoice(&rows, &[("SINV-0001", "BUNDLE-001", vec![bundle])]);
+
+    assert_eq!(grouped.len(), 6);
+    assert_eq!(grouped[0].invoice_or_item, "SINV-0001");
+    assert_eq!(grouped[0].indent, 0.0);
+    assert_eq!(grouped[1].invoice_or_item, "BUNDLE-001");
+    assert_eq!(grouped[1].indent, 1.0);
+    assert_eq!(grouped[1].parent_invoice, "SINV-0001");
+    assert_eq!(grouped[2].invoice_or_item, "COMP-001");
+    assert_eq!(grouped[2].parent_invoice, "BUNDLE-001");
+    assert_eq!(grouped[3].invoice_or_item, "ITEM-002");
+    assert_eq!(grouped[4].invoice_or_item, "SINV-0002");
+    assert_eq!(grouped[5].invoice_or_item, "ITEM-003");
+}
+
+#[test]
+fn gross_profit_skip_row_matches_erpnext_non_invoice_blank_group_behavior() {
+    let mut row = calculate_row(
+        &source_row("SINV-0001", "ITEM-001", 1.0, 100.0, 70.0),
+        &filters("Item Code"),
+    );
+    row.brand.clear();
+
+    assert!(should_skip_row(&row, "Brand"));
+    assert!(!should_skip_row(&row, "Invoice"));
+    assert!(!should_skip_row(&row, "Item Code"));
+}
+
+#[test]
+fn gross_profit_payment_term_grouping_applies_invoice_portion_like_erpnext() {
+    let mut row1 = source_row("SINV-0001", "ITEM-001", 1.0, 100.0, 60.0);
+    row1.payment_term = "30 Days".to_string();
+    row1.invoice_portion = 50.0;
+
+    let mut row2 = source_row("SINV-0002", "ITEM-002", 2.0, 200.0, 100.0);
+    row2.payment_term = "30 Days".to_string();
+    row2.payment_amount = 50.0;
+
+    let mut row3 = source_row("SINV-RET", "ITEM-003", -1.0, -80.0, -40.0);
+    row3.payment_term = "Sales Return".to_string();
+    row3.is_return = true;
+
+    let rows = group_rows(
+        &[row1, row2, row3],
+        &filters("Payment Term"),
+        &MasterNameSettings::default(),
+    );
+
+    assert_eq!(rows.len(), 3);
+    assert_eq!(rows[0][0], ReportCell::Text("30 Days".to_string()));
+    assert_eq!(rows[0][1], ReportCell::Number(100.0));
+    assert_eq!(rows[0][2], ReportCell::Number(55.0));
+    assert_eq!(rows[0][3], ReportCell::Number(45.0));
+    assert_eq!(rows[0][4], ReportCell::Number(45.0));
+
+    assert_eq!(rows[1][0], ReportCell::Text("Sales Return".to_string()));
+    assert_eq!(rows[1][1], ReportCell::Number(-80.0));
+    assert_eq!(rows[1][2], ReportCell::Number(-40.0));
+    assert_eq!(rows[1][3], ReportCell::Number(-40.0));
+    assert_eq!(rows[1][4], ReportCell::Number(-50.0));
 }
 
 #[test]
