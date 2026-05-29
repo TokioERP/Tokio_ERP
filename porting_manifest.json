@@ -2818,7 +2818,7 @@
     {
       "source": "accounts/report/accounts_receivable/accounts_receivable.py",
       "target": "accounts/report/accounts_receivable/accounts_receivable.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/accounts_receivable/test_accounts_receivable.py",
