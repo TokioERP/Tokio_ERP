@@ -462,6 +462,44 @@ fn gross_profit_not_grouped_data_wrapper_matches_erpnext_data_path() {
 }
 
 #[test]
+fn gross_profit_group_rows_monthly_formats_posting_date_like_erpnext() {
+    let mut may_one = source_row("SINV-0001", "ITEM-001", 2.0, 200.0, 120.0);
+    may_one.posting_date = "2026-05-15".to_string();
+    let mut may_two = source_row("SINV-0002", "ITEM-002", 3.0, 300.0, 150.0);
+    may_two.posting_date = "2026-05-20".to_string();
+    let mut june = source_row("SINV-0003", "ITEM-003", 1.0, 80.0, 40.0);
+    june.posting_date = "2026-06-01".to_string();
+
+    let rows = group_rows(
+        &[may_one, may_two, june],
+        &filters("Monthly"),
+        &MasterNameSettings::default(),
+    );
+
+    assert_eq!(rows.len(), 3);
+    assert_eq!(rows[0][0], ReportCell::Text("May 2026".to_string()));
+    assert_eq!(rows[0][1], ReportCell::Number(5.0));
+    assert_eq!(rows[0][2], ReportCell::Number(100.0));
+    assert_eq!(rows[0][3], ReportCell::Number(54.0));
+    assert_eq!(rows[0][4], ReportCell::Number(500.0));
+    assert_eq!(rows[0][5], ReportCell::Number(270.0));
+    assert_eq!(rows[0][6], ReportCell::Number(230.0));
+    assert_eq!(rows[0][7], ReportCell::Number(46.0));
+
+    assert_eq!(rows[1][0], ReportCell::Text("Jun 2026".to_string()));
+    assert_eq!(rows[1][4], ReportCell::Number(80.0));
+    assert_eq!(rows[1][5], ReportCell::Number(40.0));
+    assert_eq!(rows[1][7], ReportCell::Number(50.0));
+
+    assert_eq!(rows[2][0], ReportCell::Text("Total".to_string()));
+    assert_eq!(rows[2][4], ReportCell::Number(580.0));
+    assert_eq!(rows[2][5], ReportCell::Number(310.0));
+    assert_eq!(rows[2][6], ReportCell::Number(270.0));
+    assert_eq!(rows[2][7], ReportCell::Number(46.552));
+    assert_eq!(rows[2][8], ReportCell::Empty);
+}
+
+#[test]
 fn gross_profit_invoice_header_row_matches_erpnext_get_invoice_row_shape() {
     let row = get_invoice_row(&invoice_item_row("SINV-0001", "ITEM-001"));
 

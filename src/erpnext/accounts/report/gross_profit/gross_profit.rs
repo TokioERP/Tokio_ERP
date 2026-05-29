@@ -280,6 +280,7 @@ pub struct GrossProfitCalculatedRow {
     pub customer_group: String,
     pub customer_name: String,
     pub posting_date: String,
+    pub monthly: String,
     pub item_code: String,
     pub item_name: String,
     pub item_group: String,
@@ -1096,6 +1097,11 @@ pub fn calculate_row(
         customer_group: row.customer_group.clone(),
         customer_name: row.customer_name.clone(),
         posting_date: row.posting_date.clone(),
+        monthly: if filters.group_by == "Monthly" {
+            format_month_year(&row.posting_date)
+        } else {
+            String::new()
+        },
         item_code: row.item_code.clone(),
         item_name: row.item_name.clone(),
         item_group: row.item_group.clone(),
@@ -2041,6 +2047,7 @@ fn row_text_value(row: &GrossProfitCalculatedRow, col: &str) -> Option<String> {
         "customer_group" => Some(row.customer_group.clone()),
         "customer_name" => Some(row.customer_name.clone()),
         "posting_date" => Some(row.posting_date.clone()),
+        "monthly" => Some(row.monthly.clone()),
         "item_code" => Some(row.item_code.clone()),
         "item_name" => Some(row.item_name.clone()),
         "item_group" => Some(row.item_group.clone()),
