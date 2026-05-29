@@ -3133,7 +3133,7 @@
     {
       "source": "accounts/report/item_wise_purchase_register/item_wise_purchase_register.py",
       "target": "accounts/report/item_wise_purchase_register/item_wise_purchase_register.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/item_wise_purchase_register/test_item_wise_purchase_register.py",
