@@ -2,9 +2,10 @@ use std::collections::BTreeMap;
 
 use tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivable::{
     accounts_receivable_args, build_voucher_dict, get_columns, get_currency_fields,
-    init_voucher_balance, update_voucher_balance, AccountType, PaymentLedgerEntry,
-    ReceivablePayableFilters, ReceivablePayableRuntime, ReceivablePayableSettings,
-    ReceivablePayableState, ReportColumn, VoucherBalanceKey, VoucherBalanceRow,
+    init_voucher_balance, set_ageing, update_voucher_balance, AccountType, PaymentLedgerEntry,
+    ReceivablePayableAgeingRow, ReceivablePayableFilters, ReceivablePayableRuntime,
+    ReceivablePayableSettings, ReceivablePayableState, ReportColumn, VoucherBalanceKey,
+    VoucherBalanceRow,
 };
 
 fn filters() -> ReceivablePayableFilters {
@@ -12,6 +13,7 @@ fn filters() -> ReceivablePayableFilters {
         company: None,
         report_date: None,
         calculate_ageing_with: None,
+        ageing_based_on: None,
         range: None,
         account_type: None,
         group_by_party: false,
@@ -447,4 +449,113 @@ fn accounts_receivable_employee_advance_creates_separate_row_when_enabled_like_e
     assert_eq!(balances[&key].voucher_type, "Employee Advance");
     assert_eq!(balances[&key].voucher_no, "EMP-ADV-0001");
     assert_eq!(balances[&key].paid, -75.0);
+}
+
+#[test]
+fn accounts_receivable_ageing_uses_due_date_with_posting_fallback_like_erpnext() {
+    let runtime = ReceivablePayableRuntime {
+        account_type: AccountType::Receivable,
+        party_naming_by: "Naming Series".to_string(),
+        ranges: vec![
+            "30".to_string(),
+            "60".to_string(),
+            "90".to_string(),
+            "120".to_string(),
+        ],
+        range_numbers: vec![1, 2, 3, 4, 5],
+    };
+    let report_filters = ReceivablePayableFilters {
+        ageing_based_on: Some("Due Date".to_string()),
+        ..filters()
+    };
+    let mut due_date_row = ReceivablePayableAgeingRow {
+        posting_date: "2026-04-01".to_string(),
+        due_date: Some("2026-05-10".to_string()),
+        bill_date: None,
+        outstanding: 75.0,
+        age: 0,
+        range0: 0.0,
+        ranges: Vec::new(),
+        total_due: 0.0,
+    };
+    let mut fallback_row = ReceivablePayableAgeingRow {
+        due_date: None,
+        ..due_date_row.clone()
+    };
+
+    set_ageing(&mut due_date_row, &report_filters, &runtime, "2026-05-29");
+    set_ageing(&mut fallback_row, &report_filters, &runtime, "2026-05-29");
+
+    assert_eq!(due_date_row.age, 19);
+    assert_eq!(due_date_row.range0, 0.0);
+    assert_eq!(due_date_row.ranges, vec![75.0, 0.0, 0.0, 0.0, 0.0]);
+    assert_eq!(due_date_row.total_due, 75.0);
+    assert_eq!(fallback_row.age, 58);
+    assert_eq!(fallback_row.ranges, vec![0.0, 75.0, 0.0, 0.0, 0.0]);
+}
+
+#[test]
+fn accounts_receivable_ageing_supplier_invoice_date_uses_bill_date_like_erpnext() {
+    let runtime = ReceivablePayableRuntime {
+        account_type: AccountType::Payable,
+        party_naming_by: "Naming Series".to_string(),
+        ranges: vec![
+            "30".to_string(),
+            "60".to_string(),
+            "90".to_string(),
+            "120".to_string(),
+        ],
+        range_numbers: vec![1, 2, 3, 4, 5],
+    };
+    let mut row = ReceivablePayableAgeingRow {
+        posting_date: "2026-05-20".to_string(),
+        due_date: Some("2026-05-25".to_string()),
+        bill_date: Some("2026-02-10".to_string()),
+        outstanding: 88.0,
+        age: 0,
+        range0: 0.0,
+        ranges: Vec::new(),
+        total_due: 0.0,
+    };
+
+    set_ageing(
+        &mut row,
+        &ReceivablePayableFilters {
+            ageing_based_on: Some("Supplier Invoice Date".to_string()),
+            ..filters()
+        },
+        &runtime,
+        "2026-05-29",
+    );
+
+    assert_eq!(row.age, 108);
+    assert_eq!(row.ranges, vec![0.0, 0.0, 0.0, 88.0, 0.0]);
+    assert_eq!(row.total_due, 88.0);
+}
+
+#[test]
+fn accounts_receivable_ageing_future_entry_sets_range0_and_zero_total_like_erpnext() {
+    let runtime = ReceivablePayableRuntime {
+        account_type: AccountType::Receivable,
+        party_naming_by: "Naming Series".to_string(),
+        ranges: vec!["30".to_string(), "60".to_string()],
+        range_numbers: vec![1, 2, 3],
+    };
+    let mut row = ReceivablePayableAgeingRow {
+        posting_date: "2026-06-01".to_string(),
+        due_date: None,
+        bill_date: None,
+        outstanding: 42.0,
+        age: 0,
+        range0: 0.0,
+        ranges: Vec::new(),
+        total_due: 0.0,
+    };
+
+    set_ageing(&mut row, &filters(), &runtime, "2026-05-29");
+
+    assert_eq!(row.age, -3);
+    assert_eq!(row.range0, 42.0);
+    assert_eq!(row.ranges, vec![0.0, 0.0, 0.0]);
+    assert_eq!(row.total_due, 0.0);
 }

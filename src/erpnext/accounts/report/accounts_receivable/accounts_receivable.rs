@@ -17,6 +17,7 @@ pub struct ReceivablePayableFilters {
     pub company: Option<String>,
     pub report_date: Option<String>,
     pub calculate_ageing_with: Option<String>,
+    pub ageing_based_on: Option<String>,
     pub range: Option<String>,
     pub account_type: Option<AccountType>,
     pub group_by_party: bool,
@@ -118,6 +119,18 @@ pub struct VoucherBalanceRow {
     pub paid_in_account_currency: f64,
     pub credit_note_in_account_currency: f64,
     pub outstanding_in_account_currency: f64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ReceivablePayableAgeingRow {
+    pub posting_date: String,
+    pub due_date: Option<String>,
+    pub bill_date: Option<String>,
+    pub outstanding: f64,
+    pub age: i64,
+    pub range0: f64,
+    pub ranges: Vec<f64>,
+    pub total_due: f64,
 }
 
 impl VoucherBalanceKey {
@@ -412,6 +425,61 @@ pub fn update_voucher_balance(
     } else {
         row.paid -= amount;
         row.paid_in_account_currency -= amount_in_account_currency;
+    }
+}
+
+pub fn set_ageing(
+    row: &mut ReceivablePayableAgeingRow,
+    filters: &ReceivablePayableFilters,
+    runtime: &ReceivablePayableRuntime,
+    age_as_on: &str,
+) {
+    let entry_date = match filters.ageing_based_on.as_deref() {
+        Some("Due Date") => row
+            .due_date
+            .as_deref()
+            .unwrap_or(&row.posting_date)
+            .to_string(),
+        Some("Supplier Invoice Date") => row.bill_date.clone().unwrap_or_default(),
+        _ => row.posting_date.clone(),
+    };
+
+    row.range0 = 0.0;
+    get_ageing_data(&entry_date, row, runtime, age_as_on);
+
+    if !entry_date.is_empty()
+        && !age_as_on.is_empty()
+        && parse_date(&entry_date) > parse_date(age_as_on)
+    {
+        row.range0 = row.outstanding;
+        row.ranges = vec![0.0; runtime.range_numbers.len()];
+        row.total_due = 0.0;
+        return;
+    }
+
+    row.total_due = row.ranges.iter().sum();
+}
+
+fn get_ageing_data(
+    entry_date: &str,
+    row: &mut ReceivablePayableAgeingRow,
+    runtime: &ReceivablePayableRuntime,
+    age_as_on: &str,
+) {
+    row.ranges = vec![0.0; runtime.range_numbers.len()];
+    if age_as_on.is_empty() || entry_date.is_empty() {
+        return;
+    }
+
+    row.age = parse_date(age_as_on).days_since_epoch() - parse_date(entry_date).days_since_epoch();
+    let index = runtime
+        .ranges
+        .iter()
+        .position(|days| row.age <= days.parse::<i64>().unwrap_or_default())
+        .unwrap_or(runtime.ranges.len());
+
+    if let Some(range) = row.ranges.get_mut(index) {
+        *range = row.outstanding;
     }
 }
 
@@ -850,4 +918,33 @@ fn scrub(label: &str) -> String {
         .replace(|ch: char| !ch.is_ascii_alphanumeric(), "_")
         .trim_matches('_')
         .to_string()
+}
+
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+struct ErpDate {
+    year: i32,
+    month: u32,
+    day: u32,
+}
+
+fn parse_date(value: &str) -> ErpDate {
+    let mut parts = value.split('-');
+    ErpDate {
+        year: parts.next().unwrap().parse().unwrap(),
+        month: parts.next().unwrap().parse().unwrap(),
+        day: parts.next().unwrap().parse().unwrap(),
+    }
+}
+
+impl ErpDate {
+    fn days_since_epoch(self) -> i64 {
+        let year = self.year - i32::from(self.month <= 2);
+        let era = year.div_euclid(400);
+        let year_of_era = year - era * 400;
+        let month = self.month as i32;
+        let day_of_year =
+            (153 * (month + if month > 2 { -3 } else { 9 }) + 2) / 5 + self.day as i32 - 1;
+        let day_of_era = year_of_era * 365 + year_of_era / 4 - year_of_era / 100 + day_of_year;
+        i64::from(era * 146097 + day_of_era - 719468)
+    }
 }
