@@ -1,13 +1,14 @@
 use std::collections::BTreeMap;
 
 use tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivable::{
-    accounts_receivable_args, add_common_filter_conditions, allocate_future_payments,
-    build_voucher_dict, get_columns, get_currency_fields, group_future_payments,
-    init_voucher_balance, prepare_ple_query_plan, prepare_voucher_balance_rows, set_ageing,
-    set_invoice_details, set_party_details, update_voucher_balance, AccountType, FuturePayment,
-    FuturePaymentAllocationRow, InvoiceDetails, InvoiceDetailsRow, PartyDetails, PartyDetailsRow,
-    PaymentLedgerEntry, PaymentTermAllocationRow, PaymentTermDetail, PaymentTermRow,
-    ReceivablePayableAgeingRow, ReceivablePayableFilters, ReceivablePayableRuntime,
+    accounts_receivable_args, add_common_filter_conditions, add_customer_filter_conditions,
+    add_supplier_filter_conditions, allocate_future_payments, build_voucher_dict, get_columns,
+    get_currency_fields, group_future_payments, init_voucher_balance,
+    payment_term_template_filter_conditions, prepare_ple_query_plan, prepare_voucher_balance_rows,
+    set_ageing, set_invoice_details, set_party_details, update_voucher_balance, AccountType,
+    FuturePayment, FuturePaymentAllocationRow, InvoiceDetails, InvoiceDetailsRow, PartyDetails,
+    PartyDetailsRow, PaymentLedgerEntry, PaymentTermAllocationRow, PaymentTermDetail,
+    PaymentTermRow, ReceivablePayableAgeingRow, ReceivablePayableFilters, ReceivablePayableRuntime,
     ReceivablePayableSettings, ReceivablePayableState, ReportColumn, SubtotalDataRow,
     VoucherBalanceKey, VoucherBalanceRow,
 };
@@ -18,6 +19,12 @@ fn filters() -> ReceivablePayableFilters {
         report_date: None,
         finance_book: None,
         party_type: None,
+        customer_group: None,
+        territory: None,
+        supplier_group: None,
+        payment_terms_template: None,
+        cost_center: Vec::new(),
+        project: Vec::new(),
         calculate_ageing_with: None,
         ageing_based_on: None,
         range: None,
@@ -1428,4 +1435,106 @@ fn accounts_receivable_add_common_filter_conditions_skips_account_filter_when_no
     );
 
     assert_eq!(conditions, vec!["company = '_Test Company'"]);
+}
+
+#[test]
+fn accounts_receivable_customer_filter_conditions_match_customer_specific_branches() {
+    let conditions = add_customer_filter_conditions(
+        &ReceivablePayableFilters {
+            customer_group: Some("All Customer Groups".to_string()),
+            territory: Some("All Territories".to_string()),
+            payment_terms_template: Some("Net 30".to_string()),
+            sales_partner: Some("Partner A".to_string()),
+            ..filters()
+        },
+        &["All Customer Groups".to_string(), "Retail".to_string()],
+        &["All Territories".to_string(), "Tashkent".to_string()],
+        &["SINV-0001".to_string(), "SINV-0002".to_string()],
+    );
+
+    assert_eq!(
+        conditions,
+        vec![
+            "party IN Customer WHERE customer_group IN ('All Customer Groups', 'Retail')",
+            "party IN Customer WHERE territory IN ('All Territories', 'Tashkent')",
+            "(party IN Customer WHERE payment_terms = 'Net 30' OR against_voucher_no IN ('SINV-0001', 'SINV-0002'))",
+            "party IN Customer WHERE default_sales_partner = 'Partner A'",
+            "party_type != 'Employee'",
+        ]
+    );
+}
+
+#[test]
+fn accounts_receivable_supplier_filter_conditions_match_supplier_specific_branches() {
+    let conditions = add_supplier_filter_conditions(
+        &ReceivablePayableFilters {
+            supplier_group: Some("All Supplier Groups".to_string()),
+            payment_terms_template: Some("Net 45".to_string()),
+            ..filters()
+        },
+        &["PINV-0001".to_string()],
+    );
+
+    assert_eq!(
+        conditions,
+        vec![
+            "party IN Supplier WHERE supplier_group = 'All Supplier Groups'",
+            "(party IN Supplier WHERE payment_terms = 'Net 45' OR against_voucher_no IN ('PINV-0001'))",
+        ]
+    );
+}
+
+#[test]
+fn accounts_receivable_payment_term_template_filter_conditions_match_sales_and_purchase_variants() {
+    let sales_conditions = payment_term_template_filter_conditions(
+        "Sales Invoice",
+        &ReceivablePayableFilters {
+            company: Some("_Test Company".to_string()),
+            payment_terms_template: Some("Net 30".to_string()),
+            customer_group: Some("Retail".to_string()),
+            party: vec!["CUST-001".to_string()],
+            cost_center: vec!["Main - TC".to_string()],
+            party_account: Some("Debtors - TC".to_string()),
+            ..filters()
+        },
+        &["Retail".to_string(), "Online".to_string()],
+        &["Main - TC".to_string(), "Sub - TC".to_string()],
+    );
+    let purchase_conditions = payment_term_template_filter_conditions(
+        "Purchase Invoice",
+        &ReceivablePayableFilters {
+            company: Some("_Test Company".to_string()),
+            payment_terms_template: Some("Net 45".to_string()),
+            supplier_group: Some("Services".to_string()),
+            party: vec!["SUPP-001".to_string()],
+            cost_center: vec!["Main - TC".to_string()],
+            party_account: Some("Creditors - TC".to_string()),
+            ..filters()
+        },
+        &["Services".to_string()],
+        &["Main - TC".to_string()],
+    );
+
+    assert_eq!(
+        sales_conditions,
+        vec![
+            "payment_terms_template = 'Net 30'",
+            "company = '_Test Company'",
+            "customer_group IN ('Retail', 'Online')",
+            "customer IN ('CUST-001')",
+            "cost_center IN ('Main - TC', 'Sub - TC')",
+            "debit_to = 'Debtors - TC'",
+        ]
+    );
+    assert_eq!(
+        purchase_conditions,
+        vec![
+            "payment_terms_template = 'Net 45'",
+            "company = '_Test Company'",
+            "supplier_group IN ('Services')",
+            "supplier IN ('SUPP-001')",
+            "cost_center IN ('Main - TC')",
+            "credit_to = 'Creditors - TC'",
+        ]
+    );
 }

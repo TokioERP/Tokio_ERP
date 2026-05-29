@@ -18,6 +18,12 @@ pub struct ReceivablePayableFilters {
     pub report_date: Option<String>,
     pub finance_book: Option<String>,
     pub party_type: Option<String>,
+    pub customer_group: Option<String>,
+    pub territory: Option<String>,
+    pub supplier_group: Option<String>,
+    pub payment_terms_template: Option<String>,
+    pub cost_center: Vec<String>,
+    pub project: Vec<String>,
     pub calculate_ageing_with: Option<String>,
     pub ageing_based_on: Option<String>,
     pub range: Option<String>,
@@ -682,6 +688,126 @@ pub fn add_common_filter_conditions(
         conditions.push(format!("account = '{}'", party_account));
     } else if !accounts.is_empty() {
         conditions.push(format!("account IN ({})", quote_join(accounts)));
+    }
+
+    conditions
+}
+
+pub fn add_customer_filter_conditions(
+    filters: &ReceivablePayableFilters,
+    customer_group_children: &[String],
+    territory_children: &[String],
+    sales_invoice_payment_template_names: &[String],
+) -> Vec<String> {
+    let mut conditions = Vec::new();
+
+    if filters.customer_group.is_some() {
+        conditions.push(format!(
+            "party IN Customer WHERE customer_group IN ({})",
+            quote_join(customer_group_children)
+        ));
+    }
+    if filters.territory.is_some() {
+        conditions.push(format!(
+            "party IN Customer WHERE territory IN ({})",
+            quote_join(territory_children)
+        ));
+    }
+    if let Some(template) = filters.payment_terms_template.as_deref() {
+        conditions.push(format!(
+            "(party IN Customer WHERE payment_terms = '{}' OR against_voucher_no IN ({}))",
+            template,
+            quote_join(sales_invoice_payment_template_names)
+        ));
+    }
+    if let Some(sales_partner) = filters.sales_partner.as_deref() {
+        conditions.push(format!(
+            "party IN Customer WHERE default_sales_partner = '{}'",
+            sales_partner
+        ));
+    }
+
+    conditions.push("party_type != 'Employee'".to_string());
+    conditions
+}
+
+pub fn add_supplier_filter_conditions(
+    filters: &ReceivablePayableFilters,
+    purchase_invoice_payment_template_names: &[String],
+) -> Vec<String> {
+    let mut conditions = Vec::new();
+
+    if let Some(supplier_group) = filters.supplier_group.as_deref() {
+        conditions.push(format!(
+            "party IN Supplier WHERE supplier_group = '{}'",
+            supplier_group
+        ));
+    }
+    if let Some(template) = filters.payment_terms_template.as_deref() {
+        conditions.push(format!(
+            "(party IN Supplier WHERE payment_terms = '{}' OR against_voucher_no IN ({}))",
+            template,
+            quote_join(purchase_invoice_payment_template_names)
+        ));
+    }
+
+    conditions
+}
+
+pub fn payment_term_template_filter_conditions(
+    dtype: &str,
+    filters: &ReceivablePayableFilters,
+    party_group_children: &[String],
+    cost_center_children: &[String],
+) -> Vec<String> {
+    let mut conditions = Vec::new();
+
+    if let Some(template) = filters.payment_terms_template.as_deref() {
+        conditions.push(format!("payment_terms_template = '{}'", template));
+    }
+    if let Some(company) = filters.company.as_deref() {
+        conditions.push(format!("company = '{}'", company));
+    }
+
+    let (party_field, party_group_field, account_field, has_party_group) =
+        if dtype == "Purchase Invoice" {
+            (
+                "supplier",
+                "supplier_group",
+                "credit_to",
+                filters.supplier_group.is_some(),
+            )
+        } else {
+            (
+                "customer",
+                "customer_group",
+                "debit_to",
+                filters.customer_group.is_some(),
+            )
+        };
+
+    if has_party_group {
+        conditions.push(format!(
+            "{} IN ({})",
+            party_group_field,
+            quote_join(party_group_children)
+        ));
+    }
+    if !filters.party.is_empty() {
+        conditions.push(format!(
+            "{} IN ({})",
+            party_field,
+            quote_join(&filters.party)
+        ));
+    }
+    if !filters.cost_center.is_empty() {
+        conditions.push(format!(
+            "cost_center IN ({})",
+            quote_join(cost_center_children)
+        ));
+    }
+    if let Some(party_account) = filters.party_account.as_deref() {
+        conditions.push(format!("{} = '{}'", account_field, party_account));
     }
 
     conditions
