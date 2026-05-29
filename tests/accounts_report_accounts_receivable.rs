@@ -3,15 +3,16 @@ use std::collections::BTreeMap;
 use tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivable::{
     accounts_receivable_args, add_common_filter_conditions, add_customer_filter_conditions,
     add_project_and_cost_center_conditions, add_supplier_filter_conditions,
-    allocate_future_payments, build_voucher_dict, get_columns, get_currency_fields,
+    allocate_future_payments, build_delivery_note_map, build_return_entries_plan,
+    build_sales_person_records, build_voucher_dict, get_columns, get_currency_fields,
     group_future_payments, init_voucher_balance, payment_term_template_filter_conditions,
     prepare_ple_query_plan, prepare_voucher_balance_rows, set_ageing, set_invoice_details,
-    set_party_details, update_voucher_balance, AccountType, FuturePayment,
-    FuturePaymentAllocationRow, InvoiceDetails, InvoiceDetailsRow, PartyDetails, PartyDetailsRow,
-    PaymentLedgerEntry, PaymentTermAllocationRow, PaymentTermDetail, PaymentTermRow,
-    ReceivablePayableAgeingRow, ReceivablePayableFilters, ReceivablePayableRuntime,
-    ReceivablePayableSettings, ReceivablePayableState, ReportColumn, SubtotalDataRow,
-    VoucherBalanceKey, VoucherBalanceRow,
+    set_party_details, update_voucher_balance, AccountType, DeliveryNoteAgainstSalesInvoice,
+    FuturePayment, FuturePaymentAllocationRow, InvoiceDetails, InvoiceDetailsRow, PartyDetails,
+    PartyDetailsRow, PaymentLedgerEntry, PaymentTermAllocationRow, PaymentTermDetail,
+    PaymentTermRow, ReceivablePayableAgeingRow, ReceivablePayableFilters, ReceivablePayableRuntime,
+    ReceivablePayableSettings, ReceivablePayableState, ReportColumn, SalesInvoiceDeliveryNote,
+    SalesPersonRecord, SubtotalDataRow, VoucherBalanceKey, VoucherBalanceRow,
 };
 
 fn filters() -> ReceivablePayableFilters {
@@ -38,6 +39,7 @@ fn filters() -> ReceivablePayableFilters {
         show_future_payments: false,
         show_delivery_notes: false,
         show_sales_person: false,
+        sales_person: None,
         show_remarks: false,
         sales_partner: None,
         ignore_accounts: false,
@@ -1565,4 +1567,124 @@ fn accounts_receivable_project_and_cost_center_conditions_skip_empty_filters() {
     let conditions = add_project_and_cost_center_conditions(&filters(), &[]);
 
     assert!(conditions.is_empty());
+}
+
+#[test]
+fn accounts_receivable_build_return_entries_plan_matches_receivable_party_or_filters() {
+    let plan = build_return_entries_plan(
+        AccountType::Receivable,
+        &ReceivablePayableFilters {
+            company: Some("_Test Company".to_string()),
+            report_date: Some("2026-05-29".to_string()),
+            party_type: Some("Customer".to_string()),
+            party: vec!["CUST-001".to_string(), "CUST-002".to_string()],
+            ..filters()
+        },
+    );
+
+    assert_eq!(plan.doctype, "Sales Invoice");
+    assert_eq!(
+        plan.filters,
+        vec![
+            "posting_date <= '2026-05-29'",
+            "is_return = 1",
+            "docstatus = 1",
+            "company = '_Test Company'",
+            "update_outstanding_for_self = 0",
+        ]
+    );
+    assert_eq!(
+        plan.or_filters,
+        vec!["customer IN ('CUST-001', 'CUST-002')"]
+    );
+    assert_eq!(plan.fields, vec!["name", "return_against"]);
+}
+
+#[test]
+fn accounts_receivable_build_return_entries_plan_matches_payable_without_party_filter() {
+    let plan = build_return_entries_plan(
+        AccountType::Payable,
+        &ReceivablePayableFilters {
+            company: Some("_Test Company".to_string()),
+            report_date: Some("2026-05-29".to_string()),
+            ..filters()
+        },
+    );
+
+    assert_eq!(plan.doctype, "Purchase Invoice");
+    assert!(plan.or_filters.is_empty());
+}
+
+#[test]
+fn accounts_receivable_build_delivery_note_map_merges_sales_invoice_and_delivery_note_links() {
+    let notes = build_delivery_note_map(
+        &["SINV-0001".to_string()],
+        true,
+        &[
+            SalesInvoiceDeliveryNote {
+                parent: "SINV-0001".to_string(),
+                delivery_note: Some("DN-0002".to_string()),
+            },
+            SalesInvoiceDeliveryNote {
+                parent: "SINV-0001".to_string(),
+                delivery_note: None,
+            },
+        ],
+        &[
+            DeliveryNoteAgainstSalesInvoice {
+                parent: "DN-0001".to_string(),
+                against_sales_invoice: "SINV-0001".to_string(),
+            },
+            DeliveryNoteAgainstSalesInvoice {
+                parent: "DN-0002".to_string(),
+                against_sales_invoice: "SINV-0001".to_string(),
+            },
+        ],
+    );
+
+    assert_eq!(
+        notes["SINV-0001"],
+        vec!["DN-0001".to_string(), "DN-0002".to_string()]
+    );
+}
+
+#[test]
+fn accounts_receivable_build_delivery_note_map_returns_empty_when_hidden_or_no_invoices() {
+    assert!(build_delivery_note_map(&[], true, &[], &[]).is_empty());
+    assert!(build_delivery_note_map(&["SINV-0001".to_string()], false, &[], &[]).is_empty());
+}
+
+#[test]
+fn accounts_receivable_build_sales_person_records_groups_parenttype_when_filter_present() {
+    let records = build_sales_person_records(
+        &ReceivablePayableFilters {
+            sales_person: Some("Sales User".to_string()),
+            ..filters()
+        },
+        &[
+            SalesPersonRecord {
+                parent: "CUST-001".to_string(),
+                parenttype: "Customer".to_string(),
+            },
+            SalesPersonRecord {
+                parent: "SINV-0001".to_string(),
+                parenttype: "Sales Invoice".to_string(),
+            },
+            SalesPersonRecord {
+                parent: "SINV-0002".to_string(),
+                parenttype: "Sales Invoice".to_string(),
+            },
+        ],
+    );
+
+    assert_eq!(records["Customer"], vec!["CUST-001".to_string()]);
+    assert_eq!(
+        records["Sales Invoice"],
+        vec!["SINV-0001".to_string(), "SINV-0002".to_string()]
+    );
+}
+
+#[test]
+fn accounts_receivable_build_sales_person_records_returns_empty_without_filter() {
+    assert!(build_sales_person_records(&filters(), &[]).is_empty());
 }

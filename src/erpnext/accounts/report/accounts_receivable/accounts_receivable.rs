@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum AccountType {
@@ -36,6 +36,7 @@ pub struct ReceivablePayableFilters {
     pub show_future_payments: bool,
     pub show_delivery_notes: bool,
     pub show_sales_person: bool,
+    pub sales_person: Option<String>,
     pub show_remarks: bool,
     pub sales_partner: Option<String>,
     pub ignore_accounts: bool,
@@ -92,6 +93,14 @@ pub struct PleQueryPlan {
     pub date_condition: String,
     pub remarks_selection: Option<String>,
     pub order_by: Vec<&'static str>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ReturnEntriesPlan {
+    pub doctype: &'static str,
+    pub filters: Vec<String>,
+    pub or_filters: Vec<String>,
+    pub fields: Vec<&'static str>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -258,6 +267,24 @@ pub struct SubtotalDataRow {
     pub currency_values: BTreeMap<String, f64>,
     pub currency: String,
     pub is_empty: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SalesInvoiceDeliveryNote {
+    pub parent: String,
+    pub delivery_note: Option<String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DeliveryNoteAgainstSalesInvoice {
+    pub parent: String,
+    pub against_sales_invoice: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SalesPersonRecord {
+    pub parent: String,
+    pub parenttype: String,
 }
 
 impl SubtotalDataRow {
@@ -830,6 +857,102 @@ pub fn add_project_and_cost_center_conditions(
     }
 
     conditions
+}
+
+pub fn build_return_entries_plan(
+    account_type: AccountType,
+    filters: &ReceivablePayableFilters,
+) -> ReturnEntriesPlan {
+    let doctype = match account_type {
+        AccountType::Receivable => "Sales Invoice",
+        AccountType::Payable => "Purchase Invoice",
+    };
+    let report_date = filters.report_date.as_deref().unwrap_or_default();
+    let company = filters.company.as_deref().unwrap_or_default();
+    let mut or_filters = Vec::new();
+
+    if let Some(party_type) = filters.party_type.as_deref() {
+        if !filters.party.is_empty() {
+            or_filters.push(format!(
+                "{} IN ({})",
+                scrub(party_type),
+                quote_join(&filters.party)
+            ));
+        }
+    }
+
+    ReturnEntriesPlan {
+        doctype,
+        filters: vec![
+            format!("posting_date <= '{}'", report_date),
+            "is_return = 1".to_string(),
+            "docstatus = 1".to_string(),
+            format!("company = '{}'", company),
+            "update_outstanding_for_self = 0".to_string(),
+        ],
+        or_filters,
+        fields: vec!["name", "return_against"],
+    }
+}
+
+pub fn build_delivery_note_map(
+    invoices: &[String],
+    show_delivery_notes: bool,
+    si_against_dn: &[SalesInvoiceDeliveryNote],
+    dn_against_si: &[DeliveryNoteAgainstSalesInvoice],
+) -> BTreeMap<String, Vec<String>> {
+    if invoices.is_empty() || !show_delivery_notes {
+        return BTreeMap::new();
+    }
+
+    let invoice_set: BTreeSet<&String> = invoices.iter().collect();
+    let mut notes: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+
+    for row in si_against_dn {
+        if invoice_set.contains(&row.parent) {
+            if let Some(delivery_note) = row.delivery_note.as_ref() {
+                notes
+                    .entry(row.parent.clone())
+                    .or_default()
+                    .insert(delivery_note.clone());
+            }
+        }
+    }
+    for row in dn_against_si {
+        if invoice_set.contains(&row.against_sales_invoice) {
+            notes
+                .entry(row.against_sales_invoice.clone())
+                .or_default()
+                .insert(row.parent.clone());
+        }
+    }
+
+    notes
+        .into_iter()
+        .map(|(invoice, notes)| (invoice, notes.into_iter().collect()))
+        .collect()
+}
+
+pub fn build_sales_person_records(
+    filters: &ReceivablePayableFilters,
+    records: &[SalesPersonRecord],
+) -> BTreeMap<String, Vec<String>> {
+    if filters.sales_person.is_none() {
+        return BTreeMap::new();
+    }
+
+    let mut grouped: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+    for row in records {
+        grouped
+            .entry(row.parenttype.clone())
+            .or_default()
+            .insert(row.parent.clone());
+    }
+
+    grouped
+        .into_iter()
+        .map(|(parenttype, parents)| (parenttype, parents.into_iter().collect()))
+        .collect()
 }
 
 pub fn set_ageing(
