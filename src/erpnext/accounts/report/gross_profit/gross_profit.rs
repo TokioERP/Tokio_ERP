@@ -2,6 +2,18 @@ use std::collections::BTreeMap;
 
 pub type ReportRow = BTreeMap<String, ReportCell>;
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct GrossProfitReport {
+    pub columns: Vec<ReportColumn>,
+    pub data: GrossProfitReportData,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum GrossProfitReportData {
+    Invoice(Vec<ReportRow>),
+    Grouped(Vec<Vec<ReportCell>>),
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct GrossProfitFilters {
     pub company: String,
@@ -1082,6 +1094,26 @@ pub fn get_report_columns(
     } else {
         columns
     }
+}
+
+pub fn gross_profit_report(
+    filters: &GrossProfitFilters,
+    master_settings: &MasterNameSettings,
+    invoice_rows: &[GrossProfitProcessRow],
+    grouped_rows: &[GrossProfitSourceRow],
+) -> GrossProfitReport {
+    let columns = get_report_columns(filters, master_settings);
+    let data = if filters.group_by == "Invoice" {
+        GrossProfitReportData::Invoice(get_data_when_grouped_by_invoice(invoice_rows, filters))
+    } else {
+        GrossProfitReportData::Grouped(get_data_when_not_grouped_by_invoice(
+            grouped_rows,
+            filters,
+            master_settings,
+        ))
+    };
+
+    GrossProfitReport { columns, data }
 }
 
 pub fn get_columns_for_grouped_by_invoice(

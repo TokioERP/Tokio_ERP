@@ -7,16 +7,16 @@ use tokio_erp::erpnext::accounts::report::gross_profit::gross_profit::{
     get_delivery_notes_query_plan, get_group_wise_columns, get_grouped_by_invoice_total_row,
     get_invoice_row, get_last_purchase_rate_query_plan, get_product_bundle_query_plan,
     get_report_columns, get_returned_invoice_items_query_plan, get_stock_ledger_query_plan,
-    group_delivery_notes, group_items_by_invoice, group_product_bundles,
+    gross_profit_report, group_delivery_notes, group_items_by_invoice, group_product_bundles,
     group_returned_invoice_items, group_rows, load_invoice_items_query_plans,
     load_non_stock_items_query_plan, prepare_delivered_by_supplier_purchase_query_plan,
     prepare_invoice_query_plan, prepare_return_invoice_query_plan, prepare_vouchers_to_ignore,
     process_gross_profit_rows, should_skip_row, update_return_invoices, AccountingDimensionFilter,
     DeliveryNoteLoadRow, DeliveryNoteSummary, GrossProfitBuyingAmountContext,
     GrossProfitBuyingAmountRow, GrossProfitFilters, GrossProfitInvoiceRow, GrossProfitProcessRow,
-    GrossProfitSourceRow, IncomingRateCache, IncomingRateRequest, MasterNameSettings,
-    PackedItemOverride, ProductBundleItem, ProductBundleLoadRow, ReportCell, ReportColumn,
-    ReturnAdjustedRow, ReturnedInvoiceItem, StockLedgerCache, StockLedgerEntry,
+    GrossProfitReportData, GrossProfitSourceRow, IncomingRateCache, IncomingRateRequest,
+    MasterNameSettings, PackedItemOverride, ProductBundleItem, ProductBundleLoadRow, ReportCell,
+    ReportColumn, ReturnAdjustedRow, ReturnedInvoiceItem, StockLedgerCache, StockLedgerEntry,
 };
 
 fn filters(group_by: &str) -> GrossProfitFilters {
@@ -388,6 +388,72 @@ fn gross_profit_report_columns_apply_invoice_branch_only_for_invoice_group_like_
     assert!(item_columns
         .iter()
         .any(|column| column.fieldname == "item_name"));
+}
+
+#[test]
+fn gross_profit_report_dispatches_invoice_and_non_invoice_data_like_execute() {
+    let invoice_filters = filters("Invoice");
+    let invoice_rows = vec![
+        GrossProfitProcessRow {
+            base_amount: 200.0,
+            buying_amount: 120.0,
+            gross_profit: 80.0,
+            gross_profit_percent: 40.0,
+            ..process_row("SINV-0001", Some("ITEM-001"), 1.0)
+        },
+        GrossProfitProcessRow {
+            base_amount: 200.0,
+            buying_amount: 120.0,
+            gross_profit: 80.0,
+            gross_profit_percent: 40.0,
+            ..process_row("SINV-0001", None, 0.0)
+        },
+    ];
+    let invoice_report = gross_profit_report(
+        &invoice_filters,
+        &MasterNameSettings::default(),
+        &invoice_rows,
+        &[],
+    );
+    assert_eq!(
+        invoice_report.columns[0],
+        ReportColumn::link("Sales Invoice", "sales_invoice", "Item", 300)
+    );
+    match invoice_report.data {
+        GrossProfitReportData::Invoice(data) => {
+            assert_eq!(
+                data[0]["sales_invoice"],
+                ReportCell::Text("ITEM-001".to_string())
+            );
+            assert_eq!(
+                data.last().unwrap()["sales_invoice"],
+                ReportCell::Text("Total".to_string())
+            );
+        }
+        GrossProfitReportData::Grouped(_) => panic!("expected invoice data"),
+    }
+
+    let item_filters = filters("Item Code");
+    let grouped_report = gross_profit_report(
+        &item_filters,
+        &MasterNameSettings::default(),
+        &[],
+        &[source_row("SINV-0001", "ITEM-001", 2.0, 200.0, 120.0)],
+    );
+    assert_eq!(
+        grouped_report.columns[0],
+        ReportColumn::link("Item Code", "item_code", "Item", 100)
+    );
+    match grouped_report.data {
+        GrossProfitReportData::Grouped(data) => {
+            assert_eq!(data[0][0], ReportCell::Text("ITEM-001".to_string()));
+            assert_eq!(
+                data.last().unwrap()[0],
+                ReportCell::Text("Total".to_string())
+            );
+        }
+        GrossProfitReportData::Invoice(_) => panic!("expected grouped data"),
+    }
 }
 
 #[test]
