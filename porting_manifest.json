@@ -3048,7 +3048,7 @@
     {
       "source": "accounts/report/financial_statements.py",
       "target": "accounts/report/financial_statements.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/general_and_payment_ledger_comparison/__init__.py",

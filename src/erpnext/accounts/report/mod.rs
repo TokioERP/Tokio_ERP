@@ -23,6 +23,7 @@ pub mod deferred_revenue_and_expense;
 pub mod delivered_items_to_be_billed;
 pub mod dimension_wise_accounts_balance_report;
 pub mod financial_ratios;
+pub mod financial_statements;
 pub mod general_and_payment_ledger_comparison;
 pub mod general_ledger;
 pub mod gross_and_net_profit_report;
