@@ -267,6 +267,9 @@ pub fn execute(
     validate_filters(&mut filters, &input)?;
     validate_party(&filters, &input)?;
     filters = set_account_currency(filters, &input)?;
+    if filters.presentation_currency.is_none() {
+        filters.presentation_currency = Some(input.company_currency.clone());
+    }
     let columns = get_columns(&filters, &input)?;
     let mut gl_entries = get_gl_entries(&filters, &input);
     apply_party_names(&mut gl_entries, &input);

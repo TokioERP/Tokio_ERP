@@ -388,6 +388,7 @@ fn general_ledger_opening_total_closing_and_running_balance_are_added() {
     assert_eq!(report.rows[0].account.as_deref(), Some("'Opening'"));
     assert_eq!(report.rows[0].debit, 100.0);
     assert_eq!(report.rows[0].balance, 100.0);
+    assert_eq!(report.rows[0].presentation_currency.as_deref(), Some("USD"));
 
     let invoice = report
         .rows
