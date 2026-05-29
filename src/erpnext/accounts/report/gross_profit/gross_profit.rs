@@ -9,12 +9,39 @@ pub struct GrossProfitFilters {
     pub currency: String,
     pub currency_precision: u32,
     pub float_precision: u32,
+    pub include_returned_invoices: bool,
+    pub item_group: Option<String>,
+    pub sales_person: Option<String>,
+    pub sales_invoice: Option<String>,
+    pub item_code: Option<String>,
+    pub cost_center: Vec<String>,
+    pub project: Vec<String>,
+    pub warehouse: Option<String>,
+    pub accounting_dimensions: Vec<AccountingDimensionFilter>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MasterNameSettings {
     pub supplier_master_name: String,
     pub customer_master_name: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AccountingDimensionFilter {
+    pub fieldname: String,
+    pub values: Vec<String>,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct QueryPlan {
+    pub source: &'static str,
+    pub joins: Vec<&'static str>,
+    pub left_joins: Vec<&'static str>,
+    pub selects: Vec<&'static str>,
+    pub conditions: Vec<String>,
+    pub group_by: Vec<&'static str>,
+    pub order_by: Vec<&'static str>,
+    pub limit: Option<usize>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -88,6 +115,145 @@ pub enum ReportCell {
     Text(String),
     Number(f64),
     Empty,
+}
+
+pub fn prepare_invoice_query_plan(filters: &GrossProfitFilters) -> QueryPlan {
+    let mut plan = base_invoice_query_plan(filters);
+
+    if filters.include_returned_invoices {
+        plan.conditions.push(
+            "(sales_invoice.is_return = 0 or (sales_invoice.is_return = 1 and sales_invoice.return_against is null))"
+                .to_string(),
+        );
+    } else {
+        plan.conditions
+            .push("sales_invoice.is_return = 0".to_string());
+    }
+
+    plan
+}
+
+pub fn prepare_return_invoice_query_plan(
+    filters: &GrossProfitFilters,
+    vouchers_to_ignore: &[String],
+) -> QueryPlan {
+    let mut plan = base_invoice_query_plan(filters);
+
+    plan.conditions.push(
+        "(sales_invoice.is_return = 1 and sales_invoice.return_against is not null)".to_string(),
+    );
+    if !vouchers_to_ignore.is_empty() {
+        plan.conditions.push(format!(
+            "sales_invoice.return_against not in [{}]",
+            vouchers_to_ignore.join(", ")
+        ));
+    }
+
+    plan
+}
+
+pub fn get_delivery_notes_query_plan(invoices: &[String]) -> QueryPlan {
+    QueryPlan {
+        source: "Delivery Note Item",
+        selects: vec![
+            "delivery_note_item.si_detail",
+            "sum(delivery_note_item.stock_qty * delivery_note_item.incoming_rate) as total_incoming_value",
+            "sum(delivery_note_item.stock_qty) as total_qty",
+        ],
+        conditions: vec![
+            "delivery_note_item.docstatus = 1".to_string(),
+            format!(
+                "delivery_note_item.against_sales_invoice in [{}]",
+                invoices.join(", ")
+            ),
+            "delivery_note_item.si_detail is not null".to_string(),
+            "delivery_note_item.si_detail != ".to_string(),
+        ],
+        group_by: vec!["delivery_note_item.si_detail"],
+        ..QueryPlan::default()
+    }
+}
+
+pub fn get_product_bundle_query_plan() -> QueryPlan {
+    QueryPlan {
+        source: "Packed Item",
+        selects: vec![
+            "packed_item.parenttype",
+            "packed_item.parent",
+            "packed_item.parent_item",
+            "packed_item.item_code",
+            "packed_item.warehouse",
+            "-1 * packed_item.qty as total_qty",
+            "packed_item.rate",
+            "packed_item.rate * packed_item.qty as base_amount",
+            "packed_item.parent_detail_docname",
+            "packed_item.serial_and_batch_bundle",
+        ],
+        conditions: vec!["packed_item.docstatus = 1".to_string()],
+        ..QueryPlan::default()
+    }
+}
+
+pub fn get_stock_ledger_query_plan(item_code: &str, warehouse: &str, company: &str) -> QueryPlan {
+    QueryPlan {
+        source: "Stock Ledger Entry",
+        selects: vec![
+            "stock_ledger_entry.item_code",
+            "stock_ledger_entry.voucher_type",
+            "stock_ledger_entry.voucher_no",
+            "stock_ledger_entry.voucher_detail_no",
+            "stock_ledger_entry.stock_value",
+            "stock_ledger_entry.warehouse",
+            "stock_ledger_entry.actual_qty as qty",
+        ],
+        conditions: vec![
+            format!("stock_ledger_entry.company = {company}"),
+            format!("stock_ledger_entry.item_code = {item_code}"),
+            format!("stock_ledger_entry.warehouse = {warehouse}"),
+            "stock_ledger_entry.is_cancelled = 0".to_string(),
+        ],
+        order_by: vec![
+            "stock_ledger_entry.item_code",
+            "stock_ledger_entry.warehouse desc",
+            "stock_ledger_entry.posting_datetime desc",
+            "stock_ledger_entry.creation desc",
+        ],
+        ..QueryPlan::default()
+    }
+}
+
+pub fn get_last_purchase_rate_query_plan(
+    item_code: &str,
+    project: Option<&str>,
+    cost_center: Option<&str>,
+    to_date: &str,
+) -> QueryPlan {
+    let mut plan = QueryPlan {
+        source: "Purchase Invoice Item",
+        joins: vec!["Purchase Invoice"],
+        selects: vec!["purchase_invoice_item.base_rate / purchase_invoice_item.conversion_factor"],
+        conditions: vec![
+            "purchase_invoice.docstatus = 1".to_string(),
+            format!("purchase_invoice.posting_date <= {to_date}"),
+            format!("purchase_invoice_item.item_code = {item_code}"),
+            "purchase_invoice.is_return = 0".to_string(),
+            "purchase_invoice_item.parenttype = Purchase Invoice".to_string(),
+        ],
+        order_by: vec!["purchase_invoice.posting_date desc"],
+        limit: Some(1),
+        ..QueryPlan::default()
+    };
+
+    if let Some(project) = project {
+        plan.conditions
+            .push(format!("purchase_invoice_item.project = {project}"));
+    }
+    if let Some(cost_center) = cost_center {
+        plan.conditions
+            .push(format!("purchase_invoice_item.cost_center = {cost_center}"));
+    }
+
+    plan
 }
 
 impl Default for MasterNameSettings {
@@ -393,6 +559,139 @@ pub fn get_column_names() -> BTreeMap<&'static str, &'static str> {
         ("gross_profit_percent", "gross_profit_%"),
         ("project", "project"),
     ])
+}
+
+fn base_invoice_query_plan(filters: &GrossProfitFilters) -> QueryPlan {
+    let mut plan = QueryPlan {
+        source: "Sales Invoice",
+        joins: vec!["Sales Invoice Item", "Item"],
+        selects: invoice_query_selects(),
+        conditions: vec![
+            "sales_invoice.docstatus = 1".to_string(),
+            "sales_invoice.is_opening != Yes".to_string(),
+        ],
+        order_by: vec![
+            "sales_invoice.posting_date desc",
+            "sales_invoice.posting_time desc",
+        ],
+        ..QueryPlan::default()
+    };
+
+    apply_common_filter_plan(&mut plan, filters);
+
+    match filters.group_by.as_str() {
+        "Sales Person" => {
+            plan.selects.extend([
+                "sales_team.sales_person",
+                "sales_team.allocated_percentage * sales_invoice_item.base_net_amount / 100 as allocated_amount",
+                "sales_team.incentives",
+            ]);
+            plan.left_joins.push("Sales Team");
+        }
+        "Payment Term" => {
+            plan.selects.extend([
+                "case when sales_invoice.is_return = 1 then Sales Return else coalesce(payment_schedule.payment_term, No Terms) end as payment_term",
+                "payment_schedule.invoice_portion",
+                "payment_schedule.payment_amount",
+            ]);
+            plan.left_joins.push("Payment Schedule");
+        }
+        _ => {}
+    }
+
+    plan
+}
+
+fn invoice_query_selects() -> Vec<&'static str> {
+    vec![
+        "sales_invoice_item.parenttype",
+        "sales_invoice_item.parent",
+        "sales_invoice.posting_date",
+        "sales_invoice.posting_time",
+        "sales_invoice.project",
+        "sales_invoice.update_stock",
+        "sales_invoice.customer",
+        "sales_invoice.customer_group",
+        "sales_invoice.customer_name",
+        "sales_invoice.territory",
+        "sales_invoice_item.item_code",
+        "sales_invoice.base_net_total as invoice_base_net_total",
+        "sales_invoice_item.item_name",
+        "sales_invoice_item.description",
+        "sales_invoice_item.warehouse",
+        "sales_invoice_item.item_group",
+        "sales_invoice_item.brand",
+        "sales_invoice_item.so_detail",
+        "sales_invoice_item.sales_order",
+        "sales_invoice_item.dn_detail",
+        "sales_invoice_item.delivery_note",
+        "sales_invoice_item.stock_qty as qty",
+        "sales_invoice_item.base_net_rate",
+        "sales_invoice_item.base_net_amount",
+        "sales_invoice_item.name as item_row",
+        "sales_invoice.is_return",
+        "sales_invoice_item.cost_center",
+        "sales_invoice_item.serial_and_batch_bundle",
+        "sales_invoice_item.delivered_by_supplier",
+    ]
+}
+
+fn apply_common_filter_plan(plan: &mut QueryPlan, filters: &GrossProfitFilters) {
+    if !filters.company.is_empty() {
+        plan.conditions
+            .push(format!("sales_invoice.company = {}", filters.company));
+    }
+    if !filters.from_date.is_empty() {
+        plan.conditions.push(format!(
+            "sales_invoice.posting_date >= {}",
+            filters.from_date
+        ));
+    }
+    if !filters.to_date.is_empty() {
+        plan.conditions
+            .push(format!("sales_invoice.posting_date <= {}", filters.to_date));
+    }
+    if let Some(item_group) = filters.item_group.as_deref() {
+        plan.conditions
+            .push(format!("item group condition for {item_group}"));
+    }
+    if let Some(sales_person) = filters.sales_person.as_deref() {
+        plan.conditions.push(format!(
+            "exists sales_team where parent = sales_invoice.name and sales_person = {sales_person}"
+        ));
+    }
+    if let Some(sales_invoice) = filters.sales_invoice.as_deref() {
+        plan.conditions
+            .push(format!("sales_invoice.name = {sales_invoice}"));
+    }
+    if let Some(item_code) = filters.item_code.as_deref() {
+        plan.conditions
+            .push(format!("sales_invoice_item.item_code = {item_code}"));
+    }
+    if !filters.cost_center.is_empty() {
+        plan.conditions.push(format!(
+            "sales_invoice_item.cost_center in [{}]",
+            filters.cost_center.join(", ")
+        ));
+    }
+    if !filters.project.is_empty() {
+        plan.conditions.push(format!(
+            "sales_invoice_item.project in [{}]",
+            filters.project.join(", ")
+        ));
+    }
+    for dimension in &filters.accounting_dimensions {
+        plan.conditions.push(format!(
+            "sales_invoice_item.{} in [{}]",
+            dimension.fieldname,
+            dimension.values.join(", ")
+        ));
+    }
+    if let Some(warehouse) = filters.warehouse.as_deref() {
+        plan.conditions.push(format!(
+            "sales_invoice_item.warehouse in warehouse descendants of {warehouse}"
+        ));
+    }
 }
 
 pub fn get_columns(

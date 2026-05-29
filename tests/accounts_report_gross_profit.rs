@@ -1,6 +1,9 @@
 use tokio_erp::erpnext::accounts::report::gross_profit::gross_profit::{
-    calculate_row, get_column_names, get_columns, get_group_wise_columns, group_rows,
-    GrossProfitFilters, GrossProfitSourceRow, MasterNameSettings, ReportCell, ReportColumn,
+    calculate_row, get_column_names, get_columns, get_delivery_notes_query_plan,
+    get_group_wise_columns, get_last_purchase_rate_query_plan, get_product_bundle_query_plan,
+    get_stock_ledger_query_plan, group_rows, prepare_invoice_query_plan,
+    prepare_return_invoice_query_plan, AccountingDimensionFilter, GrossProfitFilters,
+    GrossProfitSourceRow, MasterNameSettings, ReportCell, ReportColumn,
 };
 
 fn filters(group_by: &str) -> GrossProfitFilters {
@@ -12,6 +15,15 @@ fn filters(group_by: &str) -> GrossProfitFilters {
         currency: "USD".to_string(),
         currency_precision: 3,
         float_precision: 2,
+        include_returned_invoices: false,
+        item_group: None,
+        sales_person: None,
+        sales_invoice: None,
+        item_code: None,
+        cost_center: Vec::new(),
+        project: Vec::new(),
+        warehouse: None,
+        accounting_dimensions: Vec::new(),
     }
 }
 
@@ -217,4 +229,183 @@ fn gross_profit_group_rows_aggregates_by_group_and_appends_total_like_erpnext() 
     assert_eq!(total[9], ReportCell::Number(210.0));
     assert_eq!(total[10], ReportCell::Number(36.207));
     assert_eq!(total[11], ReportCell::Text("USD".to_string()));
+}
+
+#[test]
+fn gross_profit_invoice_query_plan_matches_erpnext_base_selects_and_filters() {
+    let plan = prepare_invoice_query_plan(&filters("Invoice"));
+
+    assert_eq!(plan.source, "Sales Invoice");
+    assert_eq!(plan.joins, vec!["Sales Invoice Item", "Item"]);
+    assert_eq!(
+        plan.conditions,
+        vec![
+            "sales_invoice.docstatus = 1",
+            "sales_invoice.is_opening != Yes",
+            "sales_invoice.company = _Test Company",
+            "sales_invoice.posting_date >= 2026-05-01",
+            "sales_invoice.posting_date <= 2026-05-31",
+            "sales_invoice.is_return = 0",
+        ]
+    );
+    assert!(plan.selects.contains(&"sales_invoice_item.parenttype"));
+    assert!(plan.selects.contains(&"sales_invoice_item.base_net_amount"));
+    assert_eq!(
+        plan.order_by,
+        vec![
+            "sales_invoice.posting_date desc",
+            "sales_invoice.posting_time desc"
+        ]
+    );
+}
+
+#[test]
+fn gross_profit_invoice_query_plan_matches_sales_person_and_payment_term_branches() {
+    let sales_person = GrossProfitFilters {
+        group_by: "Sales Person".to_string(),
+        sales_person: Some("SP-001".to_string()),
+        ..filters("Sales Person")
+    };
+    let plan = prepare_invoice_query_plan(&sales_person);
+
+    assert_eq!(plan.left_joins, vec!["Sales Team"]);
+    assert!(plan.selects.contains(&"sales_team.sales_person"));
+    assert!(plan.selects.contains(&"sales_team.allocated_percentage * sales_invoice_item.base_net_amount / 100 as allocated_amount"));
+    assert!(plan.conditions.contains(
+        &"exists sales_team where parent = sales_invoice.name and sales_person = SP-001"
+            .to_string()
+    ));
+
+    let payment_term = prepare_invoice_query_plan(&filters("Payment Term"));
+    assert_eq!(payment_term.left_joins, vec!["Payment Schedule"]);
+    assert!(payment_term
+        .selects
+        .contains(&"case when sales_invoice.is_return = 1 then Sales Return else coalesce(payment_schedule.payment_term, No Terms) end as payment_term"));
+    assert!(payment_term
+        .selects
+        .contains(&"payment_schedule.invoice_portion"));
+    assert!(payment_term
+        .selects
+        .contains(&"payment_schedule.payment_amount"));
+}
+
+#[test]
+fn gross_profit_invoice_query_plan_matches_optional_common_filters() {
+    let plan = prepare_invoice_query_plan(&GrossProfitFilters {
+        item_group: Some("Products".to_string()),
+        sales_invoice: Some("SINV-0001".to_string()),
+        item_code: Some("ITEM-001".to_string()),
+        cost_center: vec!["Main - TC".to_string(), "Child - TC".to_string()],
+        project: vec!["PROJ-001".to_string()],
+        warehouse: Some("Stores - TC".to_string()),
+        accounting_dimensions: vec![AccountingDimensionFilter {
+            fieldname: "department".to_string(),
+            values: vec!["Sales".to_string(), "Retail".to_string()],
+        }],
+        ..filters("Item Code")
+    });
+
+    assert!(plan
+        .conditions
+        .contains(&"item group condition for Products".to_string()));
+    assert!(plan
+        .conditions
+        .contains(&"sales_invoice.name = SINV-0001".to_string()));
+    assert!(plan
+        .conditions
+        .contains(&"sales_invoice_item.item_code = ITEM-001".to_string()));
+    assert!(plan
+        .conditions
+        .contains(&"sales_invoice_item.cost_center in [Main - TC, Child - TC]".to_string()));
+    assert!(plan
+        .conditions
+        .contains(&"sales_invoice_item.project in [PROJ-001]".to_string()));
+    assert!(plan
+        .conditions
+        .contains(&"sales_invoice_item.department in [Sales, Retail]".to_string()));
+    assert!(plan.conditions.contains(
+        &"sales_invoice_item.warehouse in warehouse descendants of Stores - TC".to_string()
+    ));
+}
+
+#[test]
+fn gross_profit_return_invoice_query_plan_matches_erpnext_include_returned_branching() {
+    let excluded = prepare_return_invoice_query_plan(
+        &GrossProfitFilters {
+            include_returned_invoices: true,
+            ..filters("Invoice")
+        },
+        &["SINV-0001".to_string(), "SINV-0002".to_string()],
+    );
+
+    assert!(excluded.conditions.contains(
+        &"(sales_invoice.is_return = 1 and sales_invoice.return_against is not null)".to_string()
+    ));
+    assert!(excluded
+        .conditions
+        .contains(&"sales_invoice.return_against not in [SINV-0001, SINV-0002]".to_string()));
+
+    let included = prepare_invoice_query_plan(&GrossProfitFilters {
+        include_returned_invoices: true,
+        ..filters("Invoice")
+    });
+    assert!(included.conditions.contains(
+        &"(sales_invoice.is_return = 0 or (sales_invoice.is_return = 1 and sales_invoice.return_against is null))".to_string()
+    ));
+}
+
+#[test]
+fn gross_profit_auxiliary_query_plans_match_erpnext_shapes() {
+    assert_eq!(
+        get_delivery_notes_query_plan(&["SINV-0001".to_string(), "SINV-0002".to_string()])
+            .conditions,
+        vec![
+            "delivery_note_item.docstatus = 1",
+            "delivery_note_item.against_sales_invoice in [SINV-0001, SINV-0002]",
+            "delivery_note_item.si_detail is not null",
+            "delivery_note_item.si_detail != ",
+        ]
+    );
+
+    assert_eq!(
+        get_product_bundle_query_plan().selects,
+        vec![
+            "packed_item.parenttype",
+            "packed_item.parent",
+            "packed_item.parent_item",
+            "packed_item.item_code",
+            "packed_item.warehouse",
+            "-1 * packed_item.qty as total_qty",
+            "packed_item.rate",
+            "packed_item.rate * packed_item.qty as base_amount",
+            "packed_item.parent_detail_docname",
+            "packed_item.serial_and_batch_bundle",
+        ]
+    );
+
+    let stock = get_stock_ledger_query_plan("ITEM-001", "Stores - TC", "_Test Company");
+    assert_eq!(stock.source, "Stock Ledger Entry");
+    assert_eq!(
+        stock.order_by,
+        vec![
+            "stock_ledger_entry.item_code",
+            "stock_ledger_entry.warehouse desc",
+            "stock_ledger_entry.posting_datetime desc",
+            "stock_ledger_entry.creation desc",
+        ]
+    );
+
+    let last_purchase = get_last_purchase_rate_query_plan(
+        "ITEM-001",
+        Some("PROJ-001"),
+        Some("Main - TC"),
+        "2026-05-31",
+    );
+    assert!(last_purchase
+        .conditions
+        .contains(&"purchase_invoice_item.project = PROJ-001".to_string()));
+    assert!(last_purchase
+        .conditions
+        .contains(&"purchase_invoice_item.cost_center = Main - TC".to_string()));
+    assert_eq!(last_purchase.limit, Some(1));
 }
