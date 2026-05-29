@@ -122,6 +122,28 @@ fn input() -> GeneralLedgerInput {
                 "JV-CANCEL",
             )
             .cancelled(),
+            GlEntry::new(
+                "GLE-OTHER-PARTY",
+                "2026-05-01",
+                "Cash - A",
+                700.0,
+                0.0,
+                "No",
+                "Sales Invoice",
+                "SINV-OTHER-PARTY",
+            )
+            .with_party("Customer", "CUST-2"),
+            GlEntry::new(
+                "GLE-OTHER-AGAINST",
+                "2026-06-01",
+                "Cash - A",
+                800.0,
+                0.0,
+                "No",
+                "Sales Invoice",
+                "SINV-OTHER-AGAINST",
+            )
+            .with_against("Purchase Invoice", "PINV-2"),
         ],
     }
 }
@@ -169,6 +191,57 @@ fn general_ledger_conditions_follow_filters_and_finance_book_rules() {
 }
 
 #[test]
+fn general_ledger_execute_applies_party_against_voucher_and_project_filters() {
+    let mut f = filters();
+    f.party_type = Some("Customer".to_string());
+    f.party = vec!["CUST-1".to_string()];
+    f.against_voucher_no = Some("PINV-1".to_string());
+    let report = execute(set_account_currency(f, &input()).unwrap(), input()).unwrap();
+
+    assert!(report
+        .rows
+        .iter()
+        .any(|row| row.gl_entry.as_deref() == Some("GLE-1")));
+    assert!(!report
+        .rows
+        .iter()
+        .any(|row| row.gl_entry.as_deref() == Some("GLE-OTHER-PARTY")));
+    assert!(!report
+        .rows
+        .iter()
+        .any(|row| row.gl_entry.as_deref() == Some("GLE-OTHER-AGAINST")));
+}
+
+#[test]
+fn general_ledger_default_output_groups_entries_by_voucher_like_erpnext_gle_map() {
+    let mut input = input();
+    input.gl_entries.push(
+        GlEntry::new(
+            "GLE-SINV-1-LATE",
+            "2026-07-01",
+            "Cash - A",
+            5.0,
+            0.0,
+            "No",
+            "Sales Invoice",
+            "SINV-1",
+        )
+        .with_party("Customer", "CUST-1"),
+    );
+
+    let report = execute(set_account_currency(filters(), &input).unwrap(), input).unwrap();
+    let positions = report
+        .rows
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, row)| (row.voucher_no.as_deref() == Some("SINV-1")).then_some(idx))
+        .collect::<Vec<_>>();
+
+    assert_eq!(positions.len(), 2);
+    assert_eq!(positions[1], positions[0] + 1);
+}
+
+#[test]
 fn general_ledger_opening_total_closing_and_running_balance_are_added() {
     let f = set_account_currency(filters(), &input()).unwrap();
     let report = execute(f, input()).unwrap();
@@ -192,15 +265,17 @@ fn general_ledger_opening_total_closing_and_running_balance_are_added() {
         .iter()
         .find(|row| row.account.as_deref() == Some("'Total'"))
         .unwrap();
-    assert_eq!(total.debit, 50.0);
+    assert_eq!(total.debit, 1550.0);
     assert_eq!(total.credit, 20.0);
+    assert_eq!(total.debit_in_transaction_currency, None);
+    assert_eq!(total.credit_in_transaction_currency, None);
 
     let closing = report.rows.last().unwrap();
     assert_eq!(
         closing.account.as_deref(),
         Some("'Closing (Opening + Total)'")
     );
-    assert_eq!(closing.balance, 130.0);
+    assert_eq!(closing.balance, 1630.0);
 }
 
 #[test]

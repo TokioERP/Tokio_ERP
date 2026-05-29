@@ -459,6 +459,46 @@ pub fn get_gl_entries(filters: &GeneralLedgerFilters, input: &GeneralLedgerInput
                 .map(|voucher_no| entry.voucher_no.as_ref() == Some(voucher_no))
                 .unwrap_or(true)
         })
+        .filter(|entry| {
+            filters
+                .against_voucher_no
+                .as_ref()
+                .map(|against_voucher_no| {
+                    entry.against_voucher.as_ref() == Some(against_voucher_no)
+                })
+                .unwrap_or(true)
+        })
+        .filter(|entry| {
+            filters
+                .party_type
+                .as_ref()
+                .map(|party_type| entry.party_type.as_ref() == Some(party_type))
+                .unwrap_or(true)
+        })
+        .filter(|entry| {
+            filters.party.is_empty()
+                || entry
+                    .party
+                    .as_ref()
+                    .map(|party| filters.party.iter().any(|item| item == party))
+                    .unwrap_or(false)
+        })
+        .filter(|entry| {
+            filters.project.is_empty()
+                || entry
+                    .project
+                    .as_ref()
+                    .map(|project| filters.project.iter().any(|item| item == project))
+                    .unwrap_or(false)
+        })
+        .filter(|entry| {
+            filters.cost_center.is_empty()
+                || entry
+                    .cost_center
+                    .as_ref()
+                    .map(|cost_center| filters.cost_center.iter().any(|item| item == cost_center))
+                    .unwrap_or(false)
+        })
         .cloned()
         .collect::<Vec<_>>();
 
@@ -497,6 +537,7 @@ pub fn get_data_with_opening_closing(
     apply_party_names(&mut gl_entries, input);
 
     let mut gle_map = initialize_gle_map(&gl_entries, filters);
+    let group_order = gle_group_order(&gl_entries, filters);
     let (totals, consolidated_entries) =
         get_accountwise_gle(filters, &gl_entries, &mut gle_map, input);
     let labels = labels();
@@ -505,17 +546,21 @@ pub fn get_data_with_opening_closing(
     push_total(&mut data, &totals, "opening", &labels);
 
     if filters.categorize_by.is_none() {
-        data.extend(
-            gl_entries
-                .iter()
-                .filter(|gle| is_period_entry(gle, filters))
-                .cloned(),
-        );
+        let mut all_entries = Vec::new();
+        for group_by_value in &group_order {
+            if let Some(acc_dict) = gle_map.get(group_by_value) {
+                all_entries.extend(acc_dict.entries.clone());
+            }
+        }
+        data.extend(all_entries);
     } else if filters.categorize_by.as_deref() != Some("Categorize by Voucher (Consolidated)") {
         let set_opening_closing = filters.categorize_by.as_deref() != Some("Categorize by Voucher");
         let set_total = filters.categorize_by.is_some() || filters.voucher_no.is_none();
 
-        for acc_dict in gle_map.values() {
+        for group_by_value in &group_order {
+            let Some(acc_dict) = gle_map.get(group_by_value) else {
+                continue;
+            };
             if acc_dict.entries.is_empty() {
                 continue;
             }
@@ -539,16 +584,6 @@ pub fn get_data_with_opening_closing(
     push_total(&mut data, &totals, "total", &labels);
     push_total(&mut data, &totals, "closing", &labels);
     data
-}
-
-fn is_period_entry(gle: &GlEntry, filters: &GeneralLedgerFilters) -> bool {
-    let opening = gle.posting_date.as_deref().unwrap_or("") < filters.from_date.as_str()
-        || (gle.is_opening == "Yes"
-            && !filters.show_opening_entries
-            && !filters.disable_opening_balance_calculation);
-    !opening
-        && (gle.posting_date.as_deref().unwrap_or("") <= filters.to_date.as_str()
-            || (gle.is_opening == "Yes" && filters.show_opening_entries))
 }
 
 pub fn get_group_by_field(group_by: Option<&str>) -> &'static str {
@@ -693,6 +728,18 @@ fn initialize_gle_map(
     gle_map
 }
 
+fn gle_group_order(gl_entries: &[GlEntry], filters: &GeneralLedgerFilters) -> Vec<String> {
+    let group_by = get_group_by_field(filters.categorize_by.as_deref());
+    let mut order = Vec::new();
+    for gle in gl_entries {
+        let group_by_value = string_field(gle, group_by);
+        if !order.iter().any(|item| item == &group_by_value) {
+            order.push(group_by_value);
+        }
+    }
+    order
+}
+
 fn get_accountwise_gle(
     filters: &GeneralLedgerFilters,
     gl_entries: &[GlEntry],
@@ -737,6 +784,9 @@ fn get_accountwise_gle(
                 let key = consolidated_key(gle);
                 if let Some(existing) = consolidated_gle.get_mut(&key) {
                     accumulate_entry(existing, gle);
+                    if filters.add_values_in_transaction_currency {
+                        accumulate_transaction_currency(existing, gle);
+                    }
                 } else {
                     consolidated_gle.insert(key, gle.clone());
                 }
@@ -771,6 +821,10 @@ fn update_value_in_dict(
 ) {
     let row = data.get_mut(key).expect("total bucket should exist");
     accumulate_entry(row, gle);
+    if filters.add_values_in_transaction_currency && !matches!(key, "opening" | "closing" | "total")
+    {
+        accumulate_transaction_currency(row, gle);
+    }
 
     if filters.show_net_values_in_party_account
         && row
@@ -812,6 +866,9 @@ fn accumulate_entry(target: &mut GlEntry, gle: &GlEntry) {
     target.credit += gle.credit;
     target.debit_in_account_currency += gle.debit_in_account_currency;
     target.credit_in_account_currency += gle.credit_in_account_currency;
+}
+
+fn accumulate_transaction_currency(target: &mut GlEntry, gle: &GlEntry) {
     target.debit_in_transaction_currency = Some(
         target.debit_in_transaction_currency.unwrap_or_default()
             + gle.debit_in_transaction_currency.unwrap_or_default(),
@@ -820,24 +877,6 @@ fn accumulate_entry(target: &mut GlEntry, gle: &GlEntry) {
         target.credit_in_transaction_currency.unwrap_or_default()
             + gle.credit_in_transaction_currency.unwrap_or_default(),
     );
-    if target.account.is_none() {
-        target.account = gle.account.clone();
-    }
-    if target.voucher_no.is_none() {
-        target.voucher_no = gle.voucher_no.clone();
-    }
-    if target.voucher_type.is_none() {
-        target.voucher_type = gle.voucher_type.clone();
-    }
-    if target.party_type.is_none() {
-        target.party_type = gle.party_type.clone();
-    }
-    if target.party.is_none() {
-        target.party = gle.party.clone();
-    }
-    if target.posting_date.is_none() {
-        target.posting_date = gle.posting_date.clone();
-    }
 }
 
 fn push_total(
