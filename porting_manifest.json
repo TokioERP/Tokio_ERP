@@ -2833,7 +2833,7 @@
     {
       "source": "accounts/report/accounts_receivable_summary/accounts_receivable_summary.py",
       "target": "accounts/report/accounts_receivable_summary/accounts_receivable_summary.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/accounts_receivable_summary/test_accounts_receivable_summary.py",
