@@ -185,6 +185,41 @@ fn asset_depreciations_asset_rows_default_missing_adjustments_like_erpnext() {
 }
 
 #[test]
+#[should_panic(expected = "missing depreciation row for asset category Computers")]
+fn asset_depreciations_category_rows_panic_when_depreciation_row_is_missing_like_erpnext() {
+    assemble_group_by_asset_category_data(
+        &[AssetValueByCategoryRow {
+            asset_category: "Computers".to_string(),
+            value_as_on_from_date: 1000.0,
+            value_of_new_purchase: 0.0,
+            value_of_sold_asset: 0.0,
+            value_of_scrapped_asset: 0.0,
+            value_of_capitalized_asset: 0.0,
+        }],
+        &[],
+        &[],
+    );
+}
+
+#[test]
+#[should_panic(expected = "missing depreciation row for asset AST-0001")]
+fn asset_depreciations_asset_rows_panic_when_depreciation_row_is_missing_like_erpnext() {
+    assemble_group_by_asset_data(
+        &[AssetDetailValueRow {
+            name: "AST-0001".to_string(),
+            asset_name: "Laptop".to_string(),
+            value_as_on_from_date: 1000.0,
+            value_of_new_purchase: 0.0,
+            value_of_sold_asset: 0.0,
+            value_of_scrapped_asset: 0.0,
+            value_of_capitalized_asset: 0.0,
+        }],
+        &[],
+        &[],
+    );
+}
+
+#[test]
 fn asset_depreciations_category_depreciation_combines_gl_and_opening_rows_like_erpnext() {
     let rows = combine_category_depreciation_rows(
         &[AssetDepreciationByCategoryRow {
@@ -298,9 +333,10 @@ fn asset_depreciations_execute_routes_group_by_category_like_erpnext() {
     let report = execute(&filters("Asset Category"), &data);
 
     assert_eq!(report.columns, get_columns(&filters("Asset Category")));
-    assert_eq!(report.rows.len(), 1);
-    assert_eq!(report.rows[0].asset_category.as_deref(), Some("Computers"));
-    assert_eq!(report.rows[0].net_asset_value_as_on_to_date, 890.0);
+    let rows = report.rows.expect("category rows");
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].asset_category.as_deref(), Some("Computers"));
+    assert_eq!(rows[0].net_asset_value_as_on_to_date, 890.0);
 }
 
 #[test]
@@ -325,12 +361,12 @@ fn asset_depreciations_get_data_routes_group_by_asset_and_unknown_group_like_erp
         ..AssetDepreciationsAndBalancesData::default()
     };
 
-    let rows = get_data(&filters("Asset"), &data);
+    let rows = get_data(&filters("Asset"), &data).expect("asset rows");
 
     assert_eq!(rows.len(), 1);
     assert_eq!(rows[0].asset.as_deref(), Some("AST-0001"));
     assert_eq!(rows[0].net_asset_value_as_on_to_date, 675.0);
-    assert!(get_data(&filters("Cost Center"), &data).is_empty());
+    assert_eq!(get_data(&filters("Cost Center"), &data), None);
 }
 
 #[test]

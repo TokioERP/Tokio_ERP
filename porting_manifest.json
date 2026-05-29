@@ -2858,7 +2858,7 @@
     {
       "source": "accounts/report/asset_depreciations_and_balances/asset_depreciations_and_balances.py",
       "target": "accounts/report/asset_depreciations_and_balances/asset_depreciations_and_balances.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/balance_sheet/__init__.py",

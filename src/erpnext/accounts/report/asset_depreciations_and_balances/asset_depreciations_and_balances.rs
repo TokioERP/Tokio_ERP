@@ -23,7 +23,7 @@ pub struct ReportColumn {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct AssetDepreciationsAndBalancesReport {
     pub columns: Vec<ReportColumn>,
-    pub rows: Vec<AssetDepreciationsAndBalancesRow>,
+    pub rows: Option<Vec<AssetDepreciationsAndBalancesRow>>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -284,19 +284,19 @@ pub fn execute(
 pub fn get_data(
     filters: &AssetDepreciationsAndBalancesFilters,
     data: &AssetDepreciationsAndBalancesData,
-) -> Vec<AssetDepreciationsAndBalancesRow> {
+) -> Option<Vec<AssetDepreciationsAndBalancesRow>> {
     match filters.group_by.as_str() {
-        "Asset Category" => assemble_group_by_asset_category_data(
+        "Asset Category" => Some(assemble_group_by_asset_category_data(
             &data.category_values,
             &data.category_depreciations,
             &data.category_adjustments,
-        ),
-        "Asset" => assemble_group_by_asset_data(
+        )),
+        "Asset" => Some(assemble_group_by_asset_data(
             &data.asset_values,
             &data.asset_depreciations,
             &data.asset_adjustments,
-        ),
-        _ => Vec::new(),
+        )),
+        _ => None,
     }
 }
 
@@ -469,11 +469,18 @@ pub fn assemble_group_by_asset_category_data(
 
     asset_categories
         .iter()
-        .filter_map(|asset_category| {
-            let depreciation = asset_map.get(asset_category.asset_category.as_str())?;
+        .map(|asset_category| {
+            let depreciation = asset_map
+                .get(asset_category.asset_category.as_str())
+                .unwrap_or_else(|| {
+                    panic!(
+                        "missing depreciation row for asset category {}",
+                        asset_category.asset_category
+                    )
+                });
             let adjustment = adjustment_map.get(asset_category.asset_category.as_str());
 
-            Some(build_row(
+            build_row(
                 Some(asset_category.asset_category.clone()),
                 None,
                 None,
@@ -495,7 +502,7 @@ pub fn assemble_group_by_asset_category_data(
                         .depreciation_eliminated_via_reversal,
                 },
                 adjustment.copied().unwrap_or_default(),
-            ))
+            )
         })
         .collect()
 }
@@ -513,11 +520,15 @@ pub fn assemble_group_by_asset_data(
 
     asset_details
         .iter()
-        .filter_map(|asset_detail| {
-            let depreciation = asset_map.get(asset_detail.name.as_str())?;
+        .map(|asset_detail| {
+            let depreciation = asset_map
+                .get(asset_detail.name.as_str())
+                .unwrap_or_else(|| {
+                    panic!("missing depreciation row for asset {}", asset_detail.name)
+                });
             let adjustment = adjustment_map.get(asset_detail.name.as_str());
 
-            Some(build_row(
+            build_row(
                 None,
                 Some(asset_detail.name.clone()),
                 Some(asset_detail.asset_name.clone()),
@@ -539,7 +550,7 @@ pub fn assemble_group_by_asset_data(
                         .depreciation_eliminated_via_reversal,
                 },
                 adjustment.copied().unwrap_or_default(),
-            ))
+            )
         })
         .collect()
 }
