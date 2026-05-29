@@ -119,6 +119,21 @@ pub struct AssetDepreciationsAndBalancesData {
     pub asset_adjustments: Vec<AssetValueAdjustmentRow>,
 }
 
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct QueryPlan {
+    pub source: &'static str,
+    pub selects: Vec<&'static str>,
+    pub joins: Vec<&'static str>,
+    pub conditions: Vec<String>,
+    pub group_by: Option<&'static str>,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct DepreciationQueryPlans {
+    pub gl: QueryPlan,
+    pub opening: QueryPlan,
+}
+
 impl ReportColumn {
     pub fn link(
         label: impl Into<String>,
@@ -156,6 +171,106 @@ impl ReportColumn {
     }
 }
 
+pub fn get_category_values_query_plan(filters: &AssetDepreciationsAndBalancesFilters) -> QueryPlan {
+    let mut plan = QueryPlan {
+        source: "Asset",
+        selects: vec![
+            "asset.asset_category",
+            "value_as_on_from_date",
+            "value_of_new_purchase",
+            "value_of_sold_asset",
+            "value_of_scrapped_asset",
+            "value_of_capitalized_asset",
+        ],
+        conditions: base_asset_conditions(filters),
+        group_by: Some("asset.asset_category"),
+        ..QueryPlan::default()
+    };
+
+    push_optional_asset_category(&mut plan, filters);
+    push_optional_finance_book_asset_filter(&mut plan, filters);
+    plan
+}
+
+pub fn get_asset_details_query_plan(filters: &AssetDepreciationsAndBalancesFilters) -> QueryPlan {
+    let mut plan = QueryPlan {
+        source: "Asset",
+        selects: vec![
+            "asset.name",
+            "asset.asset_name",
+            "value_as_on_from_date",
+            "value_of_new_purchase",
+            "value_of_sold_asset",
+            "value_of_scrapped_asset",
+            "value_of_capitalized_asset",
+        ],
+        conditions: base_asset_conditions(filters),
+        group_by: Some("asset.name"),
+        ..QueryPlan::default()
+    };
+
+    push_optional_asset(&mut plan, filters);
+    push_optional_finance_book_asset_filter(&mut plan, filters);
+    plan
+}
+
+pub fn get_category_depreciation_query_plans(
+    filters: &AssetDepreciationsAndBalancesFilters,
+) -> DepreciationQueryPlans {
+    let mut gl = depreciation_gl_query_plan(filters, "asset.asset_category");
+    let mut opening = opening_depreciation_query_plan(filters, "asset.asset_category");
+
+    push_optional_asset_category(&mut gl, filters);
+    push_optional_asset_category(&mut opening, filters);
+    push_optional_finance_book_gl_filter(&mut gl, filters);
+    push_optional_finance_book_asset_filter(&mut opening, filters);
+
+    DepreciationQueryPlans { gl, opening }
+}
+
+pub fn get_asset_depreciation_query_plans(
+    filters: &AssetDepreciationsAndBalancesFilters,
+) -> DepreciationQueryPlans {
+    let mut gl = depreciation_gl_query_plan(filters, "asset.name");
+    let mut opening = opening_depreciation_query_plan(filters, "asset.name");
+
+    push_optional_asset(&mut gl, filters);
+    push_optional_asset(&mut opening, filters);
+    push_optional_finance_book_gl_filter(&mut gl, filters);
+    push_optional_finance_book_asset_filter(&mut opening, filters);
+
+    DepreciationQueryPlans { gl, opening }
+}
+
+pub fn get_asset_value_adjustment_query_plan(
+    group_by: &str,
+    filters: &AssetDepreciationsAndBalancesFilters,
+) -> QueryPlan {
+    let (select_key, group_by_field) = match group_by {
+        "Asset" => ("asset.name as key", "asset.name"),
+        _ => ("asset.asset_category as key", "asset.asset_category"),
+    };
+
+    QueryPlan {
+        source: "GL Entry",
+        selects: vec![
+            select_key,
+            "value_adjustment_before_from_date",
+            "value_adjustment_till_to_date",
+        ],
+        joins: vec!["Asset", "Asset Category Account"],
+        conditions: vec![
+            "gl_entry.is_cancelled = 0".to_string(),
+            "asset.docstatus = 1".to_string(),
+            format!("asset.company = {}", filters.company),
+            format!("asset.purchase_date <= {}", filters.to_date),
+            "gl_entry.account = asset_category_account.fixed_asset_account".to_string(),
+            "gl_entry.is_opening = No".to_string(),
+        ],
+        group_by: Some(group_by_field),
+    }
+}
+
 pub fn execute(
     filters: &AssetDepreciationsAndBalancesFilters,
     data: &AssetDepreciationsAndBalancesData,
@@ -182,6 +297,103 @@ pub fn get_data(
             &data.asset_adjustments,
         ),
         _ => Vec::new(),
+    }
+}
+
+fn base_asset_conditions(filters: &AssetDepreciationsAndBalancesFilters) -> Vec<String> {
+    vec![
+        "asset.docstatus = 1".to_string(),
+        format!("asset.company = {}", filters.company),
+        format!("asset.purchase_date <= {}", filters.to_date),
+        format!(
+            "asset.name NOT IN capitalized assets before {}",
+            filters.from_date
+        ),
+    ]
+}
+
+fn depreciation_gl_query_plan(
+    filters: &AssetDepreciationsAndBalancesFilters,
+    group_by: &'static str,
+) -> QueryPlan {
+    QueryPlan {
+        source: "GL Entry",
+        selects: vec![
+            group_by,
+            "accumulated_depreciation_as_on_from_date",
+            "depreciation_eliminated_via_reversal",
+            "depreciation_eliminated_during_the_period",
+            "depreciation_amount_during_the_period",
+        ],
+        joins: vec!["Asset", "Asset Category Account", "Company"],
+        conditions: vec![
+            "asset.docstatus = 1".to_string(),
+            format!("asset.company = {}", filters.company),
+            format!("asset.purchase_date <= {}", filters.to_date),
+            "gl_entry.is_cancelled = 0".to_string(),
+            "gl_entry.account = ifnull(asset_category_account.depreciation_expense_account, company.depreciation_expense_account)".to_string(),
+        ],
+        group_by: Some(group_by),
+    }
+}
+
+fn opening_depreciation_query_plan(
+    filters: &AssetDepreciationsAndBalancesFilters,
+    group_by: &'static str,
+) -> QueryPlan {
+    QueryPlan {
+        source: "Asset",
+        selects: vec![
+            group_by,
+            "accumulated_depreciation_as_on_from_date",
+            "depreciation_eliminated_during_the_period",
+        ],
+        conditions: vec![
+            "asset.docstatus = 1".to_string(),
+            format!("asset.company = {}", filters.company),
+            format!("asset.purchase_date <= {}", filters.to_date),
+        ],
+        group_by: Some(group_by),
+        ..QueryPlan::default()
+    }
+}
+
+fn push_optional_asset_category(
+    plan: &mut QueryPlan,
+    filters: &AssetDepreciationsAndBalancesFilters,
+) {
+    if let Some(asset_category) = filters.asset_category.as_deref() {
+        plan.conditions
+            .push(format!("asset.asset_category = {asset_category}"));
+    }
+}
+
+fn push_optional_asset(plan: &mut QueryPlan, filters: &AssetDepreciationsAndBalancesFilters) {
+    if let Some(asset) = filters.asset.as_deref() {
+        plan.conditions.push(format!("asset.name = {asset}"));
+    }
+}
+
+fn push_optional_finance_book_asset_filter(
+    plan: &mut QueryPlan,
+    filters: &AssetDepreciationsAndBalancesFilters,
+) {
+    if let Some(finance_book) = filters.finance_book.as_deref() {
+        plan.conditions.push(format!(
+            "asset.name IN assets with finance_book {finance_book}"
+        ));
+    }
+}
+
+fn push_optional_finance_book_gl_filter(
+    plan: &mut QueryPlan,
+    filters: &AssetDepreciationsAndBalancesFilters,
+) {
+    if let Some(finance_book) = filters.finance_book.as_deref() {
+        plan.conditions.push(format!(
+            "ifnull(gl_entry.finance_book, '') = {finance_book}"
+        ));
+        push_optional_finance_book_asset_filter(plan, filters);
     }
 }
 

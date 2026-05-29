@@ -1,9 +1,11 @@
 use tokio_erp::erpnext::accounts::report::asset_depreciations_and_balances::asset_depreciations_and_balances::{
     assemble_group_by_asset_category_data, assemble_group_by_asset_data,
     combine_asset_depreciation_rows, combine_category_depreciation_rows, execute, get_columns,
-    get_data, AssetDepreciationByAssetRow, AssetDepreciationByCategoryRow,
-    AssetDepreciationsAndBalancesData, AssetOpeningDepreciationByAssetRow,
-    AssetOpeningDepreciationByCategoryRow,
+    get_asset_depreciation_query_plans, get_asset_details_query_plan,
+    get_asset_value_adjustment_query_plan, get_category_depreciation_query_plans,
+    get_category_values_query_plan, get_data, AssetDepreciationByAssetRow,
+    AssetDepreciationByCategoryRow, AssetDepreciationsAndBalancesData,
+    AssetOpeningDepreciationByAssetRow, AssetOpeningDepreciationByCategoryRow,
     AssetDepreciationsAndBalancesFilters, AssetDepreciationsAndBalancesRow, AssetDetailValueRow,
     AssetValueAdjustmentRow, AssetValueByCategoryRow, ReportColumn,
 };
@@ -17,6 +19,15 @@ fn filters(group_by: &str) -> AssetDepreciationsAndBalancesFilters {
         asset_category: None,
         asset: None,
         finance_book: None,
+    }
+}
+
+fn filtered(group_by: &str) -> AssetDepreciationsAndBalancesFilters {
+    AssetDepreciationsAndBalancesFilters {
+        asset_category: Some("Computers".to_string()),
+        asset: Some("AST-0001".to_string()),
+        finance_book: Some("IFRS".to_string()),
+        ..filters(group_by)
     }
 }
 
@@ -320,4 +331,128 @@ fn asset_depreciations_get_data_routes_group_by_asset_and_unknown_group_like_erp
     assert_eq!(rows[0].asset.as_deref(), Some("AST-0001"));
     assert_eq!(rows[0].net_asset_value_as_on_to_date, 675.0);
     assert!(get_data(&filters("Cost Center"), &data).is_empty());
+}
+
+#[test]
+fn asset_depreciations_category_value_query_plan_matches_erpnext_filters() {
+    let plan = get_category_values_query_plan(&filtered("Asset Category"));
+
+    assert_eq!(plan.source, "Asset");
+    assert_eq!(
+        plan.selects,
+        vec![
+            "asset.asset_category",
+            "value_as_on_from_date",
+            "value_of_new_purchase",
+            "value_of_sold_asset",
+            "value_of_scrapped_asset",
+            "value_of_capitalized_asset",
+        ]
+    );
+    assert_eq!(plan.group_by, Some("asset.asset_category"));
+    assert!(plan.conditions.contains(&"asset.docstatus = 1".to_string()));
+    assert!(plan
+        .conditions
+        .contains(&"asset.company = _Test Company".to_string()));
+    assert!(plan
+        .conditions
+        .contains(&"asset.purchase_date <= 2026-05-31".to_string()));
+    assert!(plan
+        .conditions
+        .contains(&"asset.name NOT IN capitalized assets before 2026-05-01".to_string()));
+    assert!(plan
+        .conditions
+        .contains(&"asset.asset_category = Computers".to_string()));
+    assert!(plan
+        .conditions
+        .contains(&"asset.name IN assets with finance_book IFRS".to_string()));
+}
+
+#[test]
+fn asset_depreciations_asset_detail_query_plan_matches_erpnext_filters() {
+    let plan = get_asset_details_query_plan(&filtered("Asset"));
+
+    assert_eq!(plan.source, "Asset");
+    assert!(plan.selects.contains(&"asset.name"));
+    assert!(plan.selects.contains(&"asset.asset_name"));
+    assert_eq!(plan.group_by, Some("asset.name"));
+    assert!(plan
+        .conditions
+        .contains(&"asset.name = AST-0001".to_string()));
+    assert!(!plan
+        .conditions
+        .contains(&"asset.asset_category = Computers".to_string()));
+    assert!(plan
+        .conditions
+        .contains(&"asset.name IN assets with finance_book IFRS".to_string()));
+}
+
+#[test]
+fn asset_depreciations_depreciation_query_plans_match_erpnext_group_filters() {
+    let category = get_category_depreciation_query_plans(&filtered("Asset Category"));
+    assert_eq!(category.gl.group_by, Some("asset.asset_category"));
+    assert_eq!(category.opening.group_by, Some("asset.asset_category"));
+    assert_eq!(
+        category.gl.joins,
+        vec!["Asset", "Asset Category Account", "Company"]
+    );
+    assert!(category
+        .gl
+        .conditions
+        .contains(&"gl_entry.is_cancelled = 0".to_string()));
+    assert!(category.gl.conditions.contains(
+        &"gl_entry.account = ifnull(asset_category_account.depreciation_expense_account, company.depreciation_expense_account)".to_string()
+    ));
+    assert!(category
+        .gl
+        .conditions
+        .contains(&"asset.asset_category = Computers".to_string()));
+    assert!(category
+        .opening
+        .conditions
+        .contains(&"asset.asset_category = Computers".to_string()));
+    assert!(category
+        .gl
+        .conditions
+        .contains(&"ifnull(gl_entry.finance_book, '') = IFRS".to_string()));
+    assert!(category
+        .opening
+        .conditions
+        .contains(&"asset.name IN assets with finance_book IFRS".to_string()));
+
+    let asset = get_asset_depreciation_query_plans(&filtered("Asset"));
+    assert_eq!(asset.gl.group_by, Some("asset.name"));
+    assert_eq!(asset.opening.group_by, Some("asset.name"));
+    assert!(asset
+        .gl
+        .conditions
+        .contains(&"asset.name = AST-0001".to_string()));
+    assert!(asset
+        .opening
+        .conditions
+        .contains(&"asset.name = AST-0001".to_string()));
+    assert!(!asset
+        .gl
+        .conditions
+        .contains(&"asset.asset_category = Computers".to_string()));
+}
+
+#[test]
+fn asset_depreciations_value_adjustment_query_plans_match_erpnext_shape() {
+    let category =
+        get_asset_value_adjustment_query_plan("Asset Category", &filtered("Asset Category"));
+    assert_eq!(category.source, "GL Entry");
+    assert_eq!(category.joins, vec!["Asset", "Asset Category Account"]);
+    assert_eq!(category.group_by, Some("asset.asset_category"));
+    assert!(category.selects.contains(&"asset.asset_category as key"));
+    assert!(category
+        .conditions
+        .contains(&"gl_entry.account = asset_category_account.fixed_asset_account".to_string()));
+    assert!(category
+        .conditions
+        .contains(&"gl_entry.is_opening = No".to_string()));
+
+    let asset = get_asset_value_adjustment_query_plan("Asset", &filtered("Asset"));
+    assert_eq!(asset.group_by, Some("asset.name"));
+    assert!(asset.selects.contains(&"asset.name as key"));
 }
