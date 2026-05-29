@@ -486,9 +486,9 @@ fn gross_profit_calculate_row_adds_abs_negative_buying_amount_like_erpnext() {
 fn gross_profit_group_rows_aggregates_by_group_and_appends_total_like_erpnext() {
     let rows = group_rows(
         &[
+            source_row("SINV-0003", "ITEM-002", 1.0, 80.0, 100.0),
             source_row("SINV-0001", "ITEM-001", 2.0, 200.0, 120.0),
             source_row("SINV-0002", "ITEM-001", 3.0, 300.0, 150.0),
-            source_row("SINV-0003", "ITEM-002", 1.0, 80.0, 100.0),
         ],
         &filters("Item Code"),
         &MasterNameSettings::default(),
@@ -511,6 +511,21 @@ fn gross_profit_group_rows_aggregates_by_group_and_appends_total_like_erpnext() 
     assert_eq!(total[9], ReportCell::Number(210.0));
     assert_eq!(total[10], ReportCell::Number(36.207));
     assert_eq!(total[11], ReportCell::Empty);
+}
+
+#[test]
+fn gross_profit_group_rows_uses_reversed_si_list_order_like_erpnext_process() {
+    let rows = group_rows(
+        &[
+            source_row("SINV-NEW", "ITEM-NEW", 1.0, 100.0, 60.0),
+            source_row("SINV-OLD", "ITEM-OLD", 1.0, 90.0, 40.0),
+        ],
+        &filters("Item Code"),
+        &MasterNameSettings::default(),
+    );
+
+    assert_eq!(rows[0][0], ReportCell::Text("ITEM-OLD".to_string()));
+    assert_eq!(rows[1][0], ReportCell::Text("ITEM-NEW".to_string()));
 }
 
 #[test]
@@ -538,7 +553,7 @@ fn gross_profit_group_rows_monthly_formats_posting_date_like_erpnext() {
     june.posting_date = "2026-06-01".to_string();
 
     let rows = group_rows(
-        &[may_one, may_two, june],
+        &[june, may_two, may_one],
         &filters("Monthly"),
         &MasterNameSettings::default(),
     );
@@ -683,7 +698,7 @@ fn gross_profit_payment_term_grouping_applies_invoice_portion_like_erpnext() {
     row3.is_return = true;
 
     let rows = group_rows(
-        &[row1, row2, row3],
+        &[row3, row2, row1],
         &filters("Payment Term"),
         &MasterNameSettings::default(),
     );

@@ -1626,7 +1626,7 @@ pub fn group_rows(
     let mut grouped: BTreeMap<String, GrossProfitCalculatedRow> = BTreeMap::new();
     let mut order = Vec::new();
 
-    for source in source_rows {
+    for source in source_rows.iter().rev() {
         let row = calculate_row(source, filters);
         let Some(key) = row_text_value(&row, &group_key) else {
             continue;
