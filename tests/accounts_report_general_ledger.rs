@@ -3,7 +3,8 @@ use std::collections::BTreeMap;
 use tokio_erp::erpnext::accounts::report::general_ledger::general_ledger::{
     execute, get_balance, get_columns, get_conditions, get_data_with_opening_closing,
     get_gl_entries, get_group_by_field, get_result_as_list, set_account_currency, validate_filters,
-    AccountDetail, CostCenterDetail, GeneralLedgerFilters, GeneralLedgerInput, GlEntry,
+    AccountDetail, AccountingDimension, CostCenterDetail, GeneralLedgerFilters, GeneralLedgerInput,
+    GlEntry,
 };
 
 fn filters() -> GeneralLedgerFilters {
@@ -44,6 +45,7 @@ fn input() -> GeneralLedgerInput {
         default_company: "Acme".to_string(),
         immutable_ledger: false,
         accounting_dimensions: Vec::new(),
+        show_party_name_column: false,
         accounts: BTreeMap::from([
             (
                 "Cash - A".to_string(),
@@ -472,6 +474,76 @@ fn general_ledger_consolidates_voucher_rows_and_columns_include_transaction_curr
 }
 
 #[test]
+fn general_ledger_columns_match_dynamic_link_party_name_and_dimension_rules() {
+    let mut f = filters();
+    f.add_values_in_transaction_currency = false;
+    f.show_remarks = false;
+    let mut input = input();
+
+    let columns = get_columns(&f, &input).unwrap();
+    assert_eq!(
+        columns
+            .iter()
+            .find(|column| column.fieldname == "voucher_no")
+            .unwrap()
+            .fieldtype,
+        "Dynamic Link"
+    );
+    assert_eq!(
+        columns
+            .iter()
+            .find(|column| column.fieldname == "against_voucher")
+            .unwrap()
+            .fieldtype,
+        "Dynamic Link"
+    );
+    assert!(!columns
+        .iter()
+        .any(|column| column.fieldname == "party_name"));
+
+    input.show_party_name_column = true;
+    let columns = get_columns(&f, &input).unwrap();
+    assert!(columns
+        .iter()
+        .any(|column| column.fieldname == "party_name"));
+
+    f.include_dimensions = true;
+    input.accounting_dimensions = vec![AccountingDimension {
+        label: "Branch".to_string(),
+        fieldname: "branch".to_string(),
+    }];
+    let columns = get_columns(&f, &input).unwrap();
+    let ordered_fields = columns
+        .iter()
+        .map(|column| column.fieldname.as_str())
+        .collect::<Vec<_>>();
+    let party_idx = ordered_fields
+        .iter()
+        .position(|field| *field == "party")
+        .unwrap();
+    let project_idx = ordered_fields
+        .iter()
+        .position(|field| *field == "project")
+        .unwrap();
+    let branch_idx = ordered_fields
+        .iter()
+        .position(|field| *field == "branch")
+        .unwrap();
+    let cost_center_idx = ordered_fields
+        .iter()
+        .position(|field| *field == "cost_center")
+        .unwrap();
+    let against_idx = ordered_fields
+        .iter()
+        .position(|field| *field == "against_voucher_type")
+        .unwrap();
+    assert!(party_idx < project_idx);
+    assert!(project_idx < branch_idx);
+    assert!(branch_idx < cost_center_idx);
+    assert!(cost_center_idx < against_idx);
+}
+
+#[test]
 fn general_ledger_consolidated_voucher_key_keeps_dimension_and_creation_rows_separate() {
     let mut f = filters();
     f.categorize_by = Some("Categorize by Voucher (Consolidated)".to_string());
@@ -508,7 +580,10 @@ fn general_ledger_consolidated_voucher_key_keeps_dimension_and_creation_rows_sep
         .insert("branch".to_string(), "South".to_string());
 
     let mut dim_input = input();
-    dim_input.accounting_dimensions = vec!["branch".to_string()];
+    dim_input.accounting_dimensions = vec![AccountingDimension {
+        label: "Branch".to_string(),
+        fieldname: "branch".to_string(),
+    }];
     dim_input.gl_entries = vec![first, second];
     let data = get_data_with_opening_closing(&f, &dim_input.gl_entries, &dim_input);
     let entries = data

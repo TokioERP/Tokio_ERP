@@ -47,12 +47,19 @@ pub struct CostCenterDetail {
     pub rgt: i32,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AccountingDimension {
+    pub label: String,
+    pub fieldname: String,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct GeneralLedgerInput {
     pub company_currency: String,
     pub default_company: String,
     pub immutable_ledger: bool,
-    pub accounting_dimensions: Vec<String>,
+    pub accounting_dimensions: Vec<AccountingDimension>,
+    pub show_party_name_column: bool,
     pub accounts: BTreeMap<String, AccountDetail>,
     pub valid_parties: BTreeMap<String, Vec<String>>,
     pub party_names: BTreeMap<String, BTreeMap<String, String>>,
@@ -258,6 +265,17 @@ impl ReportColumn {
             label: label.to_string(),
             fieldname: fieldname.to_string(),
             fieldtype: "Currency".to_string(),
+            options: Some(options.to_string()),
+            width,
+            hidden: false,
+        }
+    }
+
+    pub fn dynamic_link(label: &str, fieldname: &str, options: &str, width: u16) -> Self {
+        Self {
+            label: label.to_string(),
+            fieldname: fieldname.to_string(),
+            fieldtype: "Dynamic Link".to_string(),
             options: Some(options.to_string()),
             width,
             hidden: false,
@@ -805,18 +823,45 @@ pub fn get_columns(
     columns.extend([
         ReportColumn::data("Voucher Type", "voucher_type", 120),
         ReportColumn::data("Voucher Subtype", "voucher_subtype", 180),
-        ReportColumn::link("Voucher No", "voucher_no", "voucher_type", 180, false),
+        ReportColumn::dynamic_link("Voucher No", "voucher_no", "voucher_type", 180),
         ReportColumn::data("Against Account", "against", 120),
         ReportColumn::data("Party Type", "party_type", 100),
         ReportColumn::data("Party", "party", 100),
-        ReportColumn::data("Party Name", "party_name", 150),
+    ]);
+
+    if input.show_party_name_column {
+        columns.push(ReportColumn::data("Party Name", "party_name", 150));
+    }
+
+    if filters.include_dimensions {
+        columns.push(ReportColumn::link(
+            "Project", "project", "Project", 100, false,
+        ));
+        for dimension in &input.accounting_dimensions {
+            columns.push(ReportColumn::link(
+                &dimension.label,
+                &dimension.fieldname,
+                &dimension.label,
+                100,
+                false,
+            ));
+        }
+        columns.push(ReportColumn::link(
+            "Cost Center",
+            "cost_center",
+            "Cost Center",
+            100,
+            false,
+        ));
+    }
+
+    columns.extend([
         ReportColumn::data("Against Voucher Type", "against_voucher_type", 100),
-        ReportColumn::link(
+        ReportColumn::dynamic_link(
             "Against Voucher",
             "against_voucher",
             "against_voucher_type",
             100,
-            false,
         ),
         ReportColumn::data("Supplier Invoice No", "bill_no", 100),
     ]);
@@ -1065,7 +1110,7 @@ fn consolidated_key(
         for dimension in &input.accounting_dimensions {
             values.push(
                 gle.dimensions
-                    .get(dimension)
+                    .get(&dimension.fieldname)
                     .map(String::as_str)
                     .unwrap_or(""),
             );
