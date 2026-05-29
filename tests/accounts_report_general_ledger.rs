@@ -17,6 +17,9 @@ fn filters() -> GeneralLedgerFilters {
         party: Vec::new(),
         voucher_no: None,
         against_voucher_no: None,
+        voucher_no_not_in: Vec::new(),
+        ignore_err: false,
+        ignore_cr_dr_notes: false,
         project: Vec::new(),
         cost_center: Vec::new(),
         finance_book: None,
@@ -46,6 +49,8 @@ fn input() -> GeneralLedgerInput {
         immutable_ledger: false,
         accounting_dimensions: Vec::new(),
         show_party_name_column: false,
+        exchange_rate_revaluation_vouchers: Vec::new(),
+        system_generated_cr_dr_vouchers: Vec::new(),
         accounts: BTreeMap::from([
             (
                 "Cash - A".to_string(),
@@ -167,6 +172,62 @@ fn input() -> GeneralLedgerInput {
             .with_against("Purchase Invoice", "PINV-2"),
         ],
     }
+}
+
+#[test]
+fn general_ledger_excludes_voucher_no_not_in_and_ignored_journals_like_erpnext() {
+    let mut input = input();
+    input.exchange_rate_revaluation_vouchers = vec!["JV-ERR".to_string()];
+    input.system_generated_cr_dr_vouchers = vec!["JV-CRDR".to_string()];
+    input.gl_entries.push(GlEntry::new(
+        "GLE-ERR",
+        "2026-08-01",
+        "Cash - A",
+        40.0,
+        0.0,
+        "No",
+        "Journal Entry",
+        "JV-ERR",
+    ));
+    input.gl_entries.push(GlEntry::new(
+        "GLE-CRDR",
+        "2026-08-02",
+        "Cash - A",
+        50.0,
+        0.0,
+        "No",
+        "Journal Entry",
+        "JV-CRDR",
+    ));
+    input.gl_entries.push(GlEntry::new(
+        "GLE-EXPLICIT",
+        "2026-08-03",
+        "Cash - A",
+        60.0,
+        0.0,
+        "No",
+        "Journal Entry",
+        "JV-EXPLICIT",
+    ));
+
+    let mut f = filters();
+    f.ignore_err = true;
+    f.ignore_cr_dr_notes = true;
+    f.voucher_no_not_in = vec!["JV-EXPLICIT".to_string()];
+
+    let entries = get_gl_entries(&f, &input);
+    assert!(!entries
+        .iter()
+        .any(|row| row.voucher_no.as_deref() == Some("JV-ERR")));
+    assert!(!entries
+        .iter()
+        .any(|row| row.voucher_no.as_deref() == Some("JV-CRDR")));
+    assert!(!entries
+        .iter()
+        .any(|row| row.voucher_no.as_deref() == Some("JV-EXPLICIT")));
+
+    let conditions = get_conditions(&f);
+    assert!(conditions.contains(&"voucher_no not in %(voucher_no_not_in)s".to_string()));
 }
 
 #[test]

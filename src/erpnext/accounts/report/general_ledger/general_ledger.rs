@@ -10,6 +10,9 @@ pub struct GeneralLedgerFilters {
     pub party: Vec<String>,
     pub voucher_no: Option<String>,
     pub against_voucher_no: Option<String>,
+    pub voucher_no_not_in: Vec<String>,
+    pub ignore_err: bool,
+    pub ignore_cr_dr_notes: bool,
     pub project: Vec<String>,
     pub cost_center: Vec<String>,
     pub finance_book: Option<String>,
@@ -60,6 +63,8 @@ pub struct GeneralLedgerInput {
     pub immutable_ledger: bool,
     pub accounting_dimensions: Vec<AccountingDimension>,
     pub show_party_name_column: bool,
+    pub exchange_rate_revaluation_vouchers: Vec<String>,
+    pub system_generated_cr_dr_vouchers: Vec<String>,
     pub accounts: BTreeMap<String, AccountDetail>,
     pub valid_parties: BTreeMap<String, Vec<String>>,
     pub party_names: BTreeMap<String, BTreeMap<String, String>>,
@@ -469,6 +474,9 @@ pub fn get_conditions(filters: &GeneralLedgerFilters) -> Vec<String> {
     if filters.against_voucher_no.is_some() {
         conditions.push("against_voucher=%(against_voucher_no)s".to_string());
     }
+    if filters.ignore_err || filters.ignore_cr_dr_notes || !filters.voucher_no_not_in.is_empty() {
+        conditions.push("voucher_no not in %(voucher_no_not_in)s".to_string());
+    }
     if filters.categorize_by.as_deref() == Some("Categorize by Party")
         && filters.party_type.is_none()
     {
@@ -522,10 +530,18 @@ pub fn get_conditions(filters: &GeneralLedgerFilters) -> Vec<String> {
 pub fn get_gl_entries(filters: &GeneralLedgerFilters, input: &GeneralLedgerInput) -> Vec<GlEntry> {
     let account_filter = account_filter_with_children(&filters.account, input);
     let cost_center_filter = cost_center_filter_with_children(&filters.cost_center, input);
+    let excluded_vouchers = excluded_vouchers(filters, input);
     let mut rows = input
         .gl_entries
         .iter()
         .filter(|entry| filters.show_cancelled_entries || !entry.is_cancelled)
+        .filter(|entry| {
+            entry
+                .voucher_no
+                .as_ref()
+                .map(|voucher_no| !excluded_vouchers.iter().any(|item| item == voucher_no))
+                .unwrap_or(true)
+        })
         .filter(|entry| {
             account_filter.is_empty()
                 || entry
@@ -656,6 +672,25 @@ fn cost_center_filter_with_children(
         }
     }
     expanded
+}
+
+fn excluded_vouchers(filters: &GeneralLedgerFilters, input: &GeneralLedgerInput) -> Vec<String> {
+    let mut vouchers = filters.voucher_no_not_in.clone();
+    if filters.ignore_err {
+        for voucher in &input.exchange_rate_revaluation_vouchers {
+            if !vouchers.iter().any(|item| item == voucher) {
+                vouchers.push(voucher.clone());
+            }
+        }
+    }
+    if filters.ignore_cr_dr_notes {
+        for voucher in &input.system_generated_cr_dr_vouchers {
+            if !vouchers.iter().any(|item| item == voucher) {
+                vouchers.push(voucher.clone());
+            }
+        }
+    }
+    vouchers
 }
 
 fn finance_book_matches(entry: &GlEntry, filters: &GeneralLedgerFilters) -> bool {
