@@ -1,15 +1,16 @@
 use tokio_erp::erpnext::accounts::report::gross_profit::gross_profit::{
     calculate_buying_amount_from_delivery_note, calculate_buying_amount_from_sle, calculate_row,
-    get_bundle_item_row, get_buying_amount_from_product_bundle,
+    get_bundle_item_row, get_buying_amount, get_buying_amount_from_product_bundle,
     get_buying_amount_from_so_dn_query_plan, get_column_names, get_columns,
     get_delivery_notes_query_plan, get_group_wise_columns, get_invoice_row,
     get_last_purchase_rate_query_plan, get_product_bundle_query_plan, get_stock_ledger_query_plan,
     group_items_by_invoice, group_rows, prepare_delivered_by_supplier_purchase_query_plan,
     prepare_invoice_query_plan, prepare_return_invoice_query_plan, process_gross_profit_rows,
     should_skip_row, update_return_invoices, AccountingDimensionFilter, DeliveryNoteSummary,
-    GrossProfitFilters, GrossProfitInvoiceRow, GrossProfitProcessRow, GrossProfitSourceRow,
-    MasterNameSettings, PackedItemOverride, ProductBundleItem, ReportCell, ReportColumn,
-    ReturnAdjustedRow, ReturnedInvoiceItem, StockLedgerEntry,
+    GrossProfitBuyingAmountContext, GrossProfitBuyingAmountRow, GrossProfitFilters,
+    GrossProfitInvoiceRow, GrossProfitProcessRow, GrossProfitSourceRow, MasterNameSettings,
+    PackedItemOverride, ProductBundleItem, ReportCell, ReportColumn, ReturnAdjustedRow,
+    ReturnedInvoiceItem, StockLedgerEntry,
 };
 
 fn filters(group_by: &str) -> GrossProfitFilters {
@@ -129,6 +130,38 @@ fn process_row(invoice: &str, item_code: Option<&str>, indent: f64) -> GrossProf
         base_rate: None,
         gross_profit: 0.0,
         gross_profit_percent: 0.0,
+    }
+}
+
+fn buying_row(item_code: &str) -> GrossProfitBuyingAmountRow {
+    GrossProfitBuyingAmountRow {
+        item_code: item_code.to_string(),
+        qty: 2.0,
+        delivered_by_supplier: false,
+        so_detail: None,
+        sales_order: None,
+        project: String::new(),
+        cost_center: String::new(),
+        update_stock: false,
+        dn_detail: None,
+        parenttype: "Sales Invoice".to_string(),
+        parent: "SINV-0001".to_string(),
+        invoice: None,
+        delivery_note: None,
+        item_row: Some("SINV-ROW-1".to_string()),
+    }
+}
+
+fn buying_context() -> GrossProfitBuyingAmountContext {
+    GrossProfitBuyingAmountContext {
+        po_details: Vec::new(),
+        delivered_purchase_amount: None,
+        non_stock_items: Vec::new(),
+        last_purchase_rate: None,
+        stock_ledger_entries: Vec::new(),
+        delivery_note: None,
+        so_dn_incoming_rate: None,
+        average_buying_rate: 50.0,
     }
 }
 
@@ -649,6 +682,107 @@ fn gross_profit_buying_amount_query_plans_match_erpnext_delivered_supplier_and_s
         ]
     );
     assert_eq!(so_dn.group_by, vec!["delivery_note_item.item_code"]);
+}
+
+#[test]
+fn gross_profit_get_buying_amount_uses_delivered_by_supplier_purchase_invoice_first() {
+    let row = GrossProfitBuyingAmountRow {
+        delivered_by_supplier: true,
+        so_detail: Some("SO-ROW-1".to_string()),
+        ..buying_row("ITEM-001")
+    };
+    let context = GrossProfitBuyingAmountContext {
+        po_details: vec!["PO-ITEM-1".to_string()],
+        delivered_purchase_amount: Some(425.0),
+        average_buying_rate: 10.0,
+        ..buying_context()
+    };
+
+    assert_eq!(get_buying_amount(&row, &context), 425.0);
+}
+
+#[test]
+fn gross_profit_get_buying_amount_uses_last_purchase_rate_for_non_stock_project_or_cost_center() {
+    let row = GrossProfitBuyingAmountRow {
+        project: "PROJ-001".to_string(),
+        qty: 3.0,
+        ..buying_row("SERVICE-001")
+    };
+    let context = GrossProfitBuyingAmountContext {
+        non_stock_items: vec!["SERVICE-001".to_string()],
+        last_purchase_rate: Some(27.5),
+        average_buying_rate: 99.0,
+        ..buying_context()
+    };
+
+    assert_eq!(get_buying_amount(&row, &context), 82.5);
+}
+
+#[test]
+fn gross_profit_get_buying_amount_prefers_sle_and_switches_to_delivery_note_parent_for_dn_detail() {
+    let row = GrossProfitBuyingAmountRow {
+        update_stock: false,
+        dn_detail: Some("DN-ROW-1".to_string()),
+        delivery_note: Some("DN-0001".to_string()),
+        item_row: Some("DN-ROW-1".to_string()),
+        qty: 2.0,
+        ..buying_row("ITEM-001")
+    };
+    let context = GrossProfitBuyingAmountContext {
+        stock_ledger_entries: vec![
+            StockLedgerEntry {
+                voucher_type: "Delivery Note".to_string(),
+                voucher_no: "DN-0001".to_string(),
+                voucher_detail_no: "DN-ROW-1".to_string(),
+                stock_value: 900.0,
+                qty: -3.0,
+            },
+            StockLedgerEntry {
+                voucher_type: "Delivery Note".to_string(),
+                voucher_no: "DN-0000".to_string(),
+                voucher_detail_no: "OLD".to_string(),
+                stock_value: 600.0,
+                qty: -1.0,
+            },
+        ],
+        average_buying_rate: 99.0,
+        ..buying_context()
+    };
+
+    assert_eq!(get_buying_amount(&row, &context), 200.0);
+}
+
+#[test]
+fn gross_profit_get_buying_amount_matches_delivery_note_so_dn_and_average_fallbacks() {
+    let delivery_note = GrossProfitBuyingAmountContext {
+        delivery_note: Some(DeliveryNoteSummary {
+            total_qty: 6.0,
+            total_incoming_value: 240.0,
+        }),
+        average_buying_rate: 99.0,
+        ..buying_context()
+    };
+    assert_eq!(
+        get_buying_amount(&buying_row("ITEM-001"), &delivery_note),
+        80.0
+    );
+
+    let so_dn_row = GrossProfitBuyingAmountRow {
+        sales_order: Some("SO-0001".to_string()),
+        so_detail: Some("SO-ROW-1".to_string()),
+        ..buying_row("ITEM-001")
+    };
+    let so_dn = GrossProfitBuyingAmountContext {
+        so_dn_incoming_rate: Some(37.5),
+        average_buying_rate: 99.0,
+        ..buying_context()
+    };
+    assert_eq!(get_buying_amount(&so_dn_row, &so_dn), 75.0);
+
+    assert_eq!(
+        get_buying_amount(&buying_row("ITEM-001"), &buying_context()),
+        100.0
+    );
 }
 
 #[test]

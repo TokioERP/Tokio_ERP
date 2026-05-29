@@ -160,6 +160,36 @@ pub struct DeliveryNoteSummary {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct GrossProfitBuyingAmountRow {
+    pub item_code: String,
+    pub qty: f64,
+    pub delivered_by_supplier: bool,
+    pub so_detail: Option<String>,
+    pub sales_order: Option<String>,
+    pub project: String,
+    pub cost_center: String,
+    pub update_stock: bool,
+    pub dn_detail: Option<String>,
+    pub parenttype: String,
+    pub parent: String,
+    pub invoice: Option<String>,
+    pub delivery_note: Option<String>,
+    pub item_row: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct GrossProfitBuyingAmountContext {
+    pub po_details: Vec<String>,
+    pub delivered_purchase_amount: Option<f64>,
+    pub non_stock_items: Vec<String>,
+    pub last_purchase_rate: Option<f64>,
+    pub stock_ledger_entries: Vec<StockLedgerEntry>,
+    pub delivery_note: Option<DeliveryNoteSummary>,
+    pub so_dn_incoming_rate: Option<f64>,
+    pub average_buying_rate: f64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct PackedItemOverride {
     pub parent_invoice: String,
     pub item_code: String,
@@ -1122,6 +1152,60 @@ pub fn get_buying_amount_from_product_bundle(
         .sum();
 
     round_to(total, currency_precision)
+}
+
+pub fn get_buying_amount(
+    row: &GrossProfitBuyingAmountRow,
+    context: &GrossProfitBuyingAmountContext,
+) -> f64 {
+    if row.delivered_by_supplier && row.so_detail.is_some() && !context.po_details.is_empty() {
+        return context.delivered_purchase_amount.unwrap_or(0.0);
+    }
+
+    if context.non_stock_items.contains(&row.item_code)
+        && (!row.project.is_empty() || !row.cost_center.is_empty())
+    {
+        return row.qty * context.last_purchase_rate.unwrap_or(0.0);
+    }
+
+    if (row.update_stock || row.dn_detail.is_some()) && !context.stock_ledger_entries.is_empty() {
+        let mut parenttype = row.parenttype.as_str();
+        let mut parent = row.invoice.as_deref().unwrap_or(&row.parent);
+
+        if row.dn_detail.is_some() {
+            parenttype = "Delivery Note";
+            parent = row.delivery_note.as_deref().unwrap_or_default();
+        }
+
+        return calculate_buying_amount_from_sle(
+            row.qty,
+            &context.stock_ledger_entries,
+            parenttype,
+            parent,
+            row.item_row.as_deref().unwrap_or_default(),
+            context.average_buying_rate,
+        );
+    }
+
+    if row.item_row.is_some() {
+        if let Some(delivery_note) = &context.delivery_note {
+            return calculate_buying_amount_from_delivery_note(
+                row.qty,
+                delivery_note,
+                context.average_buying_rate,
+            );
+        }
+    }
+
+    if row.sales_order.is_some() && row.so_detail.is_some() {
+        if let Some(incoming_rate) = context.so_dn_incoming_rate {
+            if incoming_rate != 0.0 {
+                return row.qty * incoming_rate;
+            }
+        }
+    }
+
+    row.qty * context.average_buying_rate
 }
 
 pub fn process_gross_profit_rows(
