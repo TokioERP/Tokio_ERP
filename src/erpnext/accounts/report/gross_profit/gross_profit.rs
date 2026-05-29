@@ -988,6 +988,18 @@ pub fn get_columns(
     columns
 }
 
+pub fn get_report_columns(
+    filters: &GrossProfitFilters,
+    master_settings: &MasterNameSettings,
+) -> Vec<ReportColumn> {
+    let columns = get_columns(filters, master_settings);
+    if filters.group_by == "Invoice" {
+        get_columns_for_grouped_by_invoice(&columns, master_settings)
+    } else {
+        columns
+    }
+}
+
 pub fn get_columns_for_grouped_by_invoice(
     columns: &[ReportColumn],
     master_settings: &MasterNameSettings,

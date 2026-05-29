@@ -5,7 +5,7 @@ use tokio_erp::erpnext::accounts::report::gross_profit::gross_profit::{
     get_column_names, get_columns, get_columns_for_grouped_by_invoice,
     get_data_when_grouped_by_invoice, get_delivery_notes_query_plan, get_group_wise_columns,
     get_grouped_by_invoice_total_row, get_invoice_row, get_last_purchase_rate_query_plan,
-    get_product_bundle_query_plan, get_returned_invoice_items_query_plan,
+    get_product_bundle_query_plan, get_report_columns, get_returned_invoice_items_query_plan,
     get_stock_ledger_query_plan, group_items_by_invoice, group_product_bundles, group_rows,
     load_non_stock_items_query_plan, prepare_delivered_by_supplier_purchase_query_plan,
     prepare_invoice_query_plan, prepare_return_invoice_query_plan, prepare_vouchers_to_ignore,
@@ -362,6 +362,30 @@ fn gross_profit_grouped_by_invoice_columns_delete_item_columns_after_customer_na
             "currency",
         ]
     );
+}
+
+#[test]
+fn gross_profit_report_columns_apply_invoice_branch_only_for_invoice_group_like_execute() {
+    let invoice_columns = get_report_columns(&filters("Invoice"), &MasterNameSettings::default());
+    assert_eq!(
+        invoice_columns[0],
+        ReportColumn::link("Sales Invoice", "sales_invoice", "Item", 300)
+    );
+    assert!(!invoice_columns
+        .iter()
+        .any(|column| column.fieldname == "item_code"));
+    assert!(!invoice_columns
+        .iter()
+        .any(|column| column.fieldname == "item_name"));
+
+    let item_columns = get_report_columns(&filters("Item Code"), &MasterNameSettings::default());
+    assert_eq!(
+        item_columns[0],
+        ReportColumn::link("Item Code", "item_code", "Item", 100)
+    );
+    assert!(item_columns
+        .iter()
+        .any(|column| column.fieldname == "item_name"));
 }
 
 #[test]
