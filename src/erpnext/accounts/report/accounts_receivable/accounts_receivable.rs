@@ -555,6 +555,31 @@ pub fn allocate_future_payments(
     }
 }
 
+pub fn group_future_payments(
+    filters: &ReceivablePayableFilters,
+    payment_entry_payments: Vec<FuturePayment>,
+    journal_entry_payments: Vec<FuturePayment>,
+) -> BTreeMap<(String, String), Vec<FuturePayment>> {
+    let mut future_payments = BTreeMap::new();
+    if !filters.show_future_payments {
+        return future_payments;
+    }
+
+    for payment in payment_entry_payments
+        .into_iter()
+        .chain(journal_entry_payments)
+    {
+        if payment.future_amount != 0.0 && !payment.invoice_no.is_empty() {
+            future_payments
+                .entry((payment.invoice_no.clone(), payment.party.clone()))
+                .or_insert_with(Vec::new)
+                .push(payment);
+        }
+    }
+
+    future_payments
+}
+
 pub fn get_columns(
     filters: &ReceivablePayableFilters,
     runtime: &ReceivablePayableRuntime,

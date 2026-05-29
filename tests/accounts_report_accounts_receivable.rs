@@ -2,10 +2,11 @@ use std::collections::BTreeMap;
 
 use tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivable::{
     accounts_receivable_args, allocate_future_payments, build_voucher_dict, get_columns,
-    get_currency_fields, init_voucher_balance, set_ageing, update_voucher_balance, AccountType,
-    FuturePayment, FuturePaymentAllocationRow, PaymentLedgerEntry, ReceivablePayableAgeingRow,
-    ReceivablePayableFilters, ReceivablePayableRuntime, ReceivablePayableSettings,
-    ReceivablePayableState, ReportColumn, VoucherBalanceKey, VoucherBalanceRow,
+    get_currency_fields, group_future_payments, init_voucher_balance, set_ageing,
+    update_voucher_balance, AccountType, FuturePayment, FuturePaymentAllocationRow,
+    PaymentLedgerEntry, ReceivablePayableAgeingRow, ReceivablePayableFilters,
+    ReceivablePayableRuntime, ReceivablePayableSettings, ReceivablePayableState, ReportColumn,
+    VoucherBalanceKey, VoucherBalanceRow,
 };
 
 fn filters() -> ReceivablePayableFilters {
@@ -697,4 +698,67 @@ fn accounts_receivable_allocate_future_payments_uses_party_currency_and_joins_re
         future_payments[&key][1].future_amount_in_base_currency,
         300.0
     );
+}
+
+#[test]
+fn accounts_receivable_group_future_payments_matches_erpnext_filter_and_merge_rules() {
+    let payment_entry = FuturePayment {
+        invoice_no: "SINV-0001".to_string(),
+        party: "CUST-001".to_string(),
+        future_date: "2026-06-10".to_string(),
+        future_ref: "PAY-REF".to_string(),
+        future_amount: 25.0,
+        future_amount_in_base_currency: 250.0,
+    };
+    let journal_entry = FuturePayment {
+        future_ref: "JE-REF".to_string(),
+        future_date: "2026-06-15".to_string(),
+        ..payment_entry.clone()
+    };
+    let zero_party_amount = FuturePayment {
+        invoice_no: "SINV-0002".to_string(),
+        party: "CUST-001".to_string(),
+        future_amount: 0.0,
+        future_amount_in_base_currency: 500.0,
+        ..payment_entry.clone()
+    };
+    let missing_invoice = FuturePayment {
+        invoice_no: String::new(),
+        party: "CUST-001".to_string(),
+        future_amount: 10.0,
+        ..payment_entry.clone()
+    };
+
+    let grouped = group_future_payments(
+        &ReceivablePayableFilters {
+            show_future_payments: true,
+            ..filters()
+        },
+        vec![payment_entry],
+        vec![journal_entry, zero_party_amount, missing_invoice],
+    );
+
+    let key = ("SINV-0001".to_string(), "CUST-001".to_string());
+    assert_eq!(grouped.len(), 1);
+    assert_eq!(grouped[&key].len(), 2);
+    assert_eq!(grouped[&key][0].future_ref, "PAY-REF");
+    assert_eq!(grouped[&key][1].future_ref, "JE-REF");
+}
+
+#[test]
+fn accounts_receivable_group_future_payments_returns_empty_when_hidden_like_erpnext() {
+    let grouped = group_future_payments(
+        &filters(),
+        vec![FuturePayment {
+            invoice_no: "SINV-0001".to_string(),
+            party: "CUST-001".to_string(),
+            future_date: "2026-06-10".to_string(),
+            future_ref: "PAY-REF".to_string(),
+            future_amount: 25.0,
+            future_amount_in_base_currency: 250.0,
+        }],
+        Vec::new(),
+    );
+
+    assert!(grouped.is_empty());
 }
