@@ -1488,6 +1488,14 @@ pub fn get_data_when_grouped_by_invoice(
     data
 }
 
+pub fn get_data_when_not_grouped_by_invoice(
+    grouped_data: &[GrossProfitSourceRow],
+    filters: &GrossProfitFilters,
+    master_settings: &MasterNameSettings,
+) -> Vec<Vec<ReportCell>> {
+    group_rows(grouped_data, filters, master_settings)
+}
+
 pub fn group_rows(
     source_rows: &[GrossProfitSourceRow],
     filters: &GrossProfitFilters,

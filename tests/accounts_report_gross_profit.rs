@@ -3,18 +3,19 @@ use tokio_erp::erpnext::accounts::report::gross_profit::gross_profit::{
     get_average_buying_rate, get_bundle_item_row, get_buying_amount,
     get_buying_amount_from_product_bundle, get_buying_amount_from_so_dn_query_plan,
     get_column_names, get_columns, get_columns_for_grouped_by_invoice,
-    get_data_when_grouped_by_invoice, get_delivery_notes_query_plan, get_group_wise_columns,
-    get_grouped_by_invoice_total_row, get_invoice_row, get_last_purchase_rate_query_plan,
-    get_product_bundle_query_plan, get_report_columns, get_returned_invoice_items_query_plan,
-    get_stock_ledger_query_plan, group_items_by_invoice, group_product_bundles, group_rows,
-    load_non_stock_items_query_plan, prepare_delivered_by_supplier_purchase_query_plan,
-    prepare_invoice_query_plan, prepare_return_invoice_query_plan, prepare_vouchers_to_ignore,
-    process_gross_profit_rows, should_skip_row, update_return_invoices, AccountingDimensionFilter,
-    DeliveryNoteSummary, GrossProfitBuyingAmountContext, GrossProfitBuyingAmountRow,
-    GrossProfitFilters, GrossProfitInvoiceRow, GrossProfitProcessRow, GrossProfitSourceRow,
-    IncomingRateCache, IncomingRateRequest, MasterNameSettings, PackedItemOverride,
-    ProductBundleItem, ProductBundleLoadRow, ReportCell, ReportColumn, ReturnAdjustedRow,
-    ReturnedInvoiceItem, StockLedgerEntry,
+    get_data_when_grouped_by_invoice, get_data_when_not_grouped_by_invoice,
+    get_delivery_notes_query_plan, get_group_wise_columns, get_grouped_by_invoice_total_row,
+    get_invoice_row, get_last_purchase_rate_query_plan, get_product_bundle_query_plan,
+    get_report_columns, get_returned_invoice_items_query_plan, get_stock_ledger_query_plan,
+    group_items_by_invoice, group_product_bundles, group_rows, load_non_stock_items_query_plan,
+    prepare_delivered_by_supplier_purchase_query_plan, prepare_invoice_query_plan,
+    prepare_return_invoice_query_plan, prepare_vouchers_to_ignore, process_gross_profit_rows,
+    should_skip_row, update_return_invoices, AccountingDimensionFilter, DeliveryNoteSummary,
+    GrossProfitBuyingAmountContext, GrossProfitBuyingAmountRow, GrossProfitFilters,
+    GrossProfitInvoiceRow, GrossProfitProcessRow, GrossProfitSourceRow, IncomingRateCache,
+    IncomingRateRequest, MasterNameSettings, PackedItemOverride, ProductBundleItem,
+    ProductBundleLoadRow, ReportCell, ReportColumn, ReturnAdjustedRow, ReturnedInvoiceItem,
+    StockLedgerEntry,
 };
 
 fn filters(group_by: &str) -> GrossProfitFilters {
@@ -443,6 +444,21 @@ fn gross_profit_group_rows_aggregates_by_group_and_appends_total_like_erpnext() 
     assert_eq!(total[9], ReportCell::Number(210.0));
     assert_eq!(total[10], ReportCell::Number(36.207));
     assert_eq!(total[11], ReportCell::Empty);
+}
+
+#[test]
+fn gross_profit_not_grouped_data_wrapper_matches_erpnext_data_path() {
+    let source_rows = vec![
+        source_row("SINV-0001", "ITEM-001", 2.0, 200.0, 120.0),
+        source_row("SINV-0002", "ITEM-001", 3.0, 300.0, 150.0),
+    ];
+    let filters = filters("Item Code");
+    let settings = MasterNameSettings::default();
+
+    assert_eq!(
+        get_data_when_not_grouped_by_invoice(&source_rows, &filters, &settings),
+        group_rows(&source_rows, &filters, &settings)
+    );
 }
 
 #[test]
