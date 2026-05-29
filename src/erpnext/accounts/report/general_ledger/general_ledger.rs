@@ -295,6 +295,11 @@ pub fn validate_filters(
             return Err(format!("Account {account} does not exists"));
         }
     }
+    for cost_center in &filters.cost_center {
+        if !input.cost_centers.contains_key(cost_center) {
+            return Err(format!("Cost Center: {cost_center} does not exist"));
+        }
+    }
 
     if filters.categorize_by.is_none() {
         if let Some(group_by) = filters.group_by.as_ref() {

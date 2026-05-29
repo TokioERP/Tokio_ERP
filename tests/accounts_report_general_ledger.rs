@@ -301,6 +301,13 @@ fn general_ledger_validate_filters_and_account_currency_match_erpnext() {
         validate_filters(&mut grouped_child, &input()).unwrap_err(),
         "Can not filter based on Child Account, if grouped by Account"
     );
+
+    let mut invalid_cost_center = filters();
+    invalid_cost_center.cost_center = vec!["Missing - A".to_string()];
+    assert_eq!(
+        validate_filters(&mut invalid_cost_center, &input()).unwrap_err(),
+        "Cost Center: Missing - A does not exist"
+    );
 }
 
 #[test]
