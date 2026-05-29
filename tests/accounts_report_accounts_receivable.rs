@@ -3,10 +3,11 @@ use std::collections::BTreeMap;
 use tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivable::{
     accounts_receivable_args, allocate_future_payments, build_voucher_dict, get_columns,
     get_currency_fields, group_future_payments, init_voucher_balance, set_ageing,
-    update_voucher_balance, AccountType, FuturePayment, FuturePaymentAllocationRow,
-    PaymentLedgerEntry, ReceivablePayableAgeingRow, ReceivablePayableFilters,
-    ReceivablePayableRuntime, ReceivablePayableSettings, ReceivablePayableState, ReportColumn,
-    VoucherBalanceKey, VoucherBalanceRow,
+    set_invoice_details, update_voucher_balance, AccountType, FuturePayment,
+    FuturePaymentAllocationRow, InvoiceDetails, InvoiceDetailsRow, PaymentLedgerEntry,
+    ReceivablePayableAgeingRow, ReceivablePayableFilters, ReceivablePayableRuntime,
+    ReceivablePayableSettings, ReceivablePayableState, ReportColumn, VoucherBalanceKey,
+    VoucherBalanceRow,
 };
 
 fn filters() -> ReceivablePayableFilters {
@@ -761,4 +762,115 @@ fn accounts_receivable_group_future_payments_returns_empty_when_hidden_like_erpn
     );
 
     assert!(grouped.is_empty());
+}
+
+#[test]
+fn accounts_receivable_set_invoice_details_preserves_existing_due_date_and_sales_details() {
+    let mut row = InvoiceDetailsRow {
+        voucher_type: "Sales Invoice".to_string(),
+        voucher_no: "SINV-0001".to_string(),
+        due_date: Some("2026-05-10".to_string()),
+        po_no: None,
+        bill_no: None,
+        bill_date: None,
+        sales_team: Vec::new(),
+        sales_person: None,
+        delivery_notes: None,
+    };
+    let invoice_details = BTreeMap::from([(
+        "SINV-0001".to_string(),
+        InvoiceDetails {
+            due_date: Some("2026-06-09".to_string()),
+            po_no: Some("PO-001".to_string()),
+            bill_no: None,
+            bill_date: None,
+            sales_team: vec!["Ada".to_string(), "Grace".to_string()],
+        },
+    )]);
+    let delivery_notes = BTreeMap::from([(
+        "SINV-0001".to_string(),
+        vec!["DN-0002".to_string(), "DN-0001".to_string()],
+    )]);
+
+    set_invoice_details(
+        &mut row,
+        &ReceivablePayableFilters {
+            show_delivery_notes: true,
+            show_sales_person: true,
+            ..filters()
+        },
+        &invoice_details,
+        &delivery_notes,
+    );
+
+    assert_eq!(row.due_date, Some("2026-05-10".to_string()));
+    assert_eq!(row.po_no, Some("PO-001".to_string()));
+    assert_eq!(row.delivery_notes, Some("DN-0002, DN-0001".to_string()));
+    assert_eq!(row.sales_person, Some("Ada, Grace".to_string()));
+    assert!(row.sales_team.is_empty());
+}
+
+#[test]
+fn accounts_receivable_set_invoice_details_updates_purchase_invoice_bill_fields_like_erpnext() {
+    let mut row = InvoiceDetailsRow {
+        voucher_type: "Purchase Invoice".to_string(),
+        voucher_no: "PINV-0001".to_string(),
+        due_date: None,
+        po_no: None,
+        bill_no: None,
+        bill_date: None,
+        sales_team: Vec::new(),
+        sales_person: None,
+        delivery_notes: None,
+    };
+    let invoice_details = BTreeMap::from([(
+        "PINV-0001".to_string(),
+        InvoiceDetails {
+            due_date: Some("2026-06-30".to_string()),
+            po_no: None,
+            bill_no: Some("BILL-777".to_string()),
+            bill_date: Some("2026-05-20".to_string()),
+            sales_team: Vec::new(),
+        },
+    )]);
+
+    set_invoice_details(&mut row, &filters(), &invoice_details, &BTreeMap::new());
+
+    assert_eq!(row.due_date, Some("2026-06-30".to_string()));
+    assert_eq!(row.bill_no, Some("BILL-777".to_string()));
+    assert_eq!(row.bill_date, Some("2026-05-20".to_string()));
+}
+
+#[test]
+fn accounts_receivable_set_invoice_details_skips_sales_only_branches_when_disabled_like_erpnext() {
+    let mut row = InvoiceDetailsRow {
+        voucher_type: "Sales Invoice".to_string(),
+        voucher_no: "SINV-0001".to_string(),
+        due_date: None,
+        po_no: None,
+        bill_no: None,
+        bill_date: None,
+        sales_team: Vec::new(),
+        sales_person: None,
+        delivery_notes: None,
+    };
+    let invoice_details = BTreeMap::from([(
+        "SINV-0001".to_string(),
+        InvoiceDetails {
+            due_date: Some("2026-06-09".to_string()),
+            po_no: Some("PO-001".to_string()),
+            bill_no: None,
+            bill_date: None,
+            sales_team: vec!["Ada".to_string()],
+        },
+    )]);
+    let delivery_notes = BTreeMap::from([("SINV-0001".to_string(), vec!["DN-0001".to_string()])]);
+
+    set_invoice_details(&mut row, &filters(), &invoice_details, &delivery_notes);
+
+    assert_eq!(row.due_date, Some("2026-06-09".to_string()));
+    assert_eq!(row.po_no, Some("PO-001".to_string()));
+    assert_eq!(row.sales_team, vec!["Ada".to_string()]);
+    assert_eq!(row.sales_person, None);
+    assert_eq!(row.delivery_notes, None);
 }

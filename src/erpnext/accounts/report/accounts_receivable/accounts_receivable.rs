@@ -153,6 +153,28 @@ pub struct FuturePaymentAllocationRow {
     pub future_ref: Option<String>,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct InvoiceDetails {
+    pub due_date: Option<String>,
+    pub po_no: Option<String>,
+    pub bill_no: Option<String>,
+    pub bill_date: Option<String>,
+    pub sales_team: Vec<String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct InvoiceDetailsRow {
+    pub voucher_type: String,
+    pub voucher_no: String,
+    pub due_date: Option<String>,
+    pub po_no: Option<String>,
+    pub bill_no: Option<String>,
+    pub bill_date: Option<String>,
+    pub sales_team: Vec<String>,
+    pub sales_person: Option<String>,
+    pub delivery_notes: Option<String>,
+}
+
 impl VoucherBalanceKey {
     pub fn with_account(account: &str, voucher_type: &str, voucher_no: &str, party: &str) -> Self {
         Self(vec![
@@ -578,6 +600,42 @@ pub fn group_future_payments(
     }
 
     future_payments
+}
+
+pub fn set_invoice_details(
+    row: &mut InvoiceDetailsRow,
+    filters: &ReceivablePayableFilters,
+    invoice_details: &BTreeMap<String, InvoiceDetails>,
+    delivery_notes: &BTreeMap<String, Vec<String>>,
+) {
+    if let Some(details) = invoice_details.get(&row.voucher_no) {
+        if row.due_date.is_none() {
+            row.due_date = details.due_date.clone();
+        }
+        row.po_no = details.po_no.clone();
+        row.bill_no = details.bill_no.clone();
+        row.bill_date = details.bill_date.clone();
+        row.sales_team = details.sales_team.clone();
+    }
+
+    if row.voucher_type == "Sales Invoice" {
+        if filters.show_delivery_notes {
+            set_delivery_notes(row, delivery_notes);
+        }
+
+        if filters.show_sales_person && !row.sales_team.is_empty() {
+            row.sales_person = Some(row.sales_team.join(", "));
+            row.sales_team.clear();
+        }
+    }
+}
+
+fn set_delivery_notes(row: &mut InvoiceDetailsRow, delivery_notes: &BTreeMap<String, Vec<String>>) {
+    if let Some(notes) = delivery_notes.get(&row.voucher_no) {
+        if !notes.is_empty() {
+            row.delivery_notes = Some(notes.join(", "));
+        }
+    }
 }
 
 pub fn get_columns(
