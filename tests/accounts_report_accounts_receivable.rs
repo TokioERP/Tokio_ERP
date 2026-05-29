@@ -4,17 +4,18 @@ use tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivab
     accounting_dimension_filter_conditions, accounts_receivable_args, add_common_filter_conditions,
     add_customer_filter_conditions, add_project_and_cost_center_conditions,
     add_supplier_filter_conditions, allocate_extra_payments_or_credits, allocate_future_payments,
-    build_delivery_note_map, build_return_entries_plan, build_sales_person_records,
-    build_voucher_dict, get_columns, get_currency_fields, group_future_payments,
-    init_voucher_balance, is_invoice_type, payment_term_template_filter_conditions,
-    prepare_conditions_plan, prepare_ple_query_plan, prepare_voucher_balance_rows, set_ageing,
-    set_invoice_details, set_party_details, update_voucher_balance, AccountType,
-    AccountingDimension, DeliveryNoteAgainstSalesInvoice, FuturePayment,
-    FuturePaymentAllocationRow, InvoiceDetails, InvoiceDetailsRow, PartyDetails, PartyDetailsRow,
-    PaymentLedgerEntry, PaymentTermAllocationRow, PaymentTermDetail, PaymentTermRow,
-    ReceivablePayableAgeingRow, ReceivablePayableFilters, ReceivablePayableRuntime,
-    ReceivablePayableSettings, ReceivablePayableState, ReportColumn, SalesInvoiceDeliveryNote,
-    SalesPersonRecord, SubtotalDataRow, VoucherBalanceKey, VoucherBalanceRow,
+    build_chart_data, build_delivery_note_map, build_exchange_rate_revaluations_plan,
+    build_return_entries_plan, build_sales_person_records, build_voucher_dict, get_columns,
+    get_currency_fields, group_future_payments, init_voucher_balance, is_invoice_type,
+    payment_term_template_filter_conditions, prepare_conditions_plan, prepare_ple_query_plan,
+    prepare_voucher_balance_rows, set_ageing, set_invoice_details, set_party_details,
+    update_voucher_balance, AccountType, AccountingDimension, ChartInputRow,
+    DeliveryNoteAgainstSalesInvoice, FuturePayment, FuturePaymentAllocationRow, InvoiceDetails,
+    InvoiceDetailsRow, PartyDetails, PartyDetailsRow, PaymentLedgerEntry, PaymentTermAllocationRow,
+    PaymentTermDetail, PaymentTermRow, ReceivablePayableAgeingRow, ReceivablePayableFilters,
+    ReceivablePayableRuntime, ReceivablePayableSettings, ReceivablePayableState, ReportColumn,
+    SalesInvoiceDeliveryNote, SalesPersonRecord, SubtotalDataRow, VoucherBalanceKey,
+    VoucherBalanceRow,
 };
 
 fn filters() -> ReceivablePayableFilters {
@@ -1858,4 +1859,57 @@ fn accounts_receivable_allocate_extra_payments_or_credits_returns_none_without_e
     };
 
     assert_eq!(allocate_extra_payments_or_credits(&mut row), None);
+}
+
+#[test]
+fn accounts_receivable_build_chart_data_skips_bold_rows_and_rounds_ranges_like_erpnext() {
+    let chart = build_chart_data(
+        &[
+            ChartInputRow {
+                bold: false,
+                range0: 1.234,
+                ranges: vec![2.345, 3.456],
+            },
+            ChartInputRow {
+                bold: true,
+                range0: 9.0,
+                ranges: vec![9.0, 9.0],
+            },
+            ChartInputRow {
+                bold: false,
+                range0: 0.0,
+                ranges: vec![4.444],
+            },
+        ],
+        &["<0".to_string(), "0-30".to_string(), "31-Above".to_string()],
+        2,
+        2,
+    );
+
+    assert_eq!(chart.chart_type, "percentage");
+    assert_eq!(chart.labels, vec!["<0", "0-30", "31-Above"]);
+    assert_eq!(
+        chart.datasets,
+        vec![vec![1.23, 2.35, 3.46], vec![0.0, 4.44, 0.0]]
+    );
+}
+
+#[test]
+fn accounts_receivable_exchange_rate_revaluations_plan_matches_erpnext_filters() {
+    let plan = build_exchange_rate_revaluations_plan(&ReceivablePayableFilters {
+        company: Some("_Test Company".to_string()),
+        report_date: Some("2026-05-29".to_string()),
+        ..filters()
+    });
+
+    assert_eq!(plan.doctype, "Journal Entry");
+    assert_eq!(plan.selected_field, "name");
+    assert_eq!(
+        plan.conditions,
+        vec![
+            "company = '_Test Company'",
+            "posting_date <= '2026-05-29'",
+            "voucher_type IN ('Exchange Rate Revaluation', 'Exchange Gain Or Loss')",
+        ]
+    );
 }

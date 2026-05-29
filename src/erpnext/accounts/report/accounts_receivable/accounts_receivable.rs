@@ -104,6 +104,27 @@ pub struct ReturnEntriesPlan {
     pub fields: Vec<&'static str>,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct ChartInputRow {
+    pub bold: bool,
+    pub range0: f64,
+    pub ranges: Vec<f64>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ReceivablePayableChart {
+    pub labels: Vec<String>,
+    pub datasets: Vec<Vec<f64>>,
+    pub chart_type: &'static str,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ExchangeRateRevaluationsPlan {
+    pub doctype: &'static str,
+    pub selected_field: &'static str,
+    pub conditions: Vec<String>,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct VoucherBalanceKey(Vec<String>);
 
@@ -1399,6 +1420,54 @@ pub fn append_subtotal_row(
         data.push(sub_total_row.clone());
         data.push(SubtotalDataRow::empty());
         update_sub_total_row(total_row_map, &sub_total_row, "Total");
+    }
+}
+
+pub fn build_chart_data(
+    data: &[ChartInputRow],
+    ageing_column_labels: &[String],
+    range_count: usize,
+    precision: u32,
+) -> ReceivablePayableChart {
+    let datasets = data
+        .iter()
+        .filter(|row| !row.bold)
+        .map(|row| {
+            let mut values = vec![round_to_precision(row.range0, precision)];
+            for index in 0..range_count {
+                values.push(round_to_precision(
+                    row.ranges.get(index).copied().unwrap_or_default(),
+                    precision,
+                ));
+            }
+            values
+        })
+        .collect();
+
+    ReceivablePayableChart {
+        labels: ageing_column_labels.to_vec(),
+        datasets,
+        chart_type: "percentage",
+    }
+}
+
+pub fn build_exchange_rate_revaluations_plan(
+    filters: &ReceivablePayableFilters,
+) -> ExchangeRateRevaluationsPlan {
+    ExchangeRateRevaluationsPlan {
+        doctype: "Journal Entry",
+        selected_field: "name",
+        conditions: vec![
+            format!(
+                "company = '{}'",
+                filters.company.as_deref().unwrap_or_default()
+            ),
+            format!(
+                "posting_date <= '{}'",
+                filters.report_date.as_deref().unwrap_or_default()
+            ),
+            "voucher_type IN ('Exchange Rate Revaluation', 'Exchange Gain Or Loss')".to_string(),
+        ],
     }
 }
 
