@@ -294,6 +294,34 @@ pub fn prepare_return_invoice_query_plan(
     plan
 }
 
+pub fn get_returned_invoice_items_query_plan(filters: &GrossProfitFilters) -> QueryPlan {
+    QueryPlan {
+        source: "Sales Invoice",
+        joins: vec!["Sales Invoice Item"],
+        selects: vec![
+            "sales_invoice.name",
+            "sales_invoice_item.item_code",
+            "sales_invoice_item.stock_qty as qty",
+            "sales_invoice_item.base_net_amount as base_amount",
+            "sales_invoice.return_against",
+        ],
+        conditions: vec![
+            "sales_invoice.name = sales_invoice_item.parent".to_string(),
+            "sales_invoice.docstatus = 1".to_string(),
+            "sales_invoice.is_return = 1".to_string(),
+            format!(
+                "sales_invoice.posting_date between {} and {}",
+                filters.from_date, filters.to_date
+            ),
+        ],
+        ..QueryPlan::default()
+    }
+}
+
+pub fn prepare_vouchers_to_ignore(rows: &[GrossProfitInvoiceRow]) -> Vec<String> {
+    rows.iter().filter_map(|row| row.parent.clone()).collect()
+}
+
 pub fn get_delivery_notes_query_plan(invoices: &[String]) -> QueryPlan {
     QueryPlan {
         source: "Delivery Note Item",

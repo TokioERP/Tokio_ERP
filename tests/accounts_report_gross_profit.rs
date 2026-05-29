@@ -3,9 +3,10 @@ use tokio_erp::erpnext::accounts::report::gross_profit::gross_profit::{
     get_bundle_item_row, get_buying_amount, get_buying_amount_from_product_bundle,
     get_buying_amount_from_so_dn_query_plan, get_column_names, get_columns,
     get_delivery_notes_query_plan, get_group_wise_columns, get_invoice_row,
-    get_last_purchase_rate_query_plan, get_product_bundle_query_plan, get_stock_ledger_query_plan,
-    group_items_by_invoice, group_rows, prepare_delivered_by_supplier_purchase_query_plan,
-    prepare_invoice_query_plan, prepare_return_invoice_query_plan, process_gross_profit_rows,
+    get_last_purchase_rate_query_plan, get_product_bundle_query_plan,
+    get_returned_invoice_items_query_plan, get_stock_ledger_query_plan, group_items_by_invoice,
+    group_rows, prepare_delivered_by_supplier_purchase_query_plan, prepare_invoice_query_plan,
+    prepare_return_invoice_query_plan, prepare_vouchers_to_ignore, process_gross_profit_rows,
     should_skip_row, update_return_invoices, AccountingDimensionFilter, DeliveryNoteSummary,
     GrossProfitBuyingAmountContext, GrossProfitBuyingAmountRow, GrossProfitFilters,
     GrossProfitInvoiceRow, GrossProfitProcessRow, GrossProfitSourceRow, MasterNameSettings,
@@ -1068,4 +1069,49 @@ fn gross_profit_auxiliary_query_plans_match_erpnext_shapes() {
         .conditions
         .contains(&"purchase_invoice_item.cost_center = Main - TC".to_string()));
     assert_eq!(last_purchase.limit, Some(1));
+}
+
+#[test]
+fn gross_profit_returned_invoice_items_query_plan_matches_erpnext_sql_shape() {
+    let plan = get_returned_invoice_items_query_plan(&filters("Invoice"));
+
+    assert_eq!(plan.source, "Sales Invoice");
+    assert_eq!(plan.joins, vec!["Sales Invoice Item"]);
+    assert_eq!(
+        plan.selects,
+        vec![
+            "sales_invoice.name",
+            "sales_invoice_item.item_code",
+            "sales_invoice_item.stock_qty as qty",
+            "sales_invoice_item.base_net_amount as base_amount",
+            "sales_invoice.return_against",
+        ]
+    );
+    assert_eq!(
+        plan.conditions,
+        vec![
+            "sales_invoice.name = sales_invoice_item.parent",
+            "sales_invoice.docstatus = 1",
+            "sales_invoice.is_return = 1",
+            "sales_invoice.posting_date between 2026-05-01 and 2026-05-31",
+        ]
+    );
+}
+
+#[test]
+fn gross_profit_prepare_vouchers_to_ignore_preserves_invoice_parent_order_like_erpnext() {
+    let rows = vec![
+        invoice_item_row("SINV-0001", "ITEM-001"),
+        invoice_item_row("SINV-0002", "ITEM-002"),
+        invoice_item_row("SINV-0001", "ITEM-003"),
+    ];
+
+    assert_eq!(
+        prepare_vouchers_to_ignore(&rows),
+        vec![
+            "SINV-0001".to_string(),
+            "SINV-0002".to_string(),
+            "SINV-0001".to_string(),
+        ]
+    );
 }
