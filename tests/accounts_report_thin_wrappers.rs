@@ -5,6 +5,7 @@ use tokio_erp::erpnext::accounts::report::accounts_payable_summary::accounts_pay
 use tokio_erp::erpnext::accounts::report::custom_financial_statement::custom_financial_statement;
 use tokio_erp::erpnext::accounts::report::purchase_invoice_trends::purchase_invoice_trends;
 use tokio_erp::erpnext::accounts::report::sales_invoice_trends::sales_invoice_trends;
+use tokio_erp::erpnext::accounts::report::sales_partners_commission;
 use tokio_erp::erpnext::accounts::report::supplier_ledger_summary::supplier_ledger_summary;
 use tokio_erp::erpnext::accounts::report::{DelegatedReportExecution, ReportArg};
 
@@ -108,4 +109,30 @@ fn custom_financial_statement_only_runs_when_report_template_is_set() {
         custom_financial_statement::XLSX_STYLES_HOOK,
         "get_xlsx_styles"
     );
+}
+
+#[test]
+fn sales_partners_commission_query_report_matches_erpnext_json() {
+    let report = sales_partners_commission::report();
+
+    assert_eq!(report.name, "Sales Partners Commission");
+    assert_eq!(report.module, "Accounts");
+    assert_eq!(report.ref_doctype, "Sales Invoice");
+    assert_eq!(report.report_type, "Query Report");
+    assert_eq!(report.roles, ["Accounts Manager", "Accounts User"]);
+    assert!(!report.add_total_row);
+    assert!(!report.prepared_report);
+    assert!(report.filters.is_empty());
+    assert!(report.columns.is_empty());
+    assert_eq!(
+        report.query,
+        sales_partners_commission::SALES_PARTNERS_COMMISSION_QUERY
+    );
+    assert!(report.query.contains("FROM\n         `tabSales Invoice`"));
+    assert!(report.query.contains("UNION ALL"));
+    assert!(report.query.contains("FROM\n         `tabPOS Invoice`"));
+    assert!(report.query.contains("GROUP BY\n   sales_partner"));
+    assert!(report
+        .query
+        .contains("ORDER BY\n   \"Total Commission:Currency:120\""));
 }
