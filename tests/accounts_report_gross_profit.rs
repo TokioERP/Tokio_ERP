@@ -7,15 +7,16 @@ use tokio_erp::erpnext::accounts::report::gross_profit::gross_profit::{
     get_delivery_notes_query_plan, get_group_wise_columns, get_grouped_by_invoice_total_row,
     get_invoice_row, get_last_purchase_rate_query_plan, get_product_bundle_query_plan,
     get_report_columns, get_returned_invoice_items_query_plan, get_stock_ledger_query_plan,
-    group_items_by_invoice, group_product_bundles, group_rows, load_invoice_items_query_plans,
+    group_delivery_notes, group_items_by_invoice, group_product_bundles,
+    group_returned_invoice_items, group_rows, load_invoice_items_query_plans,
     load_non_stock_items_query_plan, prepare_delivered_by_supplier_purchase_query_plan,
     prepare_invoice_query_plan, prepare_return_invoice_query_plan, prepare_vouchers_to_ignore,
     process_gross_profit_rows, should_skip_row, update_return_invoices, AccountingDimensionFilter,
-    DeliveryNoteSummary, GrossProfitBuyingAmountContext, GrossProfitBuyingAmountRow,
-    GrossProfitFilters, GrossProfitInvoiceRow, GrossProfitProcessRow, GrossProfitSourceRow,
-    IncomingRateCache, IncomingRateRequest, MasterNameSettings, PackedItemOverride,
-    ProductBundleItem, ProductBundleLoadRow, ReportCell, ReportColumn, ReturnAdjustedRow,
-    ReturnedInvoiceItem, StockLedgerCache, StockLedgerEntry,
+    DeliveryNoteLoadRow, DeliveryNoteSummary, GrossProfitBuyingAmountContext,
+    GrossProfitBuyingAmountRow, GrossProfitFilters, GrossProfitInvoiceRow, GrossProfitProcessRow,
+    GrossProfitSourceRow, IncomingRateCache, IncomingRateRequest, MasterNameSettings,
+    PackedItemOverride, ProductBundleItem, ProductBundleLoadRow, ReportCell, ReportColumn,
+    ReturnAdjustedRow, ReturnedInvoiceItem, StockLedgerCache, StockLedgerEntry,
 };
 
 fn filters(group_by: &str) -> GrossProfitFilters {
@@ -1484,6 +1485,37 @@ fn gross_profit_group_product_bundles_nests_parenttype_parent_and_parent_item_li
 }
 
 #[test]
+fn gross_profit_group_delivery_notes_maps_si_detail_to_summary_like_erpnext() {
+    let grouped = group_delivery_notes(&[
+        DeliveryNoteLoadRow {
+            si_detail: "SINV-ROW-1".to_string(),
+            total_qty: 2.0,
+            total_incoming_value: 120.0,
+        },
+        DeliveryNoteLoadRow {
+            si_detail: "SINV-ROW-2".to_string(),
+            total_qty: 5.0,
+            total_incoming_value: 250.0,
+        },
+    ]);
+
+    assert_eq!(
+        grouped["SINV-ROW-1"],
+        DeliveryNoteSummary {
+            total_qty: 2.0,
+            total_incoming_value: 120.0,
+        }
+    );
+    assert_eq!(
+        grouped["SINV-ROW-2"],
+        DeliveryNoteSummary {
+            total_qty: 5.0,
+            total_incoming_value: 250.0,
+        }
+    );
+}
+
+#[test]
 fn gross_profit_returned_invoice_items_query_plan_matches_erpnext_sql_shape() {
     let plan = get_returned_invoice_items_query_plan(&filters("Invoice"));
 
@@ -1508,6 +1540,37 @@ fn gross_profit_returned_invoice_items_query_plan_matches_erpnext_sql_shape() {
             "sales_invoice.posting_date between 2026-05-01 and 2026-05-31",
         ]
     );
+}
+
+#[test]
+fn gross_profit_group_returned_invoice_items_nests_return_against_and_item_code_like_erpnext() {
+    let returned = vec![
+        ReturnedInvoiceItem {
+            return_against: "SINV-0001".to_string(),
+            item_code: "ITEM-001".to_string(),
+            qty: -1.0,
+            base_amount: -100.0,
+        },
+        ReturnedInvoiceItem {
+            return_against: "SINV-0001".to_string(),
+            item_code: "ITEM-001".to_string(),
+            qty: -2.0,
+            base_amount: -180.0,
+        },
+        ReturnedInvoiceItem {
+            return_against: "SINV-0002".to_string(),
+            item_code: "ITEM-002".to_string(),
+            qty: -3.0,
+            base_amount: -240.0,
+        },
+    ];
+
+    let grouped = group_returned_invoice_items(&returned);
+
+    assert_eq!(grouped["SINV-0001"]["ITEM-001"].len(), 2);
+    assert_eq!(grouped["SINV-0001"]["ITEM-001"][0].qty, -1.0);
+    assert_eq!(grouped["SINV-0001"]["ITEM-001"][1].base_amount, -180.0);
+    assert_eq!(grouped["SINV-0002"]["ITEM-002"][0].qty, -3.0);
 }
 
 #[test]

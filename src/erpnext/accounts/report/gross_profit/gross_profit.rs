@@ -163,6 +163,8 @@ pub struct ReturnedInvoiceItem {
     pub base_amount: f64,
 }
 
+pub type ReturnedInvoices = BTreeMap<String, BTreeMap<String, Vec<ReturnedInvoiceItem>>>;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct StockLedgerEntry {
     pub voucher_type: String,
@@ -180,6 +182,13 @@ pub struct StockLedgerCache {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct DeliveryNoteSummary {
+    pub total_qty: f64,
+    pub total_incoming_value: f64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct DeliveryNoteLoadRow {
+    pub si_detail: String,
     pub total_qty: f64,
     pub total_incoming_value: f64,
 }
@@ -379,6 +388,19 @@ pub fn get_returned_invoice_items_query_plan(filters: &GrossProfitFilters) -> Qu
     }
 }
 
+pub fn group_returned_invoice_items(rows: &[ReturnedInvoiceItem]) -> ReturnedInvoices {
+    let mut returned_invoices = ReturnedInvoices::new();
+    for row in rows {
+        returned_invoices
+            .entry(row.return_against.clone())
+            .or_default()
+            .entry(row.item_code.clone())
+            .or_default()
+            .push(row.clone());
+    }
+    returned_invoices
+}
+
 pub fn prepare_vouchers_to_ignore(rows: &[GrossProfitInvoiceRow]) -> Vec<String> {
     rows.iter().filter_map(|row| row.parent.clone()).collect()
 }
@@ -403,6 +425,20 @@ pub fn get_delivery_notes_query_plan(invoices: &[String]) -> QueryPlan {
         group_by: vec!["delivery_note_item.si_detail"],
         ..QueryPlan::default()
     }
+}
+
+pub fn group_delivery_notes(rows: &[DeliveryNoteLoadRow]) -> BTreeMap<String, DeliveryNoteSummary> {
+    rows.iter()
+        .map(|row| {
+            (
+                row.si_detail.clone(),
+                DeliveryNoteSummary {
+                    total_qty: row.total_qty,
+                    total_incoming_value: row.total_incoming_value,
+                },
+            )
+        })
+        .collect()
 }
 
 pub fn get_product_bundle_query_plan() -> QueryPlan {
