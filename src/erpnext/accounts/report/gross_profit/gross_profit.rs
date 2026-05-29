@@ -202,6 +202,22 @@ pub struct GrossProfitBuyingAmountContext {
     pub average_buying_rate: f64,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct IncomingRateRequest {
+    pub item_code: String,
+    pub warehouse: String,
+    pub parenttype: String,
+    pub parent: String,
+    pub company: String,
+    pub serial_and_batch_bundle: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct IncomingRateCache {
+    pub rates: BTreeMap<(String, String), f64>,
+    pub requests: Vec<IncomingRateRequest>,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct PackedItemOverride {
     pub parent_invoice: String,
@@ -1303,6 +1319,23 @@ pub fn get_buying_amount(
     }
 
     row.qty * context.average_buying_rate
+}
+
+pub fn get_average_buying_rate(
+    cache: &mut IncomingRateCache,
+    request: &IncomingRateRequest,
+    incoming_rate: f64,
+    precision: u32,
+) -> f64 {
+    let key = (request.item_code.clone(), request.warehouse.clone());
+    if let Some(rate) = cache.rates.get(&key) {
+        return *rate;
+    }
+
+    let rate = round_to(incoming_rate, precision);
+    cache.requests.push(request.clone());
+    cache.rates.insert(key, rate);
+    rate
 }
 
 pub fn process_gross_profit_rows(

@@ -1,19 +1,20 @@
 use tokio_erp::erpnext::accounts::report::gross_profit::gross_profit::{
     calculate_buying_amount_from_delivery_note, calculate_buying_amount_from_sle, calculate_row,
-    get_bundle_item_row, get_buying_amount, get_buying_amount_from_product_bundle,
-    get_buying_amount_from_so_dn_query_plan, get_column_names, get_columns,
-    get_columns_for_grouped_by_invoice, get_data_when_grouped_by_invoice,
-    get_delivery_notes_query_plan, get_group_wise_columns, get_grouped_by_invoice_total_row,
-    get_invoice_row, get_last_purchase_rate_query_plan, get_product_bundle_query_plan,
-    get_returned_invoice_items_query_plan, get_stock_ledger_query_plan, group_items_by_invoice,
-    group_product_bundles, group_rows, load_non_stock_items_query_plan,
-    prepare_delivered_by_supplier_purchase_query_plan, prepare_invoice_query_plan,
-    prepare_return_invoice_query_plan, prepare_vouchers_to_ignore, process_gross_profit_rows,
-    should_skip_row, update_return_invoices, AccountingDimensionFilter, DeliveryNoteSummary,
-    GrossProfitBuyingAmountContext, GrossProfitBuyingAmountRow, GrossProfitFilters,
-    GrossProfitInvoiceRow, GrossProfitProcessRow, GrossProfitSourceRow, MasterNameSettings,
-    PackedItemOverride, ProductBundleItem, ProductBundleLoadRow, ReportCell, ReportColumn,
-    ReturnAdjustedRow, ReturnedInvoiceItem, StockLedgerEntry,
+    get_average_buying_rate, get_bundle_item_row, get_buying_amount,
+    get_buying_amount_from_product_bundle, get_buying_amount_from_so_dn_query_plan,
+    get_column_names, get_columns, get_columns_for_grouped_by_invoice,
+    get_data_when_grouped_by_invoice, get_delivery_notes_query_plan, get_group_wise_columns,
+    get_grouped_by_invoice_total_row, get_invoice_row, get_last_purchase_rate_query_plan,
+    get_product_bundle_query_plan, get_returned_invoice_items_query_plan,
+    get_stock_ledger_query_plan, group_items_by_invoice, group_product_bundles, group_rows,
+    load_non_stock_items_query_plan, prepare_delivered_by_supplier_purchase_query_plan,
+    prepare_invoice_query_plan, prepare_return_invoice_query_plan, prepare_vouchers_to_ignore,
+    process_gross_profit_rows, should_skip_row, update_return_invoices, AccountingDimensionFilter,
+    DeliveryNoteSummary, GrossProfitBuyingAmountContext, GrossProfitBuyingAmountRow,
+    GrossProfitFilters, GrossProfitInvoiceRow, GrossProfitProcessRow, GrossProfitSourceRow,
+    IncomingRateCache, IncomingRateRequest, MasterNameSettings, PackedItemOverride,
+    ProductBundleItem, ProductBundleLoadRow, ReportCell, ReportColumn, ReturnAdjustedRow,
+    ReturnedInvoiceItem, StockLedgerEntry,
 };
 
 fn filters(group_by: &str) -> GrossProfitFilters {
@@ -869,6 +870,33 @@ fn gross_profit_get_buying_amount_matches_delivery_note_so_dn_and_average_fallba
         get_buying_amount(&buying_row("ITEM-001"), &buying_context()),
         100.0
     );
+}
+
+#[test]
+fn gross_profit_average_buying_rate_caches_by_item_and_warehouse_like_erpnext() {
+    let mut cache = IncomingRateCache::default();
+    let request = IncomingRateRequest {
+        item_code: "ITEM-001".to_string(),
+        warehouse: "Stores - TC".to_string(),
+        parenttype: "Sales Invoice".to_string(),
+        parent: "SINV-0001".to_string(),
+        company: "_Test Company".to_string(),
+        serial_and_batch_bundle: Some("SBB-001".to_string()),
+    };
+
+    assert_eq!(
+        get_average_buying_rate(&mut cache, &request, 42.5555, 3),
+        42.556
+    );
+    assert_eq!(
+        get_average_buying_rate(&mut cache, &request, 99.0, 3),
+        42.556
+    );
+    assert_eq!(
+        cache.rates[&("ITEM-001".to_string(), "Stores - TC".to_string())],
+        42.556
+    );
+    assert_eq!(cache.requests, vec![request]);
 }
 
 #[test]
