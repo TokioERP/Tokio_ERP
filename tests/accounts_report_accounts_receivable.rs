@@ -1,11 +1,11 @@
 use std::collections::BTreeMap;
 
 use tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivable::{
-    accounts_receivable_args, build_voucher_dict, get_columns, get_currency_fields,
-    init_voucher_balance, set_ageing, update_voucher_balance, AccountType, PaymentLedgerEntry,
-    ReceivablePayableAgeingRow, ReceivablePayableFilters, ReceivablePayableRuntime,
-    ReceivablePayableSettings, ReceivablePayableState, ReportColumn, VoucherBalanceKey,
-    VoucherBalanceRow,
+    accounts_receivable_args, allocate_future_payments, build_voucher_dict, get_columns,
+    get_currency_fields, init_voucher_balance, set_ageing, update_voucher_balance, AccountType,
+    FuturePayment, FuturePaymentAllocationRow, PaymentLedgerEntry, ReceivablePayableAgeingRow,
+    ReceivablePayableFilters, ReceivablePayableRuntime, ReceivablePayableSettings,
+    ReceivablePayableState, ReportColumn, VoucherBalanceKey, VoucherBalanceRow,
 };
 
 fn filters() -> ReceivablePayableFilters {
@@ -558,4 +558,143 @@ fn accounts_receivable_ageing_future_entry_sets_range0_and_zero_total_like_erpne
     assert_eq!(row.range0, 42.0);
     assert_eq!(row.ranges, vec![0.0, 0.0, 0.0]);
     assert_eq!(row.total_due, 0.0);
+}
+
+#[test]
+fn accounts_receivable_allocate_future_payments_returns_early_when_hidden_like_erpnext() {
+    let mut row = FuturePaymentAllocationRow {
+        voucher_no: "SINV-0001".to_string(),
+        party: "CUST-001".to_string(),
+        outstanding: 100.0,
+        remaining_balance: 12.0,
+        future_amount: 34.0,
+        future_ref: Some("OLD".to_string()),
+    };
+    let mut future_payments = BTreeMap::from([(
+        ("SINV-0001".to_string(), "CUST-001".to_string()),
+        vec![FuturePayment {
+            invoice_no: "SINV-0001".to_string(),
+            party: "CUST-001".to_string(),
+            future_date: "2026-06-10".to_string(),
+            future_ref: "CHK-001".to_string(),
+            future_amount: 50.0,
+            future_amount_in_base_currency: 60.0,
+        }],
+    )]);
+
+    allocate_future_payments(&mut row, &filters(), &mut future_payments);
+
+    assert_eq!(row.remaining_balance, 12.0);
+    assert_eq!(row.future_amount, 34.0);
+    assert_eq!(row.future_ref, Some("OLD".to_string()));
+    assert_eq!(
+        future_payments[&("SINV-0001".to_string(), "CUST-001".to_string())][0].future_amount,
+        50.0
+    );
+}
+
+#[test]
+fn accounts_receivable_allocate_future_payments_caps_single_base_amount_like_erpnext() {
+    let mut row = FuturePaymentAllocationRow {
+        voucher_no: "SINV-0001".to_string(),
+        party: "CUST-001".to_string(),
+        outstanding: 100.0,
+        remaining_balance: 0.0,
+        future_amount: 0.0,
+        future_ref: None,
+    };
+    let mut future_payments = BTreeMap::from([(
+        ("SINV-0001".to_string(), "CUST-001".to_string()),
+        vec![FuturePayment {
+            invoice_no: "SINV-0001".to_string(),
+            party: "CUST-001".to_string(),
+            future_date: "2026-06-10".to_string(),
+            future_ref: "CHK-001".to_string(),
+            future_amount: 25.0,
+            future_amount_in_base_currency: 150.0,
+        }],
+    )]);
+
+    allocate_future_payments(
+        &mut row,
+        &ReceivablePayableFilters {
+            show_future_payments: true,
+            ..filters()
+        },
+        &mut future_payments,
+    );
+
+    assert_eq!(row.future_amount, 100.0);
+    assert_eq!(row.remaining_balance, 0.0);
+    assert_eq!(row.future_ref, Some("CHK-001/2026-06-10".to_string()));
+    assert_eq!(
+        future_payments[&("SINV-0001".to_string(), "CUST-001".to_string())][0].future_amount,
+        25.0
+    );
+    assert_eq!(
+        future_payments[&("SINV-0001".to_string(), "CUST-001".to_string())][0]
+            .future_amount_in_base_currency,
+        50.0
+    );
+}
+
+#[test]
+fn accounts_receivable_allocate_future_payments_uses_party_currency_and_joins_refs_like_erpnext() {
+    let mut row = FuturePaymentAllocationRow {
+        voucher_no: "SINV-0001".to_string(),
+        party: "CUST-001".to_string(),
+        outstanding: 100.0,
+        remaining_balance: 0.0,
+        future_amount: 0.0,
+        future_ref: None,
+    };
+    let key = ("SINV-0001".to_string(), "CUST-001".to_string());
+    let mut future_payments = BTreeMap::from([(
+        key.clone(),
+        vec![
+            FuturePayment {
+                invoice_no: "SINV-0001".to_string(),
+                party: "CUST-001".to_string(),
+                future_date: "2026-06-10".to_string(),
+                future_ref: "CHK-001".to_string(),
+                future_amount: 25.0,
+                future_amount_in_base_currency: 250.0,
+            },
+            FuturePayment {
+                invoice_no: "SINV-0001".to_string(),
+                party: "CUST-001".to_string(),
+                future_date: "2026-06-15".to_string(),
+                future_ref: "CHK-002".to_string(),
+                future_amount: 30.0,
+                future_amount_in_base_currency: 300.0,
+            },
+        ],
+    )]);
+
+    allocate_future_payments(
+        &mut row,
+        &ReceivablePayableFilters {
+            show_future_payments: true,
+            in_party_currency: true,
+            ..filters()
+        },
+        &mut future_payments,
+    );
+
+    assert_eq!(row.future_amount, 55.0);
+    assert_eq!(row.remaining_balance, 45.0);
+    assert_eq!(
+        row.future_ref,
+        Some("CHK-001/2026-06-10, CHK-002/2026-06-15".to_string())
+    );
+    assert_eq!(future_payments[&key][0].future_amount, 0.0);
+    assert_eq!(
+        future_payments[&key][0].future_amount_in_base_currency,
+        250.0
+    );
+    assert_eq!(future_payments[&key][1].future_amount, 0.0);
+    assert_eq!(
+        future_payments[&key][1].future_amount_in_base_currency,
+        300.0
+    );
 }

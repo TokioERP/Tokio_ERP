@@ -133,6 +133,26 @@ pub struct ReceivablePayableAgeingRow {
     pub total_due: f64,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct FuturePayment {
+    pub invoice_no: String,
+    pub party: String,
+    pub future_date: String,
+    pub future_ref: String,
+    pub future_amount: f64,
+    pub future_amount_in_base_currency: f64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct FuturePaymentAllocationRow {
+    pub voucher_no: String,
+    pub party: String,
+    pub outstanding: f64,
+    pub remaining_balance: f64,
+    pub future_amount: f64,
+    pub future_ref: Option<String>,
+}
+
 impl VoucherBalanceKey {
     pub fn with_account(account: &str, voucher_type: &str, voucher_no: &str, party: &str) -> Self {
         Self(vec![
@@ -480,6 +500,58 @@ fn get_ageing_data(
 
     if let Some(range) = row.ranges.get_mut(index) {
         *range = row.outstanding;
+    }
+}
+
+pub fn allocate_future_payments(
+    row: &mut FuturePaymentAllocationRow,
+    filters: &ReceivablePayableFilters,
+    future_payments: &mut BTreeMap<(String, String), Vec<FuturePayment>>,
+) {
+    if !filters.show_future_payments {
+        return;
+    }
+
+    row.remaining_balance = row.outstanding;
+    row.future_amount = 0.0;
+    let mut future_refs = Vec::new();
+    let key = (row.voucher_no.clone(), row.party.clone());
+    let Some(payments) = future_payments.get_mut(&key) else {
+        return;
+    };
+
+    for future in payments {
+        let future_amount = if filters.in_party_currency {
+            future.future_amount
+        } else {
+            future.future_amount_in_base_currency
+        };
+
+        if row.remaining_balance != 0.0 && future_amount != 0.0 {
+            if future_amount > row.outstanding {
+                row.future_amount = row.outstanding;
+                if filters.in_party_currency {
+                    future.future_amount = future_amount - row.outstanding;
+                } else {
+                    future.future_amount_in_base_currency = future_amount - row.outstanding;
+                }
+                row.remaining_balance = 0.0;
+            } else {
+                row.future_amount += future_amount;
+                if filters.in_party_currency {
+                    future.future_amount = 0.0;
+                } else {
+                    future.future_amount_in_base_currency = 0.0;
+                }
+                row.remaining_balance = row.outstanding - row.future_amount;
+            }
+
+            future_refs.push(format!("{}/{}", future.future_ref, future.future_date));
+        }
+    }
+
+    if !future_refs.is_empty() {
+        row.future_ref = Some(future_refs.join(", "));
     }
 }
 
