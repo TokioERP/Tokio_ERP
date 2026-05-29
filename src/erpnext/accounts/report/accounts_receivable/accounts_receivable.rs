@@ -32,6 +32,7 @@ pub struct ReceivablePayableFilters {
     pub sales_partner: Option<String>,
     pub ignore_accounts: bool,
     pub handle_employee_advances: bool,
+    pub for_revaluation_journals: bool,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -115,6 +116,7 @@ pub struct VoucherBalanceRow {
     pub paid: f64,
     pub credit_note: f64,
     pub outstanding: f64,
+    pub invoice_grand_total: f64,
     pub invoiced_in_account_currency: f64,
     pub paid_in_account_currency: f64,
     pub credit_note_in_account_currency: f64,
@@ -474,6 +476,7 @@ pub fn build_voucher_dict(ple: &PaymentLedgerEntry) -> VoucherBalanceRow {
         paid: 0.0,
         credit_note: 0.0,
         outstanding: 0.0,
+        invoice_grand_total: 0.0,
         invoiced_in_account_currency: 0.0,
         paid_in_account_currency: 0.0,
         credit_note_in_account_currency: 0.0,
@@ -555,6 +558,43 @@ pub fn update_voucher_balance(
         row.paid -= amount;
         row.paid_in_account_currency -= amount_in_account_currency;
     }
+}
+
+pub fn prepare_voucher_balance_rows(
+    voucher_balance: &BTreeMap<VoucherBalanceKey, VoucherBalanceRow>,
+    filters: &ReceivablePayableFilters,
+    currency_precision: u32,
+    err_journals: &[String],
+) -> Vec<VoucherBalanceRow> {
+    let threshold = 1.0 / 10_f64.powi(currency_precision as i32);
+    voucher_balance
+        .values()
+        .filter_map(|row| {
+            let mut row = row.clone();
+            row.outstanding = round_to_precision(
+                row.invoiced - row.paid - row.credit_note,
+                currency_precision,
+            );
+            row.outstanding_in_account_currency = round_to_precision(
+                row.invoiced_in_account_currency
+                    - row.paid_in_account_currency
+                    - row.credit_note_in_account_currency,
+                currency_precision,
+            );
+            row.invoice_grand_total = row.invoiced;
+
+            let must_consider = if filters.for_revaluation_journals {
+                row.outstanding.abs() >= threshold
+                    || row.outstanding_in_account_currency.abs() >= threshold
+            } else {
+                row.outstanding.abs() >= threshold
+                    && (row.outstanding_in_account_currency.abs() >= threshold
+                        || err_journals.contains(&row.voucher_no))
+            };
+
+            must_consider.then_some(row)
+        })
+        .collect()
 }
 
 pub fn set_ageing(
@@ -1319,6 +1359,11 @@ fn scrub(label: &str) -> String {
         .replace(|ch: char| !ch.is_ascii_alphanumeric(), "_")
         .trim_matches('_')
         .to_string()
+}
+
+fn round_to_precision(value: f64, precision: u32) -> f64 {
+    let factor = 10_f64.powi(precision as i32);
+    (value * factor).round() / factor
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]

@@ -2,11 +2,11 @@ use std::collections::BTreeMap;
 
 use tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivable::{
     accounts_receivable_args, allocate_future_payments, build_voucher_dict, get_columns,
-    get_currency_fields, group_future_payments, init_voucher_balance, set_ageing,
-    set_invoice_details, set_party_details, update_voucher_balance, AccountType, FuturePayment,
-    FuturePaymentAllocationRow, InvoiceDetails, InvoiceDetailsRow, PartyDetails, PartyDetailsRow,
-    PaymentLedgerEntry, PaymentTermAllocationRow, PaymentTermDetail, PaymentTermRow,
-    ReceivablePayableAgeingRow, ReceivablePayableFilters, ReceivablePayableRuntime,
+    get_currency_fields, group_future_payments, init_voucher_balance, prepare_voucher_balance_rows,
+    set_ageing, set_invoice_details, set_party_details, update_voucher_balance, AccountType,
+    FuturePayment, FuturePaymentAllocationRow, InvoiceDetails, InvoiceDetailsRow, PartyDetails,
+    PartyDetailsRow, PaymentLedgerEntry, PaymentTermAllocationRow, PaymentTermDetail,
+    PaymentTermRow, ReceivablePayableAgeingRow, ReceivablePayableFilters, ReceivablePayableRuntime,
     ReceivablePayableSettings, ReceivablePayableState, ReportColumn, SubtotalDataRow,
     VoucherBalanceKey, VoucherBalanceRow,
 };
@@ -31,6 +31,7 @@ fn filters() -> ReceivablePayableFilters {
         sales_partner: None,
         ignore_accounts: false,
         handle_employee_advances: false,
+        for_revaluation_journals: false,
     }
 }
 
@@ -1169,4 +1170,122 @@ fn accounts_receivable_append_subtotal_row_appends_separator_and_updates_total_l
     assert!(data[1].is_empty);
     assert_eq!(totals["Total"].currency_values["outstanding"], 100.0);
     assert_eq!(totals["Total"].currency_values["range2"], 12.0);
+}
+
+#[test]
+fn accounts_receivable_prepare_voucher_balance_rows_rounds_and_filters_like_erpnext() {
+    let base_ple = ple(
+        "Debtors - TC",
+        "Sales Invoice",
+        "SINV-0001",
+        "Sales Invoice",
+        "SINV-0001",
+        0.0,
+    );
+    let mut keep = build_voucher_dict(&base_ple);
+    keep.invoiced = 100.004;
+    keep.paid = 40.0;
+    keep.credit_note = 10.0;
+    keep.invoiced_in_account_currency = 100.0;
+    keep.paid_in_account_currency = 25.0;
+    keep.credit_note_in_account_currency = 5.0;
+    let mut drop_without_account_outstanding = keep.clone();
+    drop_without_account_outstanding.voucher_no = "SINV-0002".to_string();
+    drop_without_account_outstanding.invoiced_in_account_currency = 10.0;
+    drop_without_account_outstanding.paid_in_account_currency = 10.0;
+    drop_without_account_outstanding.credit_note_in_account_currency = 0.0;
+    let rows = BTreeMap::from([
+        (
+            VoucherBalanceKey::with_account(
+                "Debtors - TC",
+                "Sales Invoice",
+                "SINV-0001",
+                "CUST-001",
+            ),
+            keep,
+        ),
+        (
+            VoucherBalanceKey::with_account(
+                "Debtors - TC",
+                "Sales Invoice",
+                "SINV-0002",
+                "CUST-001",
+            ),
+            drop_without_account_outstanding,
+        ),
+    ]);
+
+    let prepared = prepare_voucher_balance_rows(&rows, &filters(), 2, &[]);
+
+    assert_eq!(prepared.len(), 1);
+    assert_eq!(prepared[0].voucher_no, "SINV-0001");
+    assert_eq!(prepared[0].outstanding, 50.0);
+    assert_eq!(prepared[0].outstanding_in_account_currency, 70.0);
+    assert_eq!(prepared[0].invoice_grand_total, 100.004);
+}
+
+#[test]
+fn accounts_receivable_prepare_voucher_balance_rows_keeps_err_journals_like_erpnext() {
+    let base_ple = ple(
+        "Debtors - TC",
+        "Journal Entry",
+        "JV-0001",
+        "Journal Entry",
+        "JV-0001",
+        0.0,
+    );
+    let mut row = build_voucher_dict(&base_ple);
+    row.invoiced = 100.0;
+    row.paid = 0.0;
+    row.credit_note = 0.0;
+    row.invoiced_in_account_currency = 100.0;
+    row.paid_in_account_currency = 100.0;
+    row.credit_note_in_account_currency = 0.0;
+    let rows = BTreeMap::from([(
+        VoucherBalanceKey::with_account("Debtors - TC", "Journal Entry", "JV-0001", "CUST-001"),
+        row,
+    )]);
+
+    let prepared = prepare_voucher_balance_rows(&rows, &filters(), 2, &["JV-0001".to_string()]);
+
+    assert_eq!(prepared.len(), 1);
+    assert_eq!(prepared[0].outstanding, 100.0);
+    assert_eq!(prepared[0].outstanding_in_account_currency, 0.0);
+}
+
+#[test]
+fn accounts_receivable_prepare_voucher_balance_rows_revaluation_uses_either_currency_balance() {
+    let base_ple = ple(
+        "Debtors - TC",
+        "Journal Entry",
+        "JV-0002",
+        "Journal Entry",
+        "JV-0002",
+        0.0,
+    );
+    let mut row = build_voucher_dict(&base_ple);
+    row.invoiced = 20.0;
+    row.paid = 20.0;
+    row.credit_note = 0.0;
+    row.invoiced_in_account_currency = 30.0;
+    row.paid_in_account_currency = 25.0;
+    row.credit_note_in_account_currency = 0.0;
+    let rows = BTreeMap::from([(
+        VoucherBalanceKey::with_account("Debtors - TC", "Journal Entry", "JV-0002", "CUST-001"),
+        row,
+    )]);
+
+    let prepared = prepare_voucher_balance_rows(
+        &rows,
+        &ReceivablePayableFilters {
+            for_revaluation_journals: true,
+            ..filters()
+        },
+        2,
+        &[],
+    );
+
+    assert_eq!(prepared.len(), 1);
+    assert_eq!(prepared[0].outstanding, 0.0);
+    assert_eq!(prepared[0].outstanding_in_account_currency, 5.0);
 }
