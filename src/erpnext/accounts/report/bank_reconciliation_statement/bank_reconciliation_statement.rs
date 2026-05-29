@@ -30,6 +30,24 @@ pub struct BankReconciliationEntry {
     pub account_currency: String,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct IncorrectlyClearedJournalEntry {
+    pub debit_in_account_currency: f64,
+    pub credit_in_account_currency: f64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct IncorrectlyClearedPaymentEntry {
+    pub paid_from_matches_account: bool,
+    pub paid_amount: f64,
+    pub received_amount: f64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct IncorrectlyClearedPurchaseInvoice {
+    pub paid_amount: f64,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ReportColumn {
     pub fieldname: &'static str,
@@ -145,6 +163,162 @@ impl BankReconciliationEntry {
             clearance_date: clearance_date.map(str::to_string),
             account_currency: account_currency.to_string(),
         }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn journal_entry(
+        payment_entry: &str,
+        posting_date: &str,
+        debit_in_account_currency: f64,
+        credit_in_account_currency: f64,
+        against_account: &str,
+        cheque_no: Option<&str>,
+        cheque_date: Option<&str>,
+        clearance_date: Option<&str>,
+        account_currency: &str,
+    ) -> Self {
+        Self::new(
+            BankReconciliationSource::JournalEntry,
+            payment_entry,
+            posting_date,
+            debit_in_account_currency,
+            credit_in_account_currency,
+            against_account,
+            cheque_no,
+            cheque_date,
+            clearance_date,
+            account_currency,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn payment_entry(
+        payment_entry: &str,
+        posting_date: &str,
+        paid_from: &str,
+        paid_to: &str,
+        party: Option<&str>,
+        received_amount_after_tax: f64,
+        paid_amount_after_tax: f64,
+        paid_to_account_currency: &str,
+        paid_from_account_currency: &str,
+        reference_no: Option<&str>,
+        ref_date: Option<&str>,
+        clearance_date: Option<&str>,
+        account: &str,
+    ) -> Self {
+        let paid_to_matches_account = paid_to == account;
+        let paid_from_matches_account = paid_from == account;
+        let debit = if paid_to_matches_account {
+            received_amount_after_tax
+        } else {
+            0.0
+        };
+        let credit = if paid_from_matches_account {
+            paid_amount_after_tax
+        } else {
+            0.0
+        };
+        let against_account = party.unwrap_or(if paid_from_matches_account {
+            paid_to
+        } else {
+            paid_from
+        });
+        let account_currency = if paid_to_matches_account {
+            paid_to_account_currency
+        } else {
+            paid_from_account_currency
+        };
+
+        Self::new(
+            BankReconciliationSource::PaymentEntry,
+            payment_entry,
+            posting_date,
+            debit,
+            credit,
+            against_account,
+            reference_no,
+            ref_date,
+            clearance_date,
+            account_currency,
+        )
+    }
+
+    pub fn purchase_invoice(
+        payment_entry: &str,
+        bill_no: Option<&str>,
+        posting_date: &str,
+        paid_amount: f64,
+        supplier: &str,
+        clearance_date: Option<&str>,
+        account_currency: &str,
+    ) -> Self {
+        let debit = if paid_amount < 0.0 {
+            paid_amount.abs()
+        } else {
+            0.0
+        };
+        let credit = if paid_amount > 0.0 { paid_amount } else { 0.0 };
+
+        Self::new(
+            BankReconciliationSource::PurchaseInvoice,
+            payment_entry,
+            posting_date,
+            debit,
+            credit,
+            supplier,
+            bill_no,
+            Some(posting_date),
+            clearance_date,
+            account_currency,
+        )
+    }
+
+    pub fn pos_sales_invoice(
+        payment_entry: &str,
+        posting_date: &str,
+        amount: f64,
+        debit_to: &str,
+        clearance_date: Option<&str>,
+        account_currency: &str,
+    ) -> Self {
+        Self::new(
+            BankReconciliationSource::SalesInvoice,
+            payment_entry,
+            posting_date,
+            amount,
+            0.0,
+            debit_to,
+            None,
+            None,
+            clearance_date,
+            account_currency,
+        )
+    }
+}
+
+impl IncorrectlyClearedJournalEntry {
+    pub fn new(debit_in_account_currency: f64, credit_in_account_currency: f64) -> Self {
+        Self {
+            debit_in_account_currency,
+            credit_in_account_currency,
+        }
+    }
+}
+
+impl IncorrectlyClearedPaymentEntry {
+    pub fn new(paid_from_matches_account: bool, paid_amount: f64, received_amount: f64) -> Self {
+        Self {
+            paid_from_matches_account,
+            paid_amount,
+            received_amount,
+        }
+    }
+}
+
+impl IncorrectlyClearedPurchaseInvoice {
+    pub fn new(paid_amount: f64) -> Self {
+        Self { paid_amount }
     }
 }
 
@@ -290,6 +464,49 @@ pub fn execute(
     ]);
 
     BankReconciliationReport { columns, rows }
+}
+
+pub fn execute_with_uncleared_entries(
+    filters: &BankReconciliationFilters,
+    entries: Vec<BankReconciliationEntry>,
+    journal_entries: &[IncorrectlyClearedJournalEntry],
+    payment_entries: &[IncorrectlyClearedPaymentEntry],
+    purchase_invoices: &[IncorrectlyClearedPurchaseInvoice],
+) -> BankReconciliationReport {
+    let amounts_not_reflected_in_system = get_amounts_not_reflected_in_system_from_entries(
+        journal_entries,
+        payment_entries,
+        purchase_invoices,
+    );
+
+    execute(filters, entries, amounts_not_reflected_in_system)
+}
+
+pub fn get_amounts_not_reflected_in_system_from_entries(
+    journal_entries: &[IncorrectlyClearedJournalEntry],
+    payment_entries: &[IncorrectlyClearedPaymentEntry],
+    purchase_invoices: &[IncorrectlyClearedPurchaseInvoice],
+) -> f64 {
+    let journal_entry_amount: f64 = journal_entries
+        .iter()
+        .map(|entry| entry.debit_in_account_currency - entry.credit_in_account_currency)
+        .sum();
+    let payment_entry_amount: f64 = payment_entries
+        .iter()
+        .map(|entry| {
+            if entry.paid_from_matches_account {
+                entry.paid_amount
+            } else {
+                entry.received_amount
+            }
+        })
+        .sum();
+    let purchase_invoice_amount: f64 = purchase_invoices
+        .iter()
+        .map(|entry| entry.paid_amount)
+        .sum();
+
+    journal_entry_amount + payment_entry_amount + purchase_invoice_amount
 }
 
 pub fn get_columns() -> Vec<ReportColumn> {

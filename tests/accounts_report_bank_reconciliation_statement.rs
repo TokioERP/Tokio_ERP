@@ -1,6 +1,9 @@
 use tokio_erp::erpnext::accounts::report::bank_reconciliation_statement::bank_reconciliation_statement::{
-    execute, get_balance_row, get_columns, BankReconciliationEntry, BankReconciliationFilters,
-    BankReconciliationQueryPlan, BankReconciliationRow, BankReconciliationSource, ReportColumn,
+    execute, execute_with_uncleared_entries, get_amounts_not_reflected_in_system_from_entries,
+    get_balance_row, get_columns, BankReconciliationEntry, BankReconciliationFilters,
+    BankReconciliationQueryPlan, BankReconciliationRow, BankReconciliationSource,
+    IncorrectlyClearedJournalEntry, IncorrectlyClearedPaymentEntry,
+    IncorrectlyClearedPurchaseInvoice, ReportColumn,
 };
 
 fn filters() -> BankReconciliationFilters {
@@ -208,4 +211,142 @@ fn bank_reconciliation_statement_balance_row_places_negative_amount_in_credit() 
     let row = get_balance_row("Calculated Bank Statement balance", -42.0, "USD");
     assert_eq!(row.debit, Some(0.0));
     assert_eq!(row.credit, Some(42.0));
+}
+
+#[test]
+fn bank_reconciliation_statement_source_helpers_match_erpnext_select_formulas() {
+    let inbound_payment = BankReconciliationEntry::payment_entry(
+        "PAY-IN",
+        "2026-01-10",
+        "Bank - TC",
+        "Cash - TC",
+        Some("_Test Customer"),
+        250.0,
+        999.0,
+        "USD",
+        "INR",
+        Some("REF-IN"),
+        Some("2026-01-09"),
+        None,
+        "Cash - TC",
+    );
+    assert_eq!(inbound_payment.debit, 250.0);
+    assert_eq!(inbound_payment.credit, 0.0);
+    assert_eq!(inbound_payment.against_account, "_Test Customer");
+    assert_eq!(inbound_payment.account_currency, "USD");
+
+    let outbound_payment = BankReconciliationEntry::payment_entry(
+        "PAY-OUT",
+        "2026-01-11",
+        "Cash - TC",
+        "Creditors - TC",
+        None,
+        999.0,
+        175.0,
+        "INR",
+        "USD",
+        None,
+        None,
+        None,
+        "Cash - TC",
+    );
+    assert_eq!(outbound_payment.debit, 0.0);
+    assert_eq!(outbound_payment.credit, 175.0);
+    assert_eq!(outbound_payment.against_account, "Creditors - TC");
+    assert_eq!(outbound_payment.account_currency, "USD");
+
+    let purchase_invoice_credit = BankReconciliationEntry::purchase_invoice(
+        "PINV-CREDIT",
+        Some("BILL-1"),
+        "2026-01-12",
+        80.0,
+        "_Test Supplier",
+        None,
+        "USD",
+    );
+    assert_eq!(purchase_invoice_credit.debit, 0.0);
+    assert_eq!(purchase_invoice_credit.credit, 80.0);
+    assert_eq!(
+        purchase_invoice_credit.ref_date.as_deref(),
+        Some("2026-01-12")
+    );
+
+    let purchase_invoice_debit = BankReconciliationEntry::purchase_invoice(
+        "PINV-DEBIT",
+        None,
+        "2026-01-13",
+        -45.0,
+        "_Test Supplier",
+        None,
+        "USD",
+    );
+    assert_eq!(purchase_invoice_debit.debit, 45.0);
+    assert_eq!(purchase_invoice_debit.credit, 0.0);
+    assert_eq!(purchase_invoice_debit.reference_no, None);
+
+    let pos_invoice = BankReconciliationEntry::pos_sales_invoice(
+        "SINV-POS",
+        "2026-01-14",
+        60.0,
+        "Debtors - TC",
+        Some("2026-02-01"),
+        "USD",
+    );
+    assert_eq!(pos_invoice.debit, 60.0);
+    assert_eq!(pos_invoice.credit, 0.0);
+    assert_eq!(pos_invoice.source, BankReconciliationSource::SalesInvoice);
+}
+
+#[test]
+fn bank_reconciliation_statement_computes_incorrectly_cleared_amount_from_erpnext_sources() {
+    let amount = get_amounts_not_reflected_in_system_from_entries(
+        &[
+            IncorrectlyClearedJournalEntry::new(120.0, 20.0),
+            IncorrectlyClearedJournalEntry::new(0.0, 10.0),
+        ],
+        &[
+            IncorrectlyClearedPaymentEntry::new(true, 200.0, 999.0),
+            IncorrectlyClearedPaymentEntry::new(false, 999.0, 75.0),
+        ],
+        &[
+            IncorrectlyClearedPurchaseInvoice::new(-30.0),
+            IncorrectlyClearedPurchaseInvoice::new(50.0),
+        ],
+    );
+
+    assert_eq!(amount, 385.0);
+}
+
+#[test]
+fn bank_reconciliation_statement_execute_can_derive_incorrectly_cleared_summary_amount() {
+    let report = execute_with_uncleared_entries(
+        &filters(),
+        vec![BankReconciliationEntry::journal_entry(
+            "JV-0001",
+            "2026-01-10",
+            100.0,
+            0.0,
+            "Debtors - TC",
+            Some("CHK-1"),
+            Some("2026-01-09"),
+            None,
+            "USD",
+        )],
+        &[IncorrectlyClearedJournalEntry::new(75.0, 5.0)],
+        &[IncorrectlyClearedPaymentEntry::new(false, 999.0, 30.0)],
+        &[IncorrectlyClearedPurchaseInvoice::new(20.0)],
+    );
+
+    assert_eq!(
+        report.rows[3],
+        BankReconciliationRow::outstanding(100.0, 0.0, "USD")
+    );
+    assert_eq!(
+        report.rows[4],
+        BankReconciliationRow::balance("Cheques and Deposits incorrectly cleared", 120.0, "USD")
+    );
+    assert_eq!(
+        report.rows[6],
+        BankReconciliationRow::balance("Calculated Bank Statement balance", 1_020.0, "USD")
+    );
 }
