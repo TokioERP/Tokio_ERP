@@ -1888,7 +1888,7 @@ fn total_row(
             _ => ReportCell::Empty,
         });
     }
-    cells.push(ReportCell::Text(filters.currency.clone()));
+    cells.push(ReportCell::Empty);
     cells
 }
 

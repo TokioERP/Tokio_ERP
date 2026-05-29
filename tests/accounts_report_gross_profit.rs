@@ -417,7 +417,7 @@ fn gross_profit_group_rows_aggregates_by_group_and_appends_total_like_erpnext() 
     assert_eq!(total[8], ReportCell::Number(370.0));
     assert_eq!(total[9], ReportCell::Number(210.0));
     assert_eq!(total[10], ReportCell::Number(36.207));
-    assert_eq!(total[11], ReportCell::Text("USD".to_string()));
+    assert_eq!(total[11], ReportCell::Empty);
 }
 
 #[test]
