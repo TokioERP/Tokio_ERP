@@ -3073,7 +3073,7 @@
     {
       "source": "accounts/report/general_ledger/general_ledger.py",
       "target": "accounts/report/general_ledger/general_ledger.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/general_ledger/test_general_ledger.py",
