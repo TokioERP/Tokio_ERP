@@ -3203,7 +3203,7 @@
     {
       "source": "accounts/report/profit_and_loss_statement/profit_and_loss_statement.py",
       "target": "accounts/report/profit_and_loss_statement/profit_and_loss_statement.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/profit_and_loss_statement/test_profit_and_loss_statement.py",
