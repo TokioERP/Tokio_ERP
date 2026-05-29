@@ -3098,7 +3098,7 @@
     {
       "source": "accounts/report/gross_profit/gross_profit.py",
       "target": "accounts/report/gross_profit/gross_profit.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/report/gross_profit/test_gross_profit.py",
