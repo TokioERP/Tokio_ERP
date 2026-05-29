@@ -1,20 +1,23 @@
 use std::collections::BTreeMap;
 
 use tokio_erp::erpnext::accounts::report::accounts_receivable::accounts_receivable::{
-    accounts_receivable_args, allocate_future_payments, build_voucher_dict, get_columns,
-    get_currency_fields, group_future_payments, init_voucher_balance, prepare_ple_query_plan,
-    prepare_voucher_balance_rows, set_ageing, set_invoice_details, set_party_details,
-    update_voucher_balance, AccountType, FuturePayment, FuturePaymentAllocationRow, InvoiceDetails,
-    InvoiceDetailsRow, PartyDetails, PartyDetailsRow, PaymentLedgerEntry, PaymentTermAllocationRow,
-    PaymentTermDetail, PaymentTermRow, ReceivablePayableAgeingRow, ReceivablePayableFilters,
-    ReceivablePayableRuntime, ReceivablePayableSettings, ReceivablePayableState, ReportColumn,
-    SubtotalDataRow, VoucherBalanceKey, VoucherBalanceRow,
+    accounts_receivable_args, add_common_filter_conditions, allocate_future_payments,
+    build_voucher_dict, get_columns, get_currency_fields, group_future_payments,
+    init_voucher_balance, prepare_ple_query_plan, prepare_voucher_balance_rows, set_ageing,
+    set_invoice_details, set_party_details, update_voucher_balance, AccountType, FuturePayment,
+    FuturePaymentAllocationRow, InvoiceDetails, InvoiceDetailsRow, PartyDetails, PartyDetailsRow,
+    PaymentLedgerEntry, PaymentTermAllocationRow, PaymentTermDetail, PaymentTermRow,
+    ReceivablePayableAgeingRow, ReceivablePayableFilters, ReceivablePayableRuntime,
+    ReceivablePayableSettings, ReceivablePayableState, ReportColumn, SubtotalDataRow,
+    VoucherBalanceKey, VoucherBalanceRow,
 };
 
 fn filters() -> ReceivablePayableFilters {
     ReceivablePayableFilters {
         company: None,
         report_date: None,
+        finance_book: None,
+        party_type: None,
         calculate_ageing_with: None,
         ageing_based_on: None,
         range: None,
@@ -1367,4 +1370,62 @@ fn accounts_receivable_prepare_ple_query_plan_selects_full_remarks_when_length_m
     );
 
     assert_eq!(plan.remarks_selection, Some("remarks".to_string()));
+}
+
+#[test]
+fn accounts_receivable_add_common_filter_conditions_uses_party_account_when_present_like_erpnext() {
+    let conditions = add_common_filter_conditions(
+        &ReceivablePayableFilters {
+            company: Some("_Test Company".to_string()),
+            finance_book: Some("IFRS".to_string()),
+            party_type: Some("Customer".to_string()),
+            party: vec!["CUST-001".to_string(), "CUST-002".to_string()],
+            party_account: Some("Debtors - TC".to_string()),
+            ..filters()
+        },
+        &["Debtors - TC".to_string(), "Other Debtors - TC".to_string()],
+    );
+
+    assert_eq!(
+        conditions,
+        vec![
+            "company = '_Test Company'",
+            "finance_book = 'IFRS'",
+            "party_type = 'Customer'",
+            "party IN ('CUST-001', 'CUST-002')",
+            "account = 'Debtors - TC'",
+        ]
+    );
+}
+
+#[test]
+fn accounts_receivable_add_common_filter_conditions_falls_back_to_account_type_accounts() {
+    let conditions = add_common_filter_conditions(
+        &ReceivablePayableFilters {
+            company: Some("_Test Company".to_string()),
+            ..filters()
+        },
+        &["Debtors - TC".to_string(), "Other Debtors - TC".to_string()],
+    );
+
+    assert_eq!(
+        conditions,
+        vec![
+            "company = '_Test Company'",
+            "account IN ('Debtors - TC', 'Other Debtors - TC')",
+        ]
+    );
+}
+
+#[test]
+fn accounts_receivable_add_common_filter_conditions_skips_account_filter_when_no_accounts() {
+    let conditions = add_common_filter_conditions(
+        &ReceivablePayableFilters {
+            company: Some("_Test Company".to_string()),
+            ..filters()
+        },
+        &[],
+    );
+
+    assert_eq!(conditions, vec!["company = '_Test Company'"]);
 }

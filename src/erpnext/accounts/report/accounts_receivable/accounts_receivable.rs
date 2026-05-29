@@ -16,6 +16,8 @@ pub struct AccountsReceivableArgs {
 pub struct ReceivablePayableFilters {
     pub company: Option<String>,
     pub report_date: Option<String>,
+    pub finance_book: Option<String>,
+    pub party_type: Option<String>,
     pub calculate_ageing_with: Option<String>,
     pub ageing_based_on: Option<String>,
     pub range: Option<String>,
@@ -656,6 +658,33 @@ pub fn prepare_ple_query_plan(
         remarks_selection,
         order_by,
     }
+}
+
+pub fn add_common_filter_conditions(
+    filters: &ReceivablePayableFilters,
+    accounts: &[String],
+) -> Vec<String> {
+    let mut conditions = Vec::new();
+
+    if let Some(company) = filters.company.as_deref() {
+        conditions.push(format!("company = '{}'", company));
+    }
+    if let Some(finance_book) = filters.finance_book.as_deref() {
+        conditions.push(format!("finance_book = '{}'", finance_book));
+    }
+    if let Some(party_type) = filters.party_type.as_deref() {
+        conditions.push(format!("party_type = '{}'", party_type));
+    }
+    if !filters.party.is_empty() {
+        conditions.push(format!("party IN ({})", quote_join(&filters.party)));
+    }
+    if let Some(party_account) = filters.party_account.as_deref() {
+        conditions.push(format!("account = '{}'", party_account));
+    } else if !accounts.is_empty() {
+        conditions.push(format!("account IN ({})", quote_join(accounts)));
+    }
+
+    conditions
 }
 
 pub fn set_ageing(
@@ -1420,6 +1449,14 @@ fn scrub(label: &str) -> String {
         .replace(|ch: char| !ch.is_ascii_alphanumeric(), "_")
         .trim_matches('_')
         .to_string()
+}
+
+fn quote_join(values: &[String]) -> String {
+    values
+        .iter()
+        .map(|value| format!("'{}'", value))
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 fn round_to_precision(value: f64, precision: u32) -> f64 {
