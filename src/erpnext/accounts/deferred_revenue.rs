@@ -12,6 +12,12 @@ pub enum DeferredProcessType {
     Expense,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum BookingBasis {
+    Days,
+    Months,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ServiceStopDateError {
     BeforeServiceStart { idx: u32 },
@@ -133,6 +139,30 @@ pub struct DeferredProcessAccountingDocPlan {
     pub start_date: String,
     pub end_date: String,
     pub process_type: DeferredProcessType,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct DeferredPostingSettings {
+    pub via_journal_entry: bool,
+    pub submit_journal_entry: bool,
+    pub booking_basis: BookingBasis,
+    pub account_currency: String,
+    pub already_booked: AlreadyBookedAmounts,
+    pub deferred_accounting_error: bool,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum DeferredPostingAction {
+    GlEntries {
+        posting_date: String,
+        prev_posting_date: Option<String>,
+        entries: Vec<GlEntryPlan>,
+    },
+    JournalEntry {
+        posting_date: String,
+        prev_posting_date: Option<String>,
+        journal_entry: JournalEntryPlan,
+    },
 }
 
 pub fn validate_service_stop_dates(
@@ -269,6 +299,42 @@ pub fn send_mail_plan(deferred_process: &str) -> DeferredErrorMailPlan {
             "Deferred accounting failed for some invoices:\nPlease check Process Deferred Accounting {link} and submit manually after resolving errors."
         ),
     }
+}
+
+pub fn book_deferred_income_or_expense_plan(
+    doc: &DeferredDoc,
+    deferred_process: &str,
+    posting_date: Option<&str>,
+    accounts_frozen_upto: Option<&str>,
+    settings: &DeferredPostingSettings,
+    items: &[DeferredItem],
+) -> Vec<DeferredPostingAction> {
+    let enable_revenue = doc.doctype == DeferredDocType::SalesInvoice;
+    let posting_date = posting_date.unwrap_or_default();
+    let mut actions = Vec::new();
+
+    for item in items {
+        let enabled = if enable_revenue {
+            item.enable_deferred_revenue
+        } else {
+            item.enable_deferred_expense
+        };
+        if enabled {
+            collect_deferred_posting_actions(
+                doc,
+                deferred_process,
+                posting_date,
+                accounts_frozen_upto,
+                settings,
+                item,
+                None,
+                settings.already_booked,
+                &mut actions,
+            );
+        }
+    }
+
+    actions
 }
 
 pub fn get_booking_dates(
@@ -636,6 +702,162 @@ fn conversion_plan(
         conditions,
         query,
         mail_if_error: deferred_accounting_error.then(|| send_mail_plan(deferred_process)),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn collect_deferred_posting_actions(
+    doc: &DeferredDoc,
+    deferred_process: &str,
+    posting_date: &str,
+    accounts_frozen_upto: Option<&str>,
+    settings: &DeferredPostingSettings,
+    item: &DeferredItem,
+    prev_posting_date: Option<String>,
+    already_booked: AlreadyBookedAmounts,
+    actions: &mut Vec<DeferredPostingAction>,
+) {
+    let Some(booking_dates) = get_booking_dates(
+        doc,
+        item,
+        Some(posting_date),
+        prev_posting_date.as_deref(),
+        None,
+    ) else {
+        return;
+    };
+
+    let total_days = date_diff_str(&item.service_end_date, &item.service_start_date) + 1;
+    let total_booking_days = date_diff_str(&booking_dates.end_date, &booking_dates.start_date) + 1;
+    let (amount, base_amount) = match settings.booking_basis {
+        BookingBasis::Months => calculate_monthly_amount(
+            doc,
+            item,
+            booking_dates.last_gl_entry,
+            &booking_dates.start_date,
+            &booking_dates.end_date,
+            &settings.account_currency,
+            already_booked,
+        ),
+        BookingBasis::Days => calculate_amount(
+            doc,
+            item,
+            booking_dates.last_gl_entry,
+            total_days,
+            total_booking_days,
+            &settings.account_currency,
+            already_booked,
+        ),
+    };
+
+    let (next_prev_posting_date, next_already_booked) = if amount == 0.0 {
+        (Some(booking_dates.end_date.clone()), already_booked)
+    } else {
+        let mut gl_posting_date = booking_dates.end_date.clone();
+        let mut action_prev_posting_date = None;
+        if accounts_frozen_upto
+            .is_some_and(|frozen| parse_date(&booking_dates.end_date) <= parse_date(frozen))
+        {
+            gl_posting_date = parse_date(accounts_frozen_upto.expect("checked"))
+                .add_days(1)
+                .last_day()
+                .to_string();
+            action_prev_posting_date = Some(booking_dates.end_date.clone());
+        }
+
+        if settings.via_journal_entry {
+            if let Some(journal_entry) = book_revenue_via_journal_entry_plan(
+                doc,
+                credit_account(doc, item),
+                debit_account(doc, item),
+                amount,
+                base_amount,
+                &gl_posting_date,
+                project(doc, item),
+                &settings.account_currency,
+                item.cost_center.as_deref(),
+                item,
+                Some(deferred_process),
+                settings.submit_journal_entry,
+            ) {
+                actions.push(DeferredPostingAction::JournalEntry {
+                    posting_date: gl_posting_date,
+                    prev_posting_date: action_prev_posting_date,
+                    journal_entry,
+                });
+            }
+        } else if let Some(entries) = make_gl_entries_plan(
+            doc,
+            credit_account(doc, item),
+            debit_account(doc, item),
+            &doc.party,
+            amount,
+            base_amount,
+            &gl_posting_date,
+            project(doc, item),
+            &settings.account_currency,
+            item.cost_center.as_deref(),
+            item,
+            Some(deferred_process),
+        ) {
+            actions.push(DeferredPostingAction::GlEntries {
+                posting_date: gl_posting_date,
+                prev_posting_date: action_prev_posting_date,
+                entries,
+            });
+        }
+        (
+            None,
+            AlreadyBookedAmounts {
+                base: already_booked.base + base_amount,
+                account_currency: already_booked.account_currency + amount,
+            },
+        )
+    };
+
+    if settings.deferred_accounting_error {
+        return;
+    }
+
+    if parse_date(&booking_dates.end_date) < parse_date(posting_date)
+        && !booking_dates.last_gl_entry
+    {
+        collect_deferred_posting_actions(
+            doc,
+            deferred_process,
+            posting_date,
+            accounts_frozen_upto,
+            settings,
+            item,
+            next_prev_posting_date.or_else(|| Some(booking_dates.end_date)),
+            next_already_booked,
+            actions,
+        );
+    }
+}
+
+fn credit_account<'a>(doc: &DeferredDoc, item: &'a DeferredItem) -> &'a str {
+    match doc.doctype {
+        DeferredDocType::SalesInvoice => item.income_account.as_deref().unwrap_or_default(),
+        DeferredDocType::PurchaseInvoice => {
+            item.deferred_expense_account.as_deref().unwrap_or_default()
+        }
+    }
+}
+
+fn debit_account<'a>(doc: &DeferredDoc, item: &'a DeferredItem) -> &'a str {
+    match doc.doctype {
+        DeferredDocType::SalesInvoice => {
+            item.deferred_revenue_account.as_deref().unwrap_or_default()
+        }
+        DeferredDocType::PurchaseInvoice => item.expense_account.as_deref().unwrap_or_default(),
+    }
+}
+
+fn project<'a>(doc: &'a DeferredDoc, item: &'a DeferredItem) -> Option<&'a str> {
+    match doc.doctype {
+        DeferredDocType::SalesInvoice => doc.project.as_deref(),
+        DeferredDocType::PurchaseInvoice => item.project.as_deref(),
     }
 }
 

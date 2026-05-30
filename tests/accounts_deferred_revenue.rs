@@ -1,14 +1,14 @@
 use std::collections::BTreeMap;
 
 use tokio_erp::erpnext::accounts::deferred_revenue::{
-    book_revenue_via_journal_entry_plan, build_conditions, calculate_amount,
-    calculate_monthly_amount, convert_deferred_expense_to_expense_plan,
+    book_deferred_income_or_expense_plan, book_revenue_via_journal_entry_plan, build_conditions,
+    calculate_amount, calculate_monthly_amount, convert_deferred_expense_to_expense_plan,
     convert_deferred_revenue_to_income_plan, get_booking_dates, get_deferred_booking_accounts,
     make_gl_entries_plan, process_deferred_accounting_plan, send_mail_plan,
-    validate_service_stop_dates, AlreadyBookedAmounts, BookingDates, DeferredConversionPlan,
-    DeferredDoc, DeferredDocType, DeferredErrorMailPlan, DeferredItem,
-    DeferredProcessAccountingDocPlan, DeferredProcessType, GlEntryPlan, JournalEntryPlan,
-    ServiceStopDateError,
+    validate_service_stop_dates, AlreadyBookedAmounts, BookingBasis, BookingDates,
+    DeferredConversionPlan, DeferredDoc, DeferredDocType, DeferredErrorMailPlan, DeferredItem,
+    DeferredPostingAction, DeferredPostingSettings, DeferredProcessAccountingDocPlan,
+    DeferredProcessType, GlEntryPlan, JournalEntryPlan, ServiceStopDateError,
 };
 
 fn sales_doc() -> DeferredDoc {
@@ -230,6 +230,104 @@ fn deferred_revenue_send_mail_plan_matches_erpnext_message_shape() {
             content: "Deferred accounting failed for some invoices:\nPlease check Process Deferred Accounting Process Deferred Accounting/PDA-0001 and submit manually after resolving errors.".to_string(),
         }
     );
+}
+
+#[test]
+fn deferred_revenue_book_deferred_income_or_expense_plan_handles_frozen_date_and_recursion() {
+    let mut item = deferred_item();
+    item.service_start_date = "2026-01-01".to_string();
+    item.service_end_date = "2026-03-31".to_string();
+    item.base_net_amount = 900.0;
+    item.net_amount = 900.0;
+
+    let actions = book_deferred_income_or_expense_plan(
+        &sales_doc(),
+        "PDA-0001",
+        Some("2026-03-31"),
+        Some("2026-01-31"),
+        &DeferredPostingSettings {
+            via_journal_entry: false,
+            submit_journal_entry: false,
+            booking_basis: BookingBasis::Days,
+            account_currency: "USD".to_string(),
+            already_booked: AlreadyBookedAmounts::default(),
+            deferred_accounting_error: false,
+        },
+        &[item],
+    );
+
+    assert_eq!(actions.len(), 3);
+    assert!(matches!(
+        &actions[0],
+        DeferredPostingAction::GlEntries { posting_date, prev_posting_date, entries }
+            if posting_date == "2026-02-28"
+                && prev_posting_date.as_deref() == Some("2026-01-31")
+                && entries[0].account == "Sales"
+                && entries[0].credit == 310.0
+    ));
+    assert!(matches!(
+        &actions[1],
+        DeferredPostingAction::GlEntries { posting_date, prev_posting_date, entries }
+            if posting_date == "2026-02-28"
+                && prev_posting_date.is_none()
+                && entries[0].credit == 280.0
+    ));
+    assert!(matches!(
+        &actions[2],
+        DeferredPostingAction::GlEntries { posting_date, prev_posting_date, entries }
+            if posting_date == "2026-03-31"
+                && prev_posting_date.is_none()
+                && entries[0].credit == 310.0
+    ));
+}
+
+#[test]
+fn deferred_revenue_book_deferred_income_or_expense_plan_uses_journal_entry_and_stops_on_error() {
+    let mut item = deferred_item();
+    item.enable_deferred_revenue = false;
+    let skipped = book_deferred_income_or_expense_plan(
+        &sales_doc(),
+        "PDA-0001",
+        Some("2026-01-31"),
+        None,
+        &DeferredPostingSettings {
+            via_journal_entry: true,
+            submit_journal_entry: true,
+            booking_basis: BookingBasis::Months,
+            account_currency: "EUR".to_string(),
+            already_booked: AlreadyBookedAmounts::default(),
+            deferred_accounting_error: false,
+        },
+        &[item.clone()],
+    );
+    assert!(skipped.is_empty());
+
+    item.enable_deferred_revenue = true;
+    let actions = book_deferred_income_or_expense_plan(
+        &sales_doc(),
+        "PDA-0001",
+        Some("2026-02-28"),
+        None,
+        &DeferredPostingSettings {
+            via_journal_entry: true,
+            submit_journal_entry: true,
+            booking_basis: BookingBasis::Months,
+            account_currency: "EUR".to_string(),
+            already_booked: AlreadyBookedAmounts::default(),
+            deferred_accounting_error: true,
+        },
+        &[item],
+    );
+
+    assert_eq!(actions.len(), 1);
+    assert!(matches!(
+        &actions[0],
+        DeferredPostingAction::JournalEntry { posting_date, journal_entry, prev_posting_date }
+            if posting_date == "2026-01-31"
+                && prev_posting_date.is_none()
+                && journal_entry.submit
+                && journal_entry.voucher_type == "Deferred Revenue"
+    ));
 }
 
 #[test]
