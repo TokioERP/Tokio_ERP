@@ -250,6 +250,7 @@ fn deferred_revenue_book_deferred_income_or_expense_plan_handles_frozen_date_and
             submit_journal_entry: false,
             booking_basis: BookingBasis::Days,
             account_currency: "USD".to_string(),
+            account_currency_by_item: BTreeMap::new(),
             already_booked: AlreadyBookedAmounts::default(),
             already_booked_by_item: BTreeMap::new(),
             latest_existing_posting_dates: BTreeMap::new(),
@@ -298,6 +299,7 @@ fn deferred_revenue_book_deferred_income_or_expense_plan_uses_journal_entry_and_
             submit_journal_entry: true,
             booking_basis: BookingBasis::Months,
             account_currency: "EUR".to_string(),
+            account_currency_by_item: BTreeMap::new(),
             already_booked: AlreadyBookedAmounts::default(),
             already_booked_by_item: BTreeMap::new(),
             latest_existing_posting_dates: BTreeMap::new(),
@@ -319,6 +321,7 @@ fn deferred_revenue_book_deferred_income_or_expense_plan_uses_journal_entry_and_
             submit_journal_entry: true,
             booking_basis: BookingBasis::Months,
             account_currency: "EUR".to_string(),
+            account_currency_by_item: BTreeMap::new(),
             already_booked: AlreadyBookedAmounts::default(),
             already_booked_by_item: BTreeMap::new(),
             latest_existing_posting_dates: BTreeMap::new(),
@@ -355,6 +358,7 @@ fn deferred_revenue_book_deferred_income_or_expense_plan_uses_item_existing_post
         submit_journal_entry: false,
         booking_basis: BookingBasis::Days,
         account_currency: "USD".to_string(),
+        account_currency_by_item: BTreeMap::new(),
         already_booked: AlreadyBookedAmounts::default(),
         already_booked_by_item: BTreeMap::new(),
         latest_existing_posting_dates: BTreeMap::new(),
@@ -413,6 +417,7 @@ fn deferred_revenue_book_deferred_income_or_expense_plan_keeps_gl_posting_option
             submit_journal_entry: false,
             booking_basis: BookingBasis::Days,
             account_currency: "USD".to_string(),
+            account_currency_by_item: BTreeMap::new(),
             already_booked: AlreadyBookedAmounts::default(),
             already_booked_by_item: BTreeMap::new(),
             latest_existing_posting_dates: BTreeMap::new(),
@@ -447,6 +452,7 @@ fn deferred_revenue_book_deferred_income_or_expense_plan_defaults_posting_date_t
             submit_journal_entry: false,
             booking_basis: BookingBasis::Days,
             account_currency: "USD".to_string(),
+            account_currency_by_item: BTreeMap::new(),
             already_booked: AlreadyBookedAmounts::default(),
             already_booked_by_item: BTreeMap::new(),
             latest_existing_posting_dates: BTreeMap::new(),
@@ -460,6 +466,48 @@ fn deferred_revenue_book_deferred_income_or_expense_plan_defaults_posting_date_t
         actions.last(),
         Some(DeferredPostingAction::GlEntries { posting_date, entries, .. })
             if posting_date == "2026-03-31" && entries[0].credit == 310.0
+    ));
+}
+
+#[test]
+fn deferred_revenue_book_deferred_income_or_expense_plan_uses_item_account_currency() {
+    let mut item = deferred_item();
+    item.service_start_date = "2026-01-01".to_string();
+    item.service_end_date = "2026-01-31".to_string();
+    item.base_net_amount = 620.0;
+    item.net_amount = 310.0;
+
+    let mut settings = DeferredPostingSettings {
+        via_journal_entry: false,
+        submit_journal_entry: false,
+        booking_basis: BookingBasis::Days,
+        account_currency: "USD".to_string(),
+        account_currency_by_item: BTreeMap::new(),
+        already_booked: AlreadyBookedAmounts::default(),
+        already_booked_by_item: BTreeMap::new(),
+        latest_existing_posting_dates: BTreeMap::new(),
+        today: None,
+        deferred_accounting_error: false,
+    };
+    settings
+        .account_currency_by_item
+        .insert("ITEM-ROW-1".to_string(), "EUR".to_string());
+
+    let actions = book_deferred_income_or_expense_plan(
+        &sales_doc(),
+        "PDA-0001",
+        Some("2026-01-31"),
+        None,
+        &settings,
+        &[item],
+    );
+
+    assert!(matches!(
+        &actions[0],
+        DeferredPostingAction::GlEntries { entries, .. }
+            if entries[0].credit == 620.0
+                && entries[0].credit_in_account_currency == 310.0
+                && entries[0].account_currency == "EUR"
     ));
 }
 

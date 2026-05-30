@@ -147,6 +147,7 @@ pub struct DeferredPostingSettings {
     pub submit_journal_entry: bool,
     pub booking_basis: BookingBasis,
     pub account_currency: String,
+    pub account_currency_by_item: BTreeMap<String, String>,
     pub already_booked: AlreadyBookedAmounts,
     pub already_booked_by_item: BTreeMap<String, AlreadyBookedAmounts>,
     pub latest_existing_posting_dates: BTreeMap<String, String>,
@@ -341,6 +342,11 @@ pub fn book_deferred_income_or_expense_plan(
                 .latest_existing_posting_dates
                 .get(&item.name)
                 .map(String::as_str);
+            let account_currency = settings
+                .account_currency_by_item
+                .get(&item.name)
+                .map(String::as_str)
+                .unwrap_or(&settings.account_currency);
             collect_deferred_posting_actions(
                 doc,
                 deferred_process,
@@ -349,6 +355,7 @@ pub fn book_deferred_income_or_expense_plan(
                 settings,
                 item,
                 latest_existing_posting_date,
+                account_currency,
                 None,
                 already_booked,
                 &mut actions,
@@ -736,6 +743,7 @@ fn collect_deferred_posting_actions(
     settings: &DeferredPostingSettings,
     item: &DeferredItem,
     latest_existing_posting_date: Option<&str>,
+    account_currency: &str,
     prev_posting_date: Option<String>,
     already_booked: AlreadyBookedAmounts,
     actions: &mut Vec<DeferredPostingAction>,
@@ -759,7 +767,7 @@ fn collect_deferred_posting_actions(
             booking_dates.last_gl_entry,
             &booking_dates.start_date,
             &booking_dates.end_date,
-            &settings.account_currency,
+            account_currency,
             already_booked,
         ),
         BookingBasis::Days => calculate_amount(
@@ -768,7 +776,7 @@ fn collect_deferred_posting_actions(
             booking_dates.last_gl_entry,
             total_days,
             total_booking_days,
-            &settings.account_currency,
+            account_currency,
             already_booked,
         ),
     };
@@ -797,7 +805,7 @@ fn collect_deferred_posting_actions(
                 base_amount,
                 &gl_posting_date,
                 project(doc, item),
-                &settings.account_currency,
+                account_currency,
                 item.cost_center.as_deref(),
                 item,
                 Some(deferred_process),
@@ -818,7 +826,7 @@ fn collect_deferred_posting_actions(
             base_amount,
             &gl_posting_date,
             project(doc, item),
-            &settings.account_currency,
+            account_currency,
             item.cost_center.as_deref(),
             item,
             Some(deferred_process),
@@ -855,6 +863,7 @@ fn collect_deferred_posting_actions(
             settings,
             item,
             latest_existing_posting_date,
+            account_currency,
             next_prev_posting_date.or_else(|| Some(booking_dates.end_date)),
             next_already_booked,
             actions,
