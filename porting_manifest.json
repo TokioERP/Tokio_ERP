@@ -1003,7 +1003,7 @@
     {
       "source": "accounts/doctype/ledger_health_monitor/ledger_health_monitor.py",
       "target": "accounts/doctype/ledger_health_monitor/ledger_health_monitor.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/ledger_health_monitor/test_ledger_health_monitor.py",
