@@ -1,1 +1,2 @@
+pub mod payment_gateway_account;
 pub mod payment_gateway_account_dashboard;

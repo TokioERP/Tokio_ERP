@@ -1258,7 +1258,7 @@
     {
       "source": "accounts/doctype/payment_gateway_account/payment_gateway_account.py",
       "target": "accounts/doctype/payment_gateway_account/payment_gateway_account.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_gateway_account/payment_gateway_account_dashboard.py",
