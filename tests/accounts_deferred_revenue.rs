@@ -251,6 +251,8 @@ fn deferred_revenue_book_deferred_income_or_expense_plan_handles_frozen_date_and
             booking_basis: BookingBasis::Days,
             account_currency: "USD".to_string(),
             already_booked: AlreadyBookedAmounts::default(),
+            already_booked_by_item: BTreeMap::new(),
+            latest_existing_posting_dates: BTreeMap::new(),
             deferred_accounting_error: false,
         },
         &[item],
@@ -296,6 +298,8 @@ fn deferred_revenue_book_deferred_income_or_expense_plan_uses_journal_entry_and_
             booking_basis: BookingBasis::Months,
             account_currency: "EUR".to_string(),
             already_booked: AlreadyBookedAmounts::default(),
+            already_booked_by_item: BTreeMap::new(),
+            latest_existing_posting_dates: BTreeMap::new(),
             deferred_accounting_error: false,
         },
         &[item.clone()],
@@ -314,6 +318,8 @@ fn deferred_revenue_book_deferred_income_or_expense_plan_uses_journal_entry_and_
             booking_basis: BookingBasis::Months,
             account_currency: "EUR".to_string(),
             already_booked: AlreadyBookedAmounts::default(),
+            already_booked_by_item: BTreeMap::new(),
+            latest_existing_posting_dates: BTreeMap::new(),
             deferred_accounting_error: true,
         },
         &[item],
@@ -328,6 +334,58 @@ fn deferred_revenue_book_deferred_income_or_expense_plan_uses_journal_entry_and_
                 && journal_entry.submit
                 && journal_entry.voucher_type == "Deferred Revenue"
     ));
+}
+
+#[test]
+fn deferred_revenue_book_deferred_income_or_expense_plan_uses_item_existing_postings() {
+    let mut first_item = deferred_item();
+    first_item.service_start_date = "2026-01-01".to_string();
+    first_item.service_end_date = "2026-03-31".to_string();
+    first_item.base_net_amount = 900.0;
+    first_item.net_amount = 900.0;
+
+    let mut second_item = first_item.clone();
+    second_item.name = "ITEM-ROW-2".to_string();
+
+    let mut settings = DeferredPostingSettings {
+        via_journal_entry: false,
+        submit_journal_entry: false,
+        booking_basis: BookingBasis::Days,
+        account_currency: "USD".to_string(),
+        already_booked: AlreadyBookedAmounts::default(),
+        already_booked_by_item: BTreeMap::new(),
+        latest_existing_posting_dates: BTreeMap::new(),
+        deferred_accounting_error: false,
+    };
+    settings
+        .latest_existing_posting_dates
+        .insert("ITEM-ROW-1".to_string(), "2026-01-31".to_string());
+    settings.already_booked_by_item.insert(
+        "ITEM-ROW-1".to_string(),
+        AlreadyBookedAmounts {
+            base: 310.0,
+            account_currency: 310.0,
+        },
+    );
+
+    let actions = book_deferred_income_or_expense_plan(
+        &sales_doc(),
+        "PDA-0001",
+        Some("2026-03-31"),
+        None,
+        &settings,
+        &[first_item, second_item],
+    );
+
+    let credits = actions
+        .iter()
+        .map(|action| match action {
+            DeferredPostingAction::GlEntries { entries, .. } => entries[0].credit,
+            DeferredPostingAction::JournalEntry { .. } => unreachable!(),
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(credits, vec![280.0, 310.0, 310.0, 280.0, 310.0]);
 }
 
 #[test]

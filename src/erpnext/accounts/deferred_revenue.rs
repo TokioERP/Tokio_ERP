@@ -148,6 +148,8 @@ pub struct DeferredPostingSettings {
     pub booking_basis: BookingBasis,
     pub account_currency: String,
     pub already_booked: AlreadyBookedAmounts,
+    pub already_booked_by_item: BTreeMap<String, AlreadyBookedAmounts>,
+    pub latest_existing_posting_dates: BTreeMap<String, String>,
     pub deferred_accounting_error: bool,
 }
 
@@ -320,6 +322,15 @@ pub fn book_deferred_income_or_expense_plan(
             item.enable_deferred_expense
         };
         if enabled {
+            let already_booked = settings
+                .already_booked_by_item
+                .get(&item.name)
+                .copied()
+                .unwrap_or(settings.already_booked);
+            let latest_existing_posting_date = settings
+                .latest_existing_posting_dates
+                .get(&item.name)
+                .map(String::as_str);
             collect_deferred_posting_actions(
                 doc,
                 deferred_process,
@@ -327,8 +338,9 @@ pub fn book_deferred_income_or_expense_plan(
                 accounts_frozen_upto,
                 settings,
                 item,
+                latest_existing_posting_date,
                 None,
-                settings.already_booked,
+                already_booked,
                 &mut actions,
             );
         }
@@ -713,6 +725,7 @@ fn collect_deferred_posting_actions(
     accounts_frozen_upto: Option<&str>,
     settings: &DeferredPostingSettings,
     item: &DeferredItem,
+    latest_existing_posting_date: Option<&str>,
     prev_posting_date: Option<String>,
     already_booked: AlreadyBookedAmounts,
     actions: &mut Vec<DeferredPostingAction>,
@@ -722,7 +735,7 @@ fn collect_deferred_posting_actions(
         item,
         Some(posting_date),
         prev_posting_date.as_deref(),
-        None,
+        latest_existing_posting_date,
     ) else {
         return;
     };
@@ -829,6 +842,7 @@ fn collect_deferred_posting_actions(
             accounts_frozen_upto,
             settings,
             item,
+            latest_existing_posting_date,
             next_prev_posting_date.or_else(|| Some(booking_dates.end_date)),
             next_already_booked,
             actions,
