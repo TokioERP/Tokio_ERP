@@ -1208,7 +1208,7 @@
     {
       "source": "accounts/doctype/party_link/party_link.py",
       "target": "accounts/doctype/party_link/party_link.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/party_link/test_party_link.py",
