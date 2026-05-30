@@ -253,6 +253,7 @@ fn deferred_revenue_book_deferred_income_or_expense_plan_handles_frozen_date_and
             already_booked: AlreadyBookedAmounts::default(),
             already_booked_by_item: BTreeMap::new(),
             latest_existing_posting_dates: BTreeMap::new(),
+            today: None,
             deferred_accounting_error: false,
         },
         &[item],
@@ -300,6 +301,7 @@ fn deferred_revenue_book_deferred_income_or_expense_plan_uses_journal_entry_and_
             already_booked: AlreadyBookedAmounts::default(),
             already_booked_by_item: BTreeMap::new(),
             latest_existing_posting_dates: BTreeMap::new(),
+            today: None,
             deferred_accounting_error: false,
         },
         &[item.clone()],
@@ -320,6 +322,7 @@ fn deferred_revenue_book_deferred_income_or_expense_plan_uses_journal_entry_and_
             already_booked: AlreadyBookedAmounts::default(),
             already_booked_by_item: BTreeMap::new(),
             latest_existing_posting_dates: BTreeMap::new(),
+            today: None,
             deferred_accounting_error: true,
         },
         &[item],
@@ -355,6 +358,7 @@ fn deferred_revenue_book_deferred_income_or_expense_plan_uses_item_existing_post
         already_booked: AlreadyBookedAmounts::default(),
         already_booked_by_item: BTreeMap::new(),
         latest_existing_posting_dates: BTreeMap::new(),
+        today: None,
         deferred_accounting_error: false,
     };
     settings
@@ -412,6 +416,7 @@ fn deferred_revenue_book_deferred_income_or_expense_plan_keeps_gl_posting_option
             already_booked: AlreadyBookedAmounts::default(),
             already_booked_by_item: BTreeMap::new(),
             latest_existing_posting_dates: BTreeMap::new(),
+            today: None,
             deferred_accounting_error: false,
         },
         &[item],
@@ -421,6 +426,40 @@ fn deferred_revenue_book_deferred_income_or_expense_plan_keeps_gl_posting_option
         &actions[0],
         DeferredPostingAction::GlEntries { cancel, merge_entries, .. }
             if *cancel && *merge_entries
+    ));
+}
+
+#[test]
+fn deferred_revenue_book_deferred_income_or_expense_plan_defaults_posting_date_to_yesterday() {
+    let mut item = deferred_item();
+    item.service_start_date = "2026-01-01".to_string();
+    item.service_end_date = "2026-03-31".to_string();
+    item.base_net_amount = 900.0;
+    item.net_amount = 900.0;
+
+    let actions = book_deferred_income_or_expense_plan(
+        &sales_doc(),
+        "PDA-0001",
+        None,
+        None,
+        &DeferredPostingSettings {
+            via_journal_entry: false,
+            submit_journal_entry: false,
+            booking_basis: BookingBasis::Days,
+            account_currency: "USD".to_string(),
+            already_booked: AlreadyBookedAmounts::default(),
+            already_booked_by_item: BTreeMap::new(),
+            latest_existing_posting_dates: BTreeMap::new(),
+            today: Some("2026-04-01".to_string()),
+            deferred_accounting_error: false,
+        },
+        &[item],
+    );
+
+    assert!(matches!(
+        actions.last(),
+        Some(DeferredPostingAction::GlEntries { posting_date, entries, .. })
+            if posting_date == "2026-03-31" && entries[0].credit == 310.0
     ));
 }
 

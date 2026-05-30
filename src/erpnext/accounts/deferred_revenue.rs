@@ -150,6 +150,7 @@ pub struct DeferredPostingSettings {
     pub already_booked: AlreadyBookedAmounts,
     pub already_booked_by_item: BTreeMap<String, AlreadyBookedAmounts>,
     pub latest_existing_posting_dates: BTreeMap<String, String>,
+    pub today: Option<String>,
     pub deferred_accounting_error: bool,
 }
 
@@ -314,7 +315,14 @@ pub fn book_deferred_income_or_expense_plan(
     items: &[DeferredItem],
 ) -> Vec<DeferredPostingAction> {
     let enable_revenue = doc.doctype == DeferredDocType::SalesInvoice;
-    let posting_date = posting_date.unwrap_or_default();
+    let default_posting_date = settings
+        .today
+        .as_deref()
+        .map(|today| parse_date(today).add_days(-1).to_string());
+    let posting_date = posting_date
+        .map(str::to_string)
+        .or(default_posting_date)
+        .unwrap_or_default();
     let mut actions = Vec::new();
 
     for item in items {
@@ -336,7 +344,7 @@ pub fn book_deferred_income_or_expense_plan(
             collect_deferred_posting_actions(
                 doc,
                 deferred_process,
-                posting_date,
+                &posting_date,
                 accounts_frozen_upto,
                 settings,
                 item,
