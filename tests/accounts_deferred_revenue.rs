@@ -2,9 +2,12 @@ use std::collections::BTreeMap;
 
 use tokio_erp::erpnext::accounts::deferred_revenue::{
     book_revenue_via_journal_entry_plan, build_conditions, calculate_amount,
-    calculate_monthly_amount, get_booking_dates, get_deferred_booking_accounts,
-    make_gl_entries_plan, validate_service_stop_dates, AlreadyBookedAmounts, BookingDates,
-    DeferredDoc, DeferredDocType, DeferredItem, DeferredProcessType, GlEntryPlan, JournalEntryPlan,
+    calculate_monthly_amount, convert_deferred_expense_to_expense_plan,
+    convert_deferred_revenue_to_income_plan, get_booking_dates, get_deferred_booking_accounts,
+    make_gl_entries_plan, process_deferred_accounting_plan, send_mail_plan,
+    validate_service_stop_dates, AlreadyBookedAmounts, BookingDates, DeferredConversionPlan,
+    DeferredDoc, DeferredDocType, DeferredErrorMailPlan, DeferredItem,
+    DeferredProcessAccountingDocPlan, DeferredProcessType, GlEntryPlan, JournalEntryPlan,
     ServiceStopDateError,
 };
 
@@ -116,6 +119,116 @@ fn deferred_revenue_build_conditions_matches_income_expense_account_company_bran
     assert_eq!(
         build_conditions(DeferredProcessType::Income, None, None),
         ""
+    );
+}
+
+#[test]
+fn deferred_revenue_conversion_query_plans_match_income_and_expense_sql_defaults() {
+    let income = convert_deferred_revenue_to_income_plan(
+        "PDA-INCOME",
+        None,
+        None,
+        "2026-05-30",
+        "AND p.company = '_Test Company'",
+        true,
+    );
+
+    assert_eq!(
+        income,
+        DeferredConversionPlan {
+            deferred_process: "PDA-INCOME".to_string(),
+            invoice_doctype: "Sales Invoice",
+            item_table: "tabSales Invoice Item",
+            parent_table: "tabSales Invoice",
+            enable_field: "enable_deferred_revenue",
+            date_params: ("2026-05-29".to_string(), "2026-04-30".to_string()),
+            conditions: "AND p.company = '_Test Company'".to_string(),
+            query: "select distinct item.parent from `tabSales Invoice Item` item, `tabSales Invoice` p where item.service_start_date<=%s and item.service_end_date>=%s and item.enable_deferred_revenue = 1 and item.parent=p.name and item.docstatus = 1 and ifnull(item.amount, 0) > 0 AND p.company = '_Test Company'".to_string(),
+            mail_if_error: Some(send_mail_plan("PDA-INCOME")),
+        }
+    );
+
+    let expense = convert_deferred_expense_to_expense_plan(
+        "PDA-EXPENSE",
+        Some("2026-01-01"),
+        Some("2026-01-31"),
+        "2026-05-30",
+        "",
+        false,
+    );
+
+    assert_eq!(
+        expense,
+        DeferredConversionPlan {
+            deferred_process: "PDA-EXPENSE".to_string(),
+            invoice_doctype: "Purchase Invoice",
+            item_table: "tabPurchase Invoice Item",
+            parent_table: "tabPurchase Invoice",
+            enable_field: "enable_deferred_expense",
+            date_params: ("2026-01-31".to_string(), "2026-01-01".to_string()),
+            conditions: String::new(),
+            query: "select distinct item.parent from `tabPurchase Invoice Item` item, `tabPurchase Invoice` p where item.service_start_date<=%s and item.service_end_date>=%s and item.enable_deferred_expense = 1 and item.parent=p.name and item.docstatus = 1 and ifnull(item.amount, 0) > 0".to_string(),
+            mail_if_error: None,
+        }
+    );
+}
+
+#[test]
+fn deferred_revenue_process_deferred_accounting_plan_matches_monthly_company_docs() {
+    assert!(
+        process_deferred_accounting_plan(None, "2026-05-30", false, &["_Test Company"]).is_empty()
+    );
+
+    assert_eq!(
+        process_deferred_accounting_plan(
+            Some("2026-05-15"),
+            "2026-05-30",
+            true,
+            &["_Test Company", "Second Co"],
+        ),
+        vec![
+            DeferredProcessAccountingDocPlan {
+                company: "_Test Company".to_string(),
+                posting_date: "2026-05-15".to_string(),
+                start_date: "2026-04-30".to_string(),
+                end_date: "2026-05-29".to_string(),
+                process_type: DeferredProcessType::Income,
+            },
+            DeferredProcessAccountingDocPlan {
+                company: "_Test Company".to_string(),
+                posting_date: "2026-05-15".to_string(),
+                start_date: "2026-04-30".to_string(),
+                end_date: "2026-05-29".to_string(),
+                process_type: DeferredProcessType::Expense,
+            },
+            DeferredProcessAccountingDocPlan {
+                company: "Second Co".to_string(),
+                posting_date: "2026-05-15".to_string(),
+                start_date: "2026-04-30".to_string(),
+                end_date: "2026-05-29".to_string(),
+                process_type: DeferredProcessType::Income,
+            },
+            DeferredProcessAccountingDocPlan {
+                company: "Second Co".to_string(),
+                posting_date: "2026-05-15".to_string(),
+                start_date: "2026-04-30".to_string(),
+                end_date: "2026-05-29".to_string(),
+                process_type: DeferredProcessType::Expense,
+            },
+        ]
+    );
+}
+
+#[test]
+fn deferred_revenue_send_mail_plan_matches_erpnext_message_shape() {
+    assert_eq!(
+        send_mail_plan("PDA-0001"),
+        DeferredErrorMailPlan {
+            title: "Error while processing deferred accounting for PDA-0001".to_string(),
+            doctype: "Process Deferred Accounting".to_string(),
+            docname: "PDA-0001".to_string(),
+            content: "Deferred accounting failed for some invoices:\nPlease check Process Deferred Accounting Process Deferred Accounting/PDA-0001 and submit manually after resolving errors.".to_string(),
+        }
     );
 }
 

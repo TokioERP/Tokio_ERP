@@ -105,6 +105,36 @@ pub struct DeferredPostingPlan {
     pub last_gl_entry: bool,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct DeferredConversionPlan {
+    pub deferred_process: String,
+    pub invoice_doctype: &'static str,
+    pub item_table: &'static str,
+    pub parent_table: &'static str,
+    pub enable_field: &'static str,
+    pub date_params: (String, String),
+    pub conditions: String,
+    pub query: String,
+    pub mail_if_error: Option<DeferredErrorMailPlan>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DeferredErrorMailPlan {
+    pub title: String,
+    pub doctype: String,
+    pub docname: String,
+    pub content: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DeferredProcessAccountingDocPlan {
+    pub company: String,
+    pub posting_date: String,
+    pub start_date: String,
+    pub end_date: String,
+    pub process_type: DeferredProcessType,
+}
+
 pub fn validate_service_stop_dates(
     doctype: DeferredDocType,
     _doc_name: &str,
@@ -160,6 +190,84 @@ pub fn build_conditions(
         format!("AND p.company = {}", sql_quote(company))
     } else {
         String::new()
+    }
+}
+
+pub fn convert_deferred_expense_to_expense_plan(
+    deferred_process: &str,
+    start_date: Option<&str>,
+    end_date: Option<&str>,
+    today: &str,
+    conditions: &str,
+    deferred_accounting_error: bool,
+) -> DeferredConversionPlan {
+    conversion_plan(
+        DeferredProcessType::Expense,
+        deferred_process,
+        start_date,
+        end_date,
+        today,
+        conditions,
+        deferred_accounting_error,
+    )
+}
+
+pub fn convert_deferred_revenue_to_income_plan(
+    deferred_process: &str,
+    start_date: Option<&str>,
+    end_date: Option<&str>,
+    today: &str,
+    conditions: &str,
+    deferred_accounting_error: bool,
+) -> DeferredConversionPlan {
+    conversion_plan(
+        DeferredProcessType::Income,
+        deferred_process,
+        start_date,
+        end_date,
+        today,
+        conditions,
+        deferred_accounting_error,
+    )
+}
+
+pub fn process_deferred_accounting_plan(
+    posting_date: Option<&str>,
+    today: &str,
+    automatically_process: bool,
+    companies: &[&str],
+) -> Vec<DeferredProcessAccountingDocPlan> {
+    if !automatically_process {
+        return Vec::new();
+    }
+
+    let posting_date = posting_date.unwrap_or(today).to_string();
+    let start_date = parse_date(today).add_months(-1).to_string();
+    let end_date = parse_date(today).add_days(-1).to_string();
+    let mut docs = Vec::new();
+    for company in companies {
+        for process_type in [DeferredProcessType::Income, DeferredProcessType::Expense] {
+            docs.push(DeferredProcessAccountingDocPlan {
+                company: (*company).to_string(),
+                posting_date: posting_date.clone(),
+                start_date: start_date.clone(),
+                end_date: end_date.clone(),
+                process_type,
+            });
+        }
+    }
+    docs
+}
+
+pub fn send_mail_plan(deferred_process: &str) -> DeferredErrorMailPlan {
+    let link = format!("Process Deferred Accounting/{deferred_process}");
+    DeferredErrorMailPlan {
+        title: format!("Error while processing deferred accounting for {deferred_process}"),
+        doctype: "Process Deferred Accounting".to_string(),
+        docname: deferred_process.to_string(),
+        content: format!(
+            "Deferred accounting failed for some invoices:\nPlease check Process Deferred Accounting {link} and submit manually after resolving errors."
+        ),
     }
 }
 
@@ -477,6 +585,60 @@ fn sql_quote(value: &str) -> String {
     format!("'{}'", value.replace('\'', "''"))
 }
 
+#[allow(clippy::too_many_arguments)]
+fn conversion_plan(
+    process_type: DeferredProcessType,
+    deferred_process: &str,
+    start_date: Option<&str>,
+    end_date: Option<&str>,
+    today: &str,
+    conditions: &str,
+    deferred_accounting_error: bool,
+) -> DeferredConversionPlan {
+    let start_date = start_date
+        .map(str::to_string)
+        .unwrap_or_else(|| parse_date(today).add_months(-1).to_string());
+    let end_date = end_date
+        .map(str::to_string)
+        .unwrap_or_else(|| parse_date(today).add_days(-1).to_string());
+    let (invoice_doctype, item_table, parent_table, enable_field) = match process_type {
+        DeferredProcessType::Income => (
+            "Sales Invoice",
+            "tabSales Invoice Item",
+            "tabSales Invoice",
+            "enable_deferred_revenue",
+        ),
+        DeferredProcessType::Expense => (
+            "Purchase Invoice",
+            "tabPurchase Invoice Item",
+            "tabPurchase Invoice",
+            "enable_deferred_expense",
+        ),
+    };
+    let conditions = conditions.trim().to_string();
+    let query = if conditions.is_empty() {
+        format!(
+            "select distinct item.parent from `{item_table}` item, `{parent_table}` p where item.service_start_date<=%s and item.service_end_date>=%s and item.{enable_field} = 1 and item.parent=p.name and item.docstatus = 1 and ifnull(item.amount, 0) > 0"
+        )
+    } else {
+        format!(
+            "select distinct item.parent from `{item_table}` item, `{parent_table}` p where item.service_start_date<=%s and item.service_end_date>=%s and item.{enable_field} = 1 and item.parent=p.name and item.docstatus = 1 and ifnull(item.amount, 0) > 0 {conditions}"
+        )
+    };
+
+    DeferredConversionPlan {
+        deferred_process: deferred_process.to_string(),
+        invoice_doctype,
+        item_table,
+        parent_table,
+        enable_field,
+        date_params: (end_date, start_date),
+        conditions,
+        query,
+        mail_if_error: deferred_accounting_error.then(|| send_mail_plan(deferred_process)),
+    }
+}
+
 fn flt(value: f64, precision: u32) -> f64 {
     let factor = 10_f64.powi(precision as i32);
     (value * factor).round() / factor
@@ -534,6 +696,14 @@ impl SimpleDate {
 
     fn add_days(self, days: i64) -> Self {
         civil_from_days(self.days_since_epoch() + days)
+    }
+
+    fn add_months(self, months: i32) -> Self {
+        let total_months = self.year * 12 + self.month as i32 - 1 + months;
+        let year = total_months.div_euclid(12);
+        let month = total_months.rem_euclid(12) as u32 + 1;
+        let day = self.day.min(days_in_month(year, month));
+        Self { year, month, day }
     }
 
     fn days_since_epoch(self) -> i64 {
