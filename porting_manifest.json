@@ -193,7 +193,7 @@
     {
       "source": "accounts/doctype/advance_payment_ledger_entry/advance_payment_ledger_entry.py",
       "target": "accounts/doctype/advance_payment_ledger_entry/advance_payment_ledger_entry.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/advance_payment_ledger_entry/test_advance_payment_ledger_entry.py",
@@ -1053,7 +1053,7 @@
     {
       "source": "accounts/doctype/loyalty_point_entry/loyalty_point_entry.py",
       "target": "accounts/doctype/loyalty_point_entry/loyalty_point_entry.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/loyalty_point_entry/test_loyalty_point_entry.py",
