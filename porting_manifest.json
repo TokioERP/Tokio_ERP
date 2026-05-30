@@ -953,7 +953,7 @@
     {
       "source": "accounts/doctype/journal_entry_account/journal_entry_account.py",
       "target": "accounts/doctype/journal_entry_account/journal_entry_account.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/journal_entry_template/__init__.py",
