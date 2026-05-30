@@ -483,7 +483,7 @@
     {
       "source": "accounts/doctype/budget_account/budget_account.py",
       "target": "accounts/doctype/budget_account/budget_account.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/budget_distribution/__init__.py",
@@ -493,7 +493,7 @@
     {
       "source": "accounts/doctype/budget_distribution/budget_distribution.py",
       "target": "accounts/doctype/budget_distribution/budget_distribution.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/campaign_item/__init__.py",
@@ -718,7 +718,7 @@
     {
       "source": "accounts/doctype/dunning_letter_text/dunning_letter_text.py",
       "target": "accounts/doctype/dunning_letter_text/dunning_letter_text.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/dunning_type/__init__.py",
@@ -773,7 +773,7 @@
     {
       "source": "accounts/doctype/finance_book/finance_book.py",
       "target": "accounts/doctype/finance_book/finance_book.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/finance_book/finance_book_dashboard.py",
@@ -918,7 +918,7 @@
     {
       "source": "accounts/doctype/item_tax_template_detail/item_tax_template_detail.py",
       "target": "accounts/doctype/item_tax_template_detail/item_tax_template_detail.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/item_wise_tax_detail/__init__.py",
@@ -978,7 +978,7 @@
     {
       "source": "accounts/doctype/journal_entry_template_account/journal_entry_template_account.py",
       "target": "accounts/doctype/journal_entry_template_account/journal_entry_template_account.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/ledger_health/__init__.py",
@@ -988,7 +988,7 @@
     {
       "source": "accounts/doctype/ledger_health/ledger_health.py",
       "target": "accounts/doctype/ledger_health/ledger_health.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/ledger_health/test_ledger_health.py",
@@ -1068,7 +1068,7 @@
     {
       "source": "accounts/doctype/loyalty_point_entry_redemption/loyalty_point_entry_redemption.py",
       "target": "accounts/doctype/loyalty_point_entry_redemption/loyalty_point_entry_redemption.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/loyalty_program/__init__.py",
@@ -1098,7 +1098,7 @@
     {
       "source": "accounts/doctype/loyalty_program_collection/loyalty_program_collection.py",
       "target": "accounts/doctype/loyalty_program_collection/loyalty_program_collection.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/mode_of_payment/__init__.py",
@@ -1123,7 +1123,7 @@
     {
       "source": "accounts/doctype/mode_of_payment_account/mode_of_payment_account.py",
       "target": "accounts/doctype/mode_of_payment_account/mode_of_payment_account.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/monthly_distribution/__init__.py",
@@ -1668,7 +1668,7 @@
     {
       "source": "accounts/doctype/pos_profile_user/pos_profile_user.py",
       "target": "accounts/doctype/pos_profile_user/pos_profile_user.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_profile_user/test_pos_profile_user.py",
@@ -2333,12 +2333,12 @@
     {
       "source": "accounts/doctype/subscription_invoice/subscription_invoice.py",
       "target": "accounts/doctype/subscription_invoice/subscription_invoice.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/subscription_invoice/test_subscription_invoice.py",
       "target": "accounts/doctype/subscription_invoice/test_subscription_invoice.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/subscription_plan/__init__.py",
@@ -2368,7 +2368,7 @@
     {
       "source": "accounts/doctype/subscription_plan_detail/subscription_plan_detail.py",
       "target": "accounts/doctype/subscription_plan_detail/subscription_plan_detail.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/subscription_settings/__init__.py",
