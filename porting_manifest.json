@@ -1133,7 +1133,7 @@
     {
       "source": "accounts/doctype/monthly_distribution/monthly_distribution.py",
       "target": "accounts/doctype/monthly_distribution/monthly_distribution.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/monthly_distribution/monthly_distribution_dashboard.py",
@@ -1143,7 +1143,7 @@
     {
       "source": "accounts/doctype/monthly_distribution/test_monthly_distribution.py",
       "target": "accounts/doctype/monthly_distribution/test_monthly_distribution.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/monthly_distribution_percentage/__init__.py",

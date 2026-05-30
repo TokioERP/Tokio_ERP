@@ -35,6 +35,7 @@ fn monthly_distribution_percentage_matches_erpnext_metadata() {
 #[test]
 fn monthly_distribution_percentage_preserves_pass_controller_behavior() {
     let blank = MonthlyDistributionPercentage::default();
+    assert_eq!(blank.idx, None);
     assert_eq!(blank.month, None);
     assert_eq!(blank.percentage_allocation, None);
     assert!(blank.custom_hooks().is_empty());

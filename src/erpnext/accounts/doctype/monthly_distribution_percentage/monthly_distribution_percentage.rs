@@ -2,6 +2,7 @@ use crate::erpnext::{DocumentController, FieldSpec};
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct MonthlyDistributionPercentage {
+    pub idx: Option<u16>,
     pub month: Option<String>,
     pub percentage_allocation: Option<f64>,
 }
@@ -17,6 +18,7 @@ impl MonthlyDistributionPercentage {
 
     pub fn new(month: impl Into<String>, percentage_allocation: f64) -> Self {
         Self {
+            idx: None,
             month: Some(month.into()),
             percentage_allocation: Some(percentage_allocation),
         }
