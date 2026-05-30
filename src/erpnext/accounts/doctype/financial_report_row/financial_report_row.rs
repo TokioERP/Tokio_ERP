@@ -1,7 +1,11 @@
 use crate::erpnext::{DocumentController, FieldSpec};
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct FinancialReportRow;
+pub struct FinancialReportRow {
+    pub data_source: Option<String>,
+    pub balance_type: Option<String>,
+    pub calculation_formula: Option<String>,
+}
 
 impl FinancialReportRow {
     pub const DOCTYPE: &'static str = "Financial Report Row";

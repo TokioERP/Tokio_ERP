@@ -71,7 +71,7 @@ fn financial_report_row_matches_erpnext_pass_controller_metadata() {
             .print_hide()
     );
 
-    let row = FinancialReportRow;
+    let row = FinancialReportRow::default();
     assert_eq!(row.doctype(), "Financial Report Row");
     assert!(row.custom_hooks().is_empty());
 }

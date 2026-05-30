@@ -808,7 +808,7 @@
     {
       "source": "accounts/doctype/financial_report_template/financial_report_template.py",
       "target": "accounts/doctype/financial_report_template/financial_report_template.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/financial_report_template/financial_report_validation.py",
