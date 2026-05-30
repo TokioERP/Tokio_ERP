@@ -793,7 +793,7 @@
     {
       "source": "accounts/doctype/financial_report_row/financial_report_row.py",
       "target": "accounts/doctype/financial_report_row/financial_report_row.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/financial_report_template/__init__.py",
