@@ -453,7 +453,7 @@
     {
       "source": "accounts/doctype/bisect_nodes/bisect_nodes.py",
       "target": "accounts/doctype/bisect_nodes/bisect_nodes.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bisect_nodes/test_bisect_nodes.py",
@@ -1338,7 +1338,7 @@
     {
       "source": "accounts/doctype/payment_reconciliation_allocation/payment_reconciliation_allocation.py",
       "target": "accounts/doctype/payment_reconciliation_allocation/payment_reconciliation_allocation.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_reconciliation_invoice/__init__.py",
@@ -2378,12 +2378,12 @@
     {
       "source": "accounts/doctype/subscription_settings/subscription_settings.py",
       "target": "accounts/doctype/subscription_settings/subscription_settings.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/subscription_settings/test_subscription_settings.py",
       "target": "accounts/doctype/subscription_settings/test_subscription_settings.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/supplier_group_item/__init__.py",
