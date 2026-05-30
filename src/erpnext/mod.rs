@@ -38,6 +38,7 @@ pub struct FieldSpec {
     pub required: bool,
     pub unique: bool,
     pub allow_bulk_edit: bool,
+    pub set_only_once: bool,
 }
 
 impl FieldSpec {
@@ -79,6 +80,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -120,6 +122,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -161,6 +164,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -202,6 +206,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -243,6 +248,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -284,6 +290,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -325,6 +332,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -366,6 +374,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -407,6 +416,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -448,6 +458,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -489,6 +500,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -530,6 +542,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -571,6 +584,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -612,6 +626,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -653,6 +668,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -694,6 +710,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -735,6 +752,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -776,6 +794,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -817,6 +836,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -858,6 +878,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -899,6 +920,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -940,6 +962,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -981,6 +1004,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -1022,6 +1046,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -1063,6 +1088,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -1104,6 +1130,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -1145,6 +1172,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -1186,6 +1214,7 @@ impl FieldSpec {
             required: false,
             unique: false,
             allow_bulk_edit: false,
+            set_only_once: false,
         }
     }
 
@@ -1356,6 +1385,11 @@ impl FieldSpec {
 
     pub const fn allow_bulk_edit(mut self) -> Self {
         self.allow_bulk_edit = true;
+        self
+    }
+
+    pub const fn set_only_once(mut self) -> Self {
+        self.set_only_once = true;
         self
     }
 }
