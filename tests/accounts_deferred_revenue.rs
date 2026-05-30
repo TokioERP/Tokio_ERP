@@ -261,7 +261,7 @@ fn deferred_revenue_book_deferred_income_or_expense_plan_handles_frozen_date_and
     assert_eq!(actions.len(), 3);
     assert!(matches!(
         &actions[0],
-        DeferredPostingAction::GlEntries { posting_date, prev_posting_date, entries }
+        DeferredPostingAction::GlEntries { posting_date, prev_posting_date, entries, .. }
             if posting_date == "2026-02-28"
                 && prev_posting_date.as_deref() == Some("2026-01-31")
                 && entries[0].account == "Sales"
@@ -269,14 +269,14 @@ fn deferred_revenue_book_deferred_income_or_expense_plan_handles_frozen_date_and
     ));
     assert!(matches!(
         &actions[1],
-        DeferredPostingAction::GlEntries { posting_date, prev_posting_date, entries }
+        DeferredPostingAction::GlEntries { posting_date, prev_posting_date, entries, .. }
             if posting_date == "2026-02-28"
                 && prev_posting_date.is_none()
                 && entries[0].credit == 280.0
     ));
     assert!(matches!(
         &actions[2],
-        DeferredPostingAction::GlEntries { posting_date, prev_posting_date, entries }
+        DeferredPostingAction::GlEntries { posting_date, prev_posting_date, entries, .. }
             if posting_date == "2026-03-31"
                 && prev_posting_date.is_none()
                 && entries[0].credit == 310.0
@@ -386,6 +386,42 @@ fn deferred_revenue_book_deferred_income_or_expense_plan_uses_item_existing_post
         .collect::<Vec<_>>();
 
     assert_eq!(credits, vec![280.0, 310.0, 310.0, 280.0, 310.0]);
+}
+
+#[test]
+fn deferred_revenue_book_deferred_income_or_expense_plan_keeps_gl_posting_options() {
+    let mut doc = sales_doc();
+    doc.docstatus = 2;
+
+    let mut item = deferred_item();
+    item.service_start_date = "2026-01-01".to_string();
+    item.service_end_date = "2026-01-31".to_string();
+    item.base_net_amount = 310.0;
+    item.net_amount = 310.0;
+
+    let actions = book_deferred_income_or_expense_plan(
+        &doc,
+        "PDA-0001",
+        Some("2026-01-31"),
+        None,
+        &DeferredPostingSettings {
+            via_journal_entry: false,
+            submit_journal_entry: false,
+            booking_basis: BookingBasis::Days,
+            account_currency: "USD".to_string(),
+            already_booked: AlreadyBookedAmounts::default(),
+            already_booked_by_item: BTreeMap::new(),
+            latest_existing_posting_dates: BTreeMap::new(),
+            deferred_accounting_error: false,
+        },
+        &[item],
+    );
+
+    assert!(matches!(
+        &actions[0],
+        DeferredPostingAction::GlEntries { cancel, merge_entries, .. }
+            if *cancel && *merge_entries
+    ));
 }
 
 #[test]

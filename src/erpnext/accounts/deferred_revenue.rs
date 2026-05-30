@@ -158,6 +158,8 @@ pub enum DeferredPostingAction {
     GlEntries {
         posting_date: String,
         prev_posting_date: Option<String>,
+        cancel: bool,
+        merge_entries: bool,
         entries: Vec<GlEntryPlan>,
     },
     JournalEntry {
@@ -816,6 +818,8 @@ fn collect_deferred_posting_actions(
             actions.push(DeferredPostingAction::GlEntries {
                 posting_date: gl_posting_date,
                 prev_posting_date: action_prev_posting_date,
+                cancel: doc.docstatus == 2,
+                merge_entries: true,
                 entries,
             });
         }
