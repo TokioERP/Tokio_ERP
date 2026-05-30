@@ -1248,7 +1248,7 @@
     {
       "source": "accounts/doctype/payment_entry_reference/payment_entry_reference.py",
       "target": "accounts/doctype/payment_entry_reference/payment_entry_reference.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_gateway_account/__init__.py",
