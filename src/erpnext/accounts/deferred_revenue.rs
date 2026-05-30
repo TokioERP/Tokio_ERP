@@ -546,7 +546,7 @@ pub fn make_gl_entries_plan(
             reference_name: None,
             reference_type: None,
             reference_detail_no: None,
-            accounting_dimensions: BTreeMap::new(),
+            accounting_dimensions: item.accounting_dimensions.clone(),
         },
         GlEntryPlan {
             account: debit_account.to_string(),
@@ -565,7 +565,7 @@ pub fn make_gl_entries_plan(
             reference_name: None,
             reference_type: None,
             reference_detail_no: None,
-            accounting_dimensions: BTreeMap::new(),
+            accounting_dimensions: item.accounting_dimensions.clone(),
         },
     ])
 }

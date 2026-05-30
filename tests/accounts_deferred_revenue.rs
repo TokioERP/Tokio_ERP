@@ -569,8 +569,16 @@ fn deferred_revenue_gl_and_journal_entry_plans_match_erpnext_shape() {
     assert_eq!(gl_entries[0].account, "Deferred Expense");
     assert_eq!(gl_entries[0].credit, 300.0);
     assert_eq!(gl_entries[0].against_voucher.as_deref(), Some("PDA-0001"));
+    assert_eq!(
+        gl_entries[0].accounting_dimensions,
+        BTreeMap::from([("department".to_string(), "Sales".to_string())])
+    );
     assert_eq!(gl_entries[1].account, "Expense");
     assert_eq!(gl_entries[1].debit, 300.0);
+    assert_eq!(
+        gl_entries[1].accounting_dimensions,
+        BTreeMap::from([("department".to_string(), "Sales".to_string())])
+    );
 
     let journal = book_revenue_via_journal_entry_plan(
         &sales_doc(),
