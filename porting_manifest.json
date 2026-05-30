@@ -1108,7 +1108,7 @@
     {
       "source": "accounts/doctype/mode_of_payment/mode_of_payment.py",
       "target": "accounts/doctype/mode_of_payment/mode_of_payment.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/mode_of_payment/test_mode_of_payment.py",
