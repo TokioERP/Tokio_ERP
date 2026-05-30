@@ -132,7 +132,7 @@ pub fn get_all_transfers_query_plan() -> ShareTransfersQueryPlan {
             "from_shareholder = filters.shareholder or to_shareholder = filters.shareholder",
         docstatus_filter: "docstatus = 1",
         order_by: "date",
-        company_filter: "unused placeholder condition only",
+        company_filter: "condition = ' ' because ERPNext keeps company filter commented out",
     }
 }
 

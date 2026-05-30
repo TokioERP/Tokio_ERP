@@ -136,5 +136,8 @@ fn share_ledger_query_plan_matches_erpnext_sql_filters() {
     );
     assert_eq!(plan.docstatus_filter, "docstatus = 1");
     assert_eq!(plan.order_by, "date");
-    assert_eq!(plan.company_filter, "unused placeholder condition only");
+    assert_eq!(
+        plan.company_filter,
+        "condition = ' ' because ERPNext keeps company filter commented out"
+    );
 }
