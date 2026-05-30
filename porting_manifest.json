@@ -33,7 +33,7 @@
     {
       "source": "accounts/deferred_revenue.py",
       "target": "accounts/deferred_revenue.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/__init__.py",
