@@ -208,7 +208,7 @@
     {
       "source": "accounts/doctype/advance_taxes_and_charges/advance_taxes_and_charges.py",
       "target": "accounts/doctype/advance_taxes_and_charges/advance_taxes_and_charges.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/allowed_dimension/__init__.py",
@@ -763,7 +763,7 @@
     {
       "source": "accounts/doctype/exchange_rate_revaluation_account/exchange_rate_revaluation_account.py",
       "target": "accounts/doctype/exchange_rate_revaluation_account/exchange_rate_revaluation_account.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/finance_book/__init__.py",
@@ -1178,7 +1178,7 @@
     {
       "source": "accounts/doctype/opening_invoice_creation_tool_item/opening_invoice_creation_tool_item.py",
       "target": "accounts/doctype/opening_invoice_creation_tool_item/opening_invoice_creation_tool_item.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/overdue_payment/__init__.py",
@@ -1188,7 +1188,7 @@
     {
       "source": "accounts/doctype/overdue_payment/overdue_payment.py",
       "target": "accounts/doctype/overdue_payment/overdue_payment.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/party_account/__init__.py",
@@ -1313,7 +1313,7 @@
     {
       "source": "accounts/doctype/payment_order_reference/payment_order_reference.py",
       "target": "accounts/doctype/payment_order_reference/payment_order_reference.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_reconciliation/__init__.py",
@@ -1348,7 +1348,7 @@
     {
       "source": "accounts/doctype/payment_reconciliation_invoice/payment_reconciliation_invoice.py",
       "target": "accounts/doctype/payment_reconciliation_invoice/payment_reconciliation_invoice.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_reconciliation_payment/__init__.py",
@@ -1358,7 +1358,7 @@
     {
       "source": "accounts/doctype/payment_reconciliation_payment/payment_reconciliation_payment.py",
       "target": "accounts/doctype/payment_reconciliation_payment/payment_reconciliation_payment.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_reference/__init__.py",
