@@ -1618,7 +1618,7 @@
     {
       "source": "accounts/doctype/pos_opening_entry/pos_opening_entry.py",
       "target": "accounts/doctype/pos_opening_entry/pos_opening_entry.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_opening_entry/test_pos_opening_entry.py",
