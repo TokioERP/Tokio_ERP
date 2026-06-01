@@ -878,7 +878,7 @@
     {
       "source": "accounts/doctype/invoice_discounting/invoice_discounting.py",
       "target": "accounts/doctype/invoice_discounting/invoice_discounting.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/invoice_discounting/invoice_discounting_dashboard.py",
