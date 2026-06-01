@@ -578,7 +578,7 @@
     {
       "source": "accounts/doctype/cost_center/cost_center.py",
       "target": "accounts/doctype/cost_center/cost_center.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/cost_center/cost_center_dashboard.py",
