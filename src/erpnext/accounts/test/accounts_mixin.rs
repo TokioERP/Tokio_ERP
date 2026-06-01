@@ -26,7 +26,7 @@ pub struct AccountsMixinState {
     pub dynamic_attributes: BTreeMap<String, String>,
 }
 
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CustomerSeed {
     pub customer_name: String,
     pub currency: Option<String>,
@@ -35,19 +35,52 @@ pub struct CustomerSeed {
     pub exists: bool,
 }
 
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SupplierSeed {
     pub supplier_name: String,
     pub currency: Option<String>,
     pub exists: bool,
 }
 
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CompanySeed {
     pub company_name: String,
     pub abbr: String,
     pub exists: bool,
     pub cost_center: String,
+}
+
+impl Default for CustomerSeed {
+    fn default() -> Self {
+        Self {
+            customer_name: "_Test Customer".to_string(),
+            currency: None,
+            default_account: None,
+            company: None,
+            exists: false,
+        }
+    }
+}
+
+impl Default for SupplierSeed {
+    fn default() -> Self {
+        Self {
+            supplier_name: "_Test Supplier".to_string(),
+            currency: None,
+            exists: false,
+        }
+    }
+}
+
+impl Default for CompanySeed {
+    fn default() -> Self {
+        Self {
+            company_name: "_Test Company".to_string(),
+            abbr: "_TC".to_string(),
+            exists: false,
+            cost_center: String::new(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]

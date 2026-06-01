@@ -313,12 +313,12 @@ impl POSProfile {
         accounting_dimensions: &[AccountingDimensionCheck],
     ) -> Result<Vec<String>, POSProfileError> {
         self.validate_disabled(old_disabled, has_open_session)?;
-        self.validate_default_profile(other_default_profile_by_user_company)?;
+        let warnings = self.validate_default_profile(other_default_profile_by_user_company)?;
         self.validate_all_link_fields(doctype_company_links, existing_company_links)?;
         self.validate_duplicate_groups()?;
         self.validate_payment_methods(mode_default_accounts)?;
         self.validate_accounting_dimensions(accounting_dimensions)?;
-        Ok(Vec::new())
+        Ok(warnings)
     }
 
     pub fn validate_accounting_dimensions(
@@ -601,11 +601,7 @@ pub fn set_default_profile_plan(
     modified: &str,
 ) -> SetDefaultProfilePlan {
     if pos_profile.is_empty() || company.is_empty() {
-        return SetDefaultProfilePlan {
-            modified: modified.to_string(),
-            modified_by: user.to_string(),
-            ..Default::default()
-        };
+        return SetDefaultProfilePlan::default();
     }
 
     SetDefaultProfilePlan {

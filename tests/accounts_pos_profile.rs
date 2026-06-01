@@ -361,4 +361,37 @@ fn pos_profile_query_and_set_default_profile_plan_match_sql_paths() {
     let no_op = set_default_profile_plan("POS-User", "", "cashier@example.com", "2026-06-01");
     assert_eq!(no_op.clear_default_for_user, "");
     assert_eq!(no_op.set_default_profile, None);
+    assert_eq!(no_op.modified, "");
+    assert_eq!(no_op.modified_by, "");
+}
+
+#[test]
+fn pos_profile_validate_preserves_non_blocking_default_warnings() {
+    let mut profile = base_profile();
+    profile.applicable_for_users = vec![POSProfileUserRow {
+        idx: 9,
+        user: "cashier@example.com".to_string(),
+        default: false,
+        ..Default::default()
+    }];
+
+    let warnings = profile
+        .validate(
+            None,
+            false,
+            &BTreeMap::new(),
+            &[],
+            &BTreeMap::from([("Cash".to_string(), Some("Cash - WP".to_string()))]),
+            &BTreeSet::from(["Warehouse:Wind Power LLC:Stores - WP".to_string()]),
+            &[],
+        )
+        .unwrap();
+
+    assert_eq!(
+        warnings,
+        vec![
+            "User cashier@example.com doesn't have any default POS Profile. Check Default at Row 9 for this User."
+                .to_string()
+        ]
+    );
 }

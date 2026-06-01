@@ -405,14 +405,20 @@ impl OpeningInvoiceCreationTool {
         if scheduler_inactive && !in_test {
             return Err(OpeningInvoiceCreationError::SchedulerInactive);
         }
+        if job_enqueued {
+            return Ok(MakeInvoicesPlan {
+                mode: "noop".to_string(),
+                ..Default::default()
+            });
+        }
         let job_id = format!("opening_invoice::{}", self.name);
         Ok(MakeInvoicesPlan {
             mode: "enqueue".to_string(),
             job_id: Some(job_id),
-            enqueue: !job_enqueued,
-            queue: (!job_enqueued).then(|| "default".to_string()),
-            timeout: (!job_enqueued).then_some(6000),
-            event: (!job_enqueued).then(|| "opening_invoice_creation".to_string()),
+            enqueue: true,
+            queue: Some("default".to_string()),
+            timeout: Some(6000),
+            event: Some("opening_invoice_creation".to_string()),
             run_now: in_test,
         })
     }

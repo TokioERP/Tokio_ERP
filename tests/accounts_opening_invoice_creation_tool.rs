@@ -184,6 +184,12 @@ fn opening_invoice_get_invoices_and_make_invoices_follow_sync_async_thresholds()
         "enqueue"
     );
     assert_eq!(
+        tool.make_invoices_plan(50, false, false, true)
+            .unwrap()
+            .mode,
+        "noop"
+    );
+    assert_eq!(
         tool.make_invoices_plan(50, true, false, false),
         Err(OpeningInvoiceCreationError::SchedulerInactive)
     );

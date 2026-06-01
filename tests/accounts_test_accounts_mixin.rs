@@ -200,3 +200,16 @@ fn accounts_mixin_attribute_and_cleanup_helpers_match_python_strings() {
         ]
     );
 }
+
+#[test]
+fn accounts_mixin_seed_defaults_match_python_method_defaults() {
+    let customer = CustomerSeed::default();
+    assert_eq!(customer.customer_name, "_Test Customer");
+
+    let supplier = SupplierSeed::default();
+    assert_eq!(supplier.supplier_name, "_Test Supplier");
+
+    let company = CompanySeed::default();
+    assert_eq!(company.company_name, "_Test Company");
+    assert_eq!(company.abbr, "_TC");
+}
