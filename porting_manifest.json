@@ -178,7 +178,7 @@
     {
       "source": "accounts/doctype/accounts_settings/accounts_settings.py",
       "target": "accounts/doctype/accounts_settings/accounts_settings.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/accounts_settings/test_accounts_settings.py",
