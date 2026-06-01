@@ -438,7 +438,7 @@
     {
       "source": "accounts/doctype/bisect_accounting_statements/bisect_accounting_statements.py",
       "target": "accounts/doctype/bisect_accounting_statements/bisect_accounting_statements.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bisect_accounting_statements/test_bisect_accounting_statements.py",
