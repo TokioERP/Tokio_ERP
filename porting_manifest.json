@@ -1163,7 +1163,7 @@
     {
       "source": "accounts/doctype/opening_invoice_creation_tool/opening_invoice_creation_tool.py",
       "target": "accounts/doctype/opening_invoice_creation_tool/opening_invoice_creation_tool.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/opening_invoice_creation_tool/test_opening_invoice_creation_tool.py",
