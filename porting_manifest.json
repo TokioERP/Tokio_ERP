@@ -553,7 +553,7 @@
     {
       "source": "accounts/doctype/cheque_print_template/cheque_print_template.py",
       "target": "accounts/doctype/cheque_print_template/cheque_print_template.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/cheque_print_template/test_cheque_print_template.py",
