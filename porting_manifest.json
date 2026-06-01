@@ -833,7 +833,7 @@
     {
       "source": "accounts/doctype/fiscal_year/fiscal_year.py",
       "target": "accounts/doctype/fiscal_year/fiscal_year.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/fiscal_year/fiscal_year_dashboard.py",
