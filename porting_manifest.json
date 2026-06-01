@@ -1573,7 +1573,7 @@
     {
       "source": "accounts/doctype/pos_invoice_item/pos_invoice_item.py",
       "target": "accounts/doctype/pos_invoice_item/pos_invoice_item.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_invoice_merge_log/__init__.py",
