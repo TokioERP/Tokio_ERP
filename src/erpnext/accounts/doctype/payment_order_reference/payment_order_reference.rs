@@ -5,7 +5,12 @@ pub struct PaymentOrderReference {
     pub reference_doctype: Option<String>,
     pub reference_name: Option<String>,
     pub amount: f64,
+    pub supplier: Option<String>,
+    pub payment_request: Option<String>,
+    pub mode_of_payment: Option<String>,
     pub bank_account: Option<String>,
+    pub account: Option<String>,
+    pub payment_reference: Option<String>,
 }
 
 impl PaymentOrderReference {
@@ -39,7 +44,12 @@ impl PaymentOrderReference {
             reference_doctype: Some(reference_doctype.into()),
             reference_name: Some(reference_name.into()),
             amount,
+            supplier: None,
+            payment_request: None,
+            mode_of_payment: None,
             bank_account: Some(bank_account.into()),
+            account: None,
+            payment_reference: None,
         }
     }
 

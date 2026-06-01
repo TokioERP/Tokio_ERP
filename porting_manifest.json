@@ -1293,7 +1293,7 @@
     {
       "source": "accounts/doctype/payment_order/payment_order.py",
       "target": "accounts/doctype/payment_order/payment_order.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_order/payment_order_dashboard.py",
