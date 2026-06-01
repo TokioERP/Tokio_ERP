@@ -1,2 +1,3 @@
 pub mod standard_chart_of_accounts;
+pub mod standard_chart_of_accounts_with_account_number;
 pub mod syscohada_chart_of_accounts;
