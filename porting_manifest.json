@@ -388,7 +388,7 @@
     {
       "source": "accounts/doctype/bank_transaction/bank_transaction.py",
       "target": "accounts/doctype/bank_transaction/bank_transaction.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_transaction/bank_transaction_upload.py",
