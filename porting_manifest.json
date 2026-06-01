@@ -1653,7 +1653,7 @@
     {
       "source": "accounts/doctype/pos_profile/pos_profile.py",
       "target": "accounts/doctype/pos_profile/pos_profile.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_profile/test_pos_profile.py",
