@@ -1078,7 +1078,7 @@
     {
       "source": "accounts/doctype/loyalty_program/loyalty_program.py",
       "target": "accounts/doctype/loyalty_program/loyalty_program.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/loyalty_program/loyalty_program_dashboard.py",
