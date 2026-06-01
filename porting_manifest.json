@@ -1028,7 +1028,7 @@
     {
       "source": "accounts/doctype/ledger_merge/ledger_merge.py",
       "target": "accounts/doctype/ledger_merge/ledger_merge.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/ledger_merge/test_ledger_merge.py",
