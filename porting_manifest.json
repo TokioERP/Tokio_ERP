@@ -2348,7 +2348,7 @@
     {
       "source": "accounts/doctype/subscription_plan/subscription_plan.py",
       "target": "accounts/doctype/subscription_plan/subscription_plan.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/subscription_plan/subscription_plan_dashboard.py",
