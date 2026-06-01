@@ -1693,7 +1693,7 @@
     {
       "source": "accounts/doctype/pos_settings/pos_settings.py",
       "target": "accounts/doctype/pos_settings/pos_settings.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_settings/test_pos_settings.py",
