@@ -1,1 +1,2 @@
+pub mod exchange_rate_revaluation;
 pub mod exchange_rate_revaluation_dashboard;

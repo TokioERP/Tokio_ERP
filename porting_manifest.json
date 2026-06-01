@@ -743,7 +743,7 @@
     {
       "source": "accounts/doctype/exchange_rate_revaluation/exchange_rate_revaluation.py",
       "target": "accounts/doctype/exchange_rate_revaluation/exchange_rate_revaluation.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/exchange_rate_revaluation/exchange_rate_revaluation_dashboard.py",
