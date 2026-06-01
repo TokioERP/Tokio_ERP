@@ -35,7 +35,7 @@ This is not an MVP list. Every source folder and file is tracked. A row is close
 | `custom` | 1 | 2 | 1 | 1 | 0 | not_started | |
 | `dashboard_chart` | 8 | 7 | 0 | 7 | 0 | not_started | |
 | `dashboard_chart_source` | 2 | 5 | 3 | 1 | 1 | not_started | |
-| `doctype` | 191 | 923 | 504 | 282 | 111 | mapped | `bank_account_subtype` parity-tested; remaining doctypes pending. |
+| `doctype` | 191 | 923 | 504 | 282 | 111 | mapped | Multiple controllers are parity-tested, including `bank_account_subtype`, `pos_profile`, and `opening_invoice_creation_tool`; remaining doctypes pending. |
 | `financial_report_template` | 7 | 14 | 7 | 7 | 0 | parity_tested | Python init files are empty/no-op; Rust preserves template registry names, modules, report types, row counts, and exact source folder paths where needed in `accounts_financial_report_template`. JSON kept external. |
 | `letterhead` | 1 | 2 | 0 | 0 | 0 | not_started | |
 | `module_onboarding` | 2 | 1 | 0 | 1 | 0 | not_started | |
@@ -46,7 +46,7 @@ This is not an MVP list. Every source folder and file is tracked. A row is close
 | `print_format` | 26 | 57 | 26 | 25 | 0 | parity_tested | Python init files are empty/no-op; Rust preserves 25 static print format names, folders, report/doc type targets, format type, and standard flags in `accounts_print_static_formats`. JSON/HTML kept external. |
 | `print_format_field_template` | 3 | 5 | 3 | 2 | 0 | parity_tested | Python init files are empty/no-op; Rust preserves field template names, document types, field names, template file paths, and standard flags in `accounts_print_static_formats`. JSON kept external. |
 | `report` | 53 | 244 | 128 | 52 | 50 | not_started | |
-| `test` | 1 | 4 | 4 | 0 | 0 | not_started | |
+| `test` | 1 | 4 | 4 | 0 | 0 | mapped | `accounts_mixin.py` parity-tested; remaining test helpers pending. |
 | `workspace` | 3 | 2 | 0 | 2 | 0 | not_started | |
 
 ## First Pass Order
@@ -149,7 +149,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `mode_of_payment_account` | 3 | 2 | 1 | 0 | not_started | |
 | `monthly_distribution` | 7 | 4 | 1 | 1 | not_started | |
 | `monthly_distribution_percentage` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_monthly_distribution_percentage`. JSON kept external. |
-| `opening_invoice_creation_tool` | 6 | 3 | 1 | 1 | not_started | |
+| `opening_invoice_creation_tool` | 6 | 3 | 1 | 1 | parity_tested | Rust covers onload summary helpers, row defaults, mandatory party validation, party creation plans, invoice dict generation, sync/enqueue/no-op import planning, realtime payloads, and temporary opening account lookup in `accounts_opening_invoice_creation_tool`. JSON/JS kept external. |
 | `opening_invoice_creation_tool_item` | 3 | 2 | 1 | 0 | not_started | |
 | `overdue_payment` | 3 | 2 | 1 | 0 | not_started | |
 | `party_account` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_party_account`. JSON kept external. |
@@ -187,7 +187,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `pos_opening_entry` | 6 | 3 | 1 | 2 | not_started | |
 | `pos_opening_entry_detail` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_opening_entry_detail`. JSON kept external. |
 | `pos_payment_method` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_payment_method`. JSON kept external. |
-| `pos_profile` | 5 | 3 | 1 | 1 | not_started | |
+| `pos_profile` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, disabled/default-profile validation, company link checks, duplicate groups, payment method rules, accounting dimension checks, defaults, item-group permission helpers, query fallback, and default-profile update planning in `accounts_pos_profile`. JSON/JS kept external. |
 | `pos_profile_user` | 5 | 3 | 1 | 1 | not_started | |
 | `pos_search_fields` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_search_fields`. JSON kept external. |
 | `pos_settings` | 5 | 3 | 1 | 1 | not_started | |
