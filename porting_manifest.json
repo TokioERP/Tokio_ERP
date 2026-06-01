@@ -2123,7 +2123,7 @@
     {
       "source": "accounts/doctype/sales_invoice_item/sales_invoice_item.py",
       "target": "accounts/doctype/sales_invoice_item/sales_invoice_item.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/sales_invoice_payment/__init__.py",
