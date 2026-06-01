@@ -3413,7 +3413,7 @@
     {
       "source": "accounts/test/accounts_mixin.py",
       "target": "accounts/test/accounts_mixin.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/test/test_reports.py",
