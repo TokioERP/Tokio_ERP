@@ -908,7 +908,7 @@
     {
       "source": "accounts/doctype/item_tax_template/test_item_tax_template.py",
       "target": "accounts/doctype/item_tax_template/test_item_tax_template.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/item_tax_template_detail/__init__.py",

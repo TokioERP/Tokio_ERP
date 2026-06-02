@@ -21,7 +21,9 @@ impl ItemTaxTemplateDetail {
                 .options("Account")
                 .required()
                 .in_list_view(),
-            FieldSpec::float("tax_rate", "Tax Rate").in_list_view(),
+            FieldSpec::float("tax_rate", "Tax Rate")
+                .read_only_depends_on("eval:doc.not_applicable")
+                .in_list_view(),
             FieldSpec::check("not_applicable", "Not Applicable")
                 .default("0")
                 .in_list_view(),

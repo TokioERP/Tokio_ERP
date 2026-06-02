@@ -129,8 +129,8 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `fiscal_year_company` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_fiscal_year_company`. JSON kept external. |
 | `gl_entry` | 6 | 3 | 1 | 1 | not_started | |
 | `invoice_discounting` | 7 | 4 | 1 | 2 | parity_tested | Rust covers metadata, validation, duplicate/outstanding guards, total/status/end-date updates, sales invoice discount flags, GL entry plans, disbursement and settlement journal plans, invoice filtering, party-account routing for disbursed/settled states, and dashboard metadata in `accounts_invoice_discounting`/`accounts_static_dashboards`. JSON kept external. |
-| `item_tax_template` | 6 | 4 | 1 | 1 | not_started | |
-| `item_tax_template_detail` | 3 | 2 | 1 | 0 | not_started | |
+| `item_tax_template` | 6 | 4 | 1 | 1 | parity_tested | Rust covers metadata, autoname, not-applicable tax-rate zeroing, account company/type validation, duplicate tax detection, pass/no-op Python test parity, and dashboard metadata in `accounts_item_tax_template`/`accounts_static_dashboards`. JSON kept external. |
+| `item_tax_template_detail` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata including `tax_rate` read-only dependency on `not_applicable` covered in `accounts_small_pass_doctypes`. JSON kept external. |
 | `item_wise_tax_detail` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_item_wise_tax_detail`. JSON kept external. |
 | `journal_entry` | 8 | 3 | 2 | 2 | not_started | |
 | `journal_entry_account` | 4 | 2 | 1 | 0 | not_started | |
