@@ -168,7 +168,7 @@
     {
       "source": "accounts/doctype/accounting_period/test_accounting_period.py",
       "target": "accounts/doctype/accounting_period/test_accounting_period.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/accounts_settings/__init__.py",
