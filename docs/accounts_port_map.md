@@ -122,7 +122,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `dunning_type` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, script naming from dunning type plus company abbreviation, controller hooks, and pass/no-op Python test parity in `accounts_dunning_type`. JSON kept external. |
 | `exchange_rate_revaluation` | 6 | 4 | 1 | 1 | not_started | |
 | `exchange_rate_revaluation_account` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust child table metadata covered in `accounts_payment_child_pass_doctypes`. JSON kept external. |
-| `finance_book` | 6 | 4 | 1 | 1 | not_started | |
+| `finance_book` | 6 | 4 | 1 | 1 | parity_tested | Python controller is pass/no-op; Rust covers DocType metadata including import/autoname/document type/icon/search/sort/track-seen flags, unique finance-book name field, empty controller hooks, constructor behavior, and static dashboard data in `accounts_small_pass_doctypes`/`accounts_static_dashboards`. GL propagation from Journal Entry remains external integration. JSON/JS kept external. |
 | `financial_report_row` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust child table metadata covered by `accounts_financial_report_row`. JSON kept external. |
 | `financial_report_template` | 8 | 6 | 1 | 1 | not_started | |
 | `fiscal_year` | 7 | 4 | 1 | 1 | parity_tested | Rust covers metadata, one-year date validation, short-year bypass, overlap rules including company-specific fiscal years over global years, auto-create planning, cached date lookup shape, and dashboard metadata in `accounts_fiscal_year`/`accounts_static_dashboards`. JSON kept external. |

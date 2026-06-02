@@ -16,11 +16,19 @@ fn finance_book_matches_erpnext_pass_controller_metadata() {
     assert_eq!(FinanceBook::DOCTYPE, "Finance Book");
     assert_eq!(FinanceBook::MODULE, "Accounts");
     assert_eq!(FinanceBook::FIELD_ORDER, ["finance_book_name"]);
+    assert!(FinanceBook::ALLOW_IMPORT);
+    assert_eq!(FinanceBook::AUTONAME, "field:finance_book_name");
+    assert_eq!(FinanceBook::DOCUMENT_TYPE, "Document");
+    assert_eq!(FinanceBook::ICON, "fa fa-book");
     assert!(FinanceBook::QUICK_ENTRY);
+    assert_eq!(FinanceBook::SEARCH_FIELDS, "finance_book_name");
+    assert_eq!(FinanceBook::SORT_FIELD, "creation");
+    assert_eq!(FinanceBook::SORT_ORDER, "DESC");
     assert!(FinanceBook::TRACK_CHANGES);
+    assert!(FinanceBook::TRACK_SEEN);
     assert_eq!(
         FinanceBook::fields(),
-        vec![FieldSpec::data("finance_book_name", "Name")]
+        vec![FieldSpec::data("finance_book_name", "Name").unique()]
     );
 
     let doc = FinanceBook::new("Primary Book");
