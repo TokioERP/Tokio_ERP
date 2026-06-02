@@ -121,9 +121,9 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `dunning_letter_text` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and child table behavior covered in `accounts_small_pass_doctypes`. JSON kept external. |
 | `dunning_type` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, script naming from dunning type plus company abbreviation, controller hooks, and pass/no-op Python test parity in `accounts_dunning_type`. JSON kept external. |
 | `exchange_rate_revaluation` | 6 | 4 | 1 | 1 | not_started | |
-| `exchange_rate_revaluation_account` | 3 | 2 | 1 | 0 | not_started | |
+| `exchange_rate_revaluation_account` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust child table metadata covered in `accounts_payment_child_pass_doctypes`. JSON kept external. |
 | `finance_book` | 6 | 4 | 1 | 1 | not_started | |
-| `financial_report_row` | 3 | 2 | 1 | 0 | not_started | |
+| `financial_report_row` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust child table metadata covered by `accounts_financial_report_row`. JSON kept external. |
 | `financial_report_template` | 8 | 6 | 1 | 1 | not_started | |
 | `fiscal_year` | 7 | 4 | 1 | 1 | not_started | |
 | `fiscal_year_company` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_fiscal_year_company`. JSON kept external. |
