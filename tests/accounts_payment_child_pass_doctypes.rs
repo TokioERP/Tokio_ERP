@@ -272,6 +272,13 @@ fn revaluation_opening_and_overdue_child_tables_match_erpnext_metadata() {
     );
 
     assert_eq!(OverduePayment::DOCTYPE, "Overdue Payment");
+    assert_eq!(OverduePayment::MODULE, "Accounts");
+    assert!(OverduePayment::INDEX_WEB_PAGES_FOR_SEARCH);
+    assert!(OverduePayment::IS_TABLE);
+    assert!(OverduePayment::QUICK_ENTRY);
+    assert_eq!(OverduePayment::SORT_FIELD, "creation");
+    assert_eq!(OverduePayment::SORT_ORDER, "DESC");
+    assert!(OverduePayment::TRACK_CHANGES);
     assert_eq!(
         OverduePayment::FIELD_ORDER,
         [
@@ -295,35 +302,73 @@ fn revaluation_opening_and_overdue_child_tables_match_erpnext_metadata() {
             "interest",
         ]
     );
-    assert_eq!(OverduePayment::fields().len(), 18);
     assert_eq!(
-        OverduePayment::fields()[0],
-        FieldSpec::link("payment_term", "Payment Term")
-            .options("Payment Term")
-            .columns(2)
-            .read_only()
-            .print_hide()
+        OverduePayment::fields(),
+        vec![
+            FieldSpec::link("payment_term", "Payment Term")
+                .options("Payment Term")
+                .columns(2)
+                .read_only()
+                .print_hide(),
+            FieldSpec::section_break("section_break_15")
+                .label("Description")
+                .collapsible(),
+            FieldSpec::small_text("description", "Description")
+                .columns(2)
+                .fetch_from("payment_term.description")
+                .read_only(),
+            FieldSpec::section_break("section_break_4"),
+            FieldSpec::date("due_date", "Due Date")
+                .columns(2)
+                .read_only(),
+            FieldSpec::link("mode_of_payment", "Mode of Payment")
+                .options("Mode of Payment")
+                .read_only(),
+            FieldSpec::column_break("column_break_5"),
+            FieldSpec::percent("invoice_portion", "Invoice Portion")
+                .columns(2)
+                .read_only(),
+            FieldSpec::currency("payment_amount", "Payment Amount")
+                .options("currency")
+                .columns(2)
+                .read_only(),
+            FieldSpec::currency("outstanding", "Outstanding")
+                .options("currency")
+                .fetch_from("payment_amount")
+                .read_only()
+                .in_list_view(),
+            FieldSpec::currency("paid_amount", "Paid Amount")
+                .options("currency")
+                .depends_on("paid_amount"),
+            FieldSpec::currency("discounted_amount", "Discounted Amount")
+                .default("0")
+                .depends_on("discounted_amount")
+                .read_only()
+                .print_hide(),
+            FieldSpec::link("sales_invoice", "Sales Invoice")
+                .options("Sales Invoice")
+                .required()
+                .read_only()
+                .in_list_view(),
+            FieldSpec::data("payment_schedule", "Payment Schedule")
+                .read_only()
+                .print_hide(),
+            FieldSpec::data("overdue_days", "Overdue Days")
+                .read_only()
+                .in_list_view(),
+            FieldSpec::int("dunning_level", "Dunning Level")
+                .default("1")
+                .read_only()
+                .in_list_view(),
+            FieldSpec::section_break("section_break_16"),
+            FieldSpec::currency("interest", "Interest")
+                .options("currency")
+                .read_only()
+                .in_list_view(),
+        ]
     );
-    assert_eq!(
-        OverduePayment::fields()[2],
-        FieldSpec::small_text("description", "Description")
-            .columns(2)
-            .fetch_from("payment_term.description")
-            .read_only()
-    );
-    assert_eq!(
-        OverduePayment::fields()[11],
-        FieldSpec::currency("discounted_amount", "Discounted Amount")
-            .default("0")
-            .depends_on("discounted_amount")
-            .read_only()
-            .print_hide()
-    );
-    assert_eq!(
-        OverduePayment::fields()[17],
-        FieldSpec::currency("interest", "Interest")
-            .options("currency")
-            .read_only()
-            .in_list_view()
-    );
+
+    let overdue_payment = OverduePayment;
+    assert_eq!(overdue_payment.doctype(), "Overdue Payment");
+    assert_eq!(overdue_payment.module(), "Accounts");
 }
