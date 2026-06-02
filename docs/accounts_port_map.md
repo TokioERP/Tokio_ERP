@@ -157,7 +157,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `payment_entry` | 6 | 3 | 1 | 2 | not_started | |
 | `payment_entry_deduction` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_payment_entry_deduction`. JSON kept external. |
 | `payment_entry_reference` | 3 | 2 | 1 | 0 | parity_tested | Rust covers DocType metadata, child table flags, index-web-pages flag, quick entry, row format, sort metadata, field order, field definitions, payment_request_outstanding property lookup, and empty controller hooks in `accounts_payment_entry_reference`. JSON kept external. |
-| `payment_gateway_account` | 6 | 4 | 1 | 1 | not_started | |
+| `payment_gateway_account` | 6 | 4 | 1 | 1 | parity_tested | Python test class is pass/no-op; Rust covers DocType metadata, JSON fields order, autoname, validate currency/default handling, default-unset update plan, controller hooks, and static dashboard data in `accounts_payment_gateway_account` and `accounts_static_dashboards`. JSON/JS kept external. |
 | `payment_ledger_entry` | 5 | 3 | 1 | 1 | not_started | |
 | `payment_order` | 6 | 4 | 1 | 1 | not_started | |
 | `payment_order_reference` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata covers child table flags, index-web-pages flag, quick entry, sort metadata, field order, field dependencies/defaults, and empty controller hooks in `accounts_payment_child_pass_doctypes`. JSON kept external. |

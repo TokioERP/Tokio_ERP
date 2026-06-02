@@ -65,14 +65,6 @@ impl PaymentGatewayAccount {
                 .options("Payment Gateway")
                 .in_list_view()
                 .required(),
-            FieldSpec::select("payment_channel", "Payment Channel")
-                .options("\nEmail\nPhone\nOther")
-                .default("Email"),
-            FieldSpec::link("company", "Company")
-                .options("Company")
-                .in_list_view()
-                .print_hide()
-                .required(),
             FieldSpec::check("is_default", "Is Default").default("0"),
             FieldSpec::column_break("column_break_4"),
             FieldSpec::link("payment_account", "Payment Account")
@@ -86,6 +78,14 @@ impl PaymentGatewayAccount {
             FieldSpec::small_text("message", "Default Payment Request Message")
                 .default("Please click on the link below to make your payment"),
             FieldSpec::html("message_examples", "Message Examples").options(Self::MESSAGE_EXAMPLES),
+            FieldSpec::select("payment_channel", "Payment Channel")
+                .options("\nEmail\nPhone\nOther")
+                .default("Email"),
+            FieldSpec::link("company", "Company")
+                .options("Company")
+                .in_list_view()
+                .print_hide()
+                .required(),
         ]
     }
 
