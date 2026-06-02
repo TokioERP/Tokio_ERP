@@ -47,13 +47,6 @@ fn loyalty_point_entry_matches_erpnext_metadata_and_query_helpers() {
                 .options("Customer")
                 .in_list_view()
                 .required(),
-            FieldSpec::link("invoice_type", "Invoice Type")
-                .options("DocType")
-                .required(),
-            FieldSpec::dynamic_link("invoice")
-                .label("Invoice")
-                .options("invoice_type")
-                .in_list_view(),
             FieldSpec::link("redeem_against", "Redeem Against").options("Loyalty Point Entry"),
             FieldSpec::int("loyalty_points", "Loyalty Points")
                 .in_list_view()
@@ -66,6 +59,13 @@ fn loyalty_point_entry_matches_erpnext_metadata_and_query_helpers() {
             FieldSpec::link("company", "Company")
                 .options("Company")
                 .required(),
+            FieldSpec::link("invoice_type", "Invoice Type")
+                .options("DocType")
+                .required(),
+            FieldSpec::dynamic_link("invoice")
+                .label("Invoice")
+                .options("invoice_type")
+                .in_list_view(),
             FieldSpec::data("discretionary_reason", "Discretionary Reason"),
         ]
     );
@@ -99,6 +99,18 @@ fn loyalty_point_entry_matches_erpnext_metadata_and_query_helpers() {
         ]
     );
     assert_eq!(entries.order_by, Some("expiry_date"));
+
+    let explicit_entries = get_loyalty_point_entries_plan(
+        "CUST-001",
+        "Rewards",
+        "Acme",
+        Some("2026-06-30"),
+        "2026-05-30",
+    );
+    assert_eq!(
+        explicit_entries.filters[2],
+        ("expiry_date", ">=", "2026-06-30".to_string())
+    );
 
     let redemption = get_redemption_details_plan("CUST-001", "Rewards", "Acme");
     assert_eq!(redemption.select, "redeem_against, sum(loyalty_points)");

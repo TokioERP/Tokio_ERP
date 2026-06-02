@@ -61,13 +61,6 @@ impl LoyaltyPointEntry {
                 .options("Customer")
                 .in_list_view()
                 .required(),
-            FieldSpec::link("invoice_type", "Invoice Type")
-                .options("DocType")
-                .required(),
-            FieldSpec::dynamic_link("invoice")
-                .label("Invoice")
-                .options("invoice_type")
-                .in_list_view(),
             FieldSpec::link("redeem_against", "Redeem Against").options("Loyalty Point Entry"),
             FieldSpec::int("loyalty_points", "Loyalty Points")
                 .in_list_view()
@@ -80,6 +73,13 @@ impl LoyaltyPointEntry {
             FieldSpec::link("company", "Company")
                 .options("Company")
                 .required(),
+            FieldSpec::link("invoice_type", "Invoice Type")
+                .options("DocType")
+                .required(),
+            FieldSpec::dynamic_link("invoice")
+                .label("Invoice")
+                .options("invoice_type")
+                .in_list_view(),
             FieldSpec::data("discretionary_reason", "Discretionary Reason"),
         ]
     }
