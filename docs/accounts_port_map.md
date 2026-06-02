@@ -99,8 +99,8 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `bisect_accounting_statements` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, date-order validation, BFS/DFS bisect-node generation order, build-tree root/current-period setup, report-summary difference math, cached node summary fetch/update including ERPNext's swapped cached summary assignment, left/right/up navigation messages, and controller hooks in `accounts_bisect_accounting_statements`. JSON/JS kept external; Python test file is pass/no-op. |
 | `bisect_nodes` | 5 | 3 | 1 | 1 | parity_tested | Python controller and test are pass/no-op; Rust preserves Bisect Nodes metadata, autoincrement node links, period/summary/generated fields, and empty controller hooks in `accounts_reconciliation_and_bisect_pass`. JSON/JS kept external. |
 | `budget` | 5 | 3 | 1 | 1 | not_started | |
-| `budget_account` | 3 | 2 | 1 | 0 | not_started | |
-| `budget_distribution` | 3 | 2 | 1 | 0 | not_started | |
+| `budget_account` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust preserves Budget Account child-table metadata, required account/budget amount fields, quick entry, and empty controller hooks in `accounts_small_pass_doctypes`. JSON kept external. |
+| `budget_distribution` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust preserves Budget Distribution child-table metadata, read-only start/end dates, amount/percent list fields, and empty controller behavior in `accounts_small_pass_doctypes`. JSON kept external. |
 | `campaign_item` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_campaign_item`. JSON kept external. |
 | `cashier_closing` | 5 | 3 | 1 | 1 | not_started | |
 | `cashier_closing_payments` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_cashier_closing_payments`. JSON kept external. |
