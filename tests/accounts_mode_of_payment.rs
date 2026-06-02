@@ -35,11 +35,11 @@ fn mode_of_payment_matches_erpnext_metadata() {
                 .in_list_view()
                 .required()
                 .unique(),
-            FieldSpec::check("enabled", "Enabled").default("1"),
             FieldSpec::select("type", "Type")
                 .options("Cash\nBank\nGeneral\nPhone")
                 .in_standard_filter(),
             FieldSpec::table("accounts", "Accounts").options("Mode of Payment Account"),
+            FieldSpec::check("enabled", "Enabled").default("1"),
         ]
     );
 }
