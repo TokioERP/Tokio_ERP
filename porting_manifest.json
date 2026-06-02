@@ -1498,7 +1498,7 @@
     {
       "source": "accounts/doctype/pos_closing_entry/pos_closing_entry.py",
       "target": "accounts/doctype/pos_closing_entry/pos_closing_entry.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_closing_entry/test_pos_closing_entry.py",
