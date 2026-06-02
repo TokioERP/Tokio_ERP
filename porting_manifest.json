@@ -543,7 +543,7 @@
     {
       "source": "accounts/doctype/chart_of_accounts_importer/test_chart_of_accounts_importer.py",
       "target": "accounts/doctype/chart_of_accounts_importer/test_chart_of_accounts_importer.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/cheque_print_template/__init__.py",
