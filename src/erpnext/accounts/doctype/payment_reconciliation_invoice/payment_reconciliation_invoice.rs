@@ -7,7 +7,10 @@ impl PaymentReconciliationInvoice {
     pub const DOCTYPE: &'static str = "Payment Reconciliation Invoice";
     pub const MODULE: &'static str = "Accounts";
     pub const IS_TABLE: bool = true;
+    pub const IS_VIRTUAL: bool = true;
     pub const QUICK_ENTRY: bool = true;
+    pub const SORT_FIELD: &'static str = "creation";
+    pub const SORT_ORDER: &'static str = "DESC";
     pub const TRACK_CHANGES: bool = true;
     pub const FIELD_ORDER: [&'static str; 8] = [
         "invoice_type",

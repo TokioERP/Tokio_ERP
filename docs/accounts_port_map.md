@@ -163,8 +163,8 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `payment_order_reference` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata covers child table flags, index-web-pages flag, quick entry, sort metadata, field order, field dependencies/defaults, and empty controller hooks in `accounts_payment_child_pass_doctypes`. JSON kept external. |
 | `payment_reconciliation` | 5 | 3 | 1 | 1 | not_started | |
 | `payment_reconciliation_allocation` | 3 | 2 | 1 | 0 | not_started | |
-| `payment_reconciliation_invoice` | 3 | 2 | 1 | 0 | not_started | |
-| `payment_reconciliation_payment` | 3 | 2 | 1 | 0 | not_started | |
+| `payment_reconciliation_invoice` | 3 | 2 | 1 | 0 | parity_tested | Python get_list is pass/no-op; Rust metadata covers child table flags, virtual flag, quick entry, sort metadata, track changes, field order, field definitions, and get_list no-op in `accounts_payment_child_pass_doctypes`. JSON kept external. |
+| `payment_reconciliation_payment` | 3 | 2 | 1 | 0 | parity_tested | Python get_list is pass/no-op; Rust metadata covers child table flags, virtual flag, quick entry, sort metadata, field order, field definitions, and get_list no-op in `accounts_payment_child_pass_doctypes`. JSON kept external. |
 | `payment_reference` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_payment_reference`. JSON kept external. |
 | `payment_request` | 7 | 4 | 1 | 2 | not_started | |
 | `payment_schedule` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_payment_schedule`. JSON kept external. |

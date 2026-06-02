@@ -158,6 +158,17 @@ fn payment_order_reference_matches_erpnext_metadata_shape() {
 #[test]
 fn payment_reconciliation_child_tables_match_erpnext_metadata_and_get_list_pass() {
     assert_eq!(
+        PaymentReconciliationInvoice::DOCTYPE,
+        "Payment Reconciliation Invoice"
+    );
+    assert_eq!(PaymentReconciliationInvoice::MODULE, "Accounts");
+    assert!(PaymentReconciliationInvoice::IS_TABLE);
+    assert!(PaymentReconciliationInvoice::IS_VIRTUAL);
+    assert!(PaymentReconciliationInvoice::QUICK_ENTRY);
+    assert_eq!(PaymentReconciliationInvoice::SORT_FIELD, "creation");
+    assert_eq!(PaymentReconciliationInvoice::SORT_ORDER, "DESC");
+    assert!(PaymentReconciliationInvoice::TRACK_CHANGES);
+    assert_eq!(
         PaymentReconciliationInvoice::FIELD_ORDER,
         [
             "invoice_type",
@@ -170,25 +181,50 @@ fn payment_reconciliation_child_tables_match_erpnext_metadata_and_get_list_pass(
             "exchange_rate",
         ]
     );
-    assert!(PaymentReconciliationInvoice::IS_TABLE);
-    assert!(PaymentReconciliationInvoice::QUICK_ENTRY);
-    assert!(PaymentReconciliationInvoice::TRACK_CHANGES);
     assert_eq!(
-        PaymentReconciliationInvoice::fields()[0],
-        FieldSpec::select("invoice_type", "Invoice Type")
-            .options("Sales Invoice\nPurchase Invoice\nJournal Entry")
-            .read_only()
-            .in_list_view()
+        PaymentReconciliationInvoice::fields(),
+        vec![
+            FieldSpec::select("invoice_type", "Invoice Type")
+                .options("Sales Invoice\nPurchase Invoice\nJournal Entry")
+                .read_only()
+                .in_list_view(),
+            FieldSpec::dynamic_link("invoice_number")
+                .label("Invoice Number")
+                .options("invoice_type")
+                .read_only()
+                .in_list_view(),
+            FieldSpec::date("invoice_date", "Invoice Date")
+                .read_only()
+                .in_list_view(),
+            FieldSpec::column_break("col_break1"),
+            FieldSpec::currency("amount", "Amount")
+                .options("currency")
+                .read_only(),
+            FieldSpec::currency("outstanding_amount", "Outstanding Amount")
+                .options("currency")
+                .read_only()
+                .in_list_view(),
+            FieldSpec::link("currency", "Currency")
+                .options("Currency")
+                .hidden(),
+            FieldSpec::float("exchange_rate", "Exchange Rate").hidden(),
+        ]
     );
     assert_eq!(PaymentReconciliationInvoice::get_list("ignored"), ());
+    let invoice = PaymentReconciliationInvoice;
+    assert_eq!(invoice.doctype(), "Payment Reconciliation Invoice");
+    assert_eq!(invoice.module(), "Accounts");
 
     assert_eq!(
-        PaymentReconciliationInvoice::fields()[6],
-        FieldSpec::link("currency", "Currency")
-            .options("Currency")
-            .hidden()
+        PaymentReconciliationPayment::DOCTYPE,
+        "Payment Reconciliation Payment"
     );
-
+    assert_eq!(PaymentReconciliationPayment::MODULE, "Accounts");
+    assert!(PaymentReconciliationPayment::IS_TABLE);
+    assert!(PaymentReconciliationPayment::IS_VIRTUAL);
+    assert!(PaymentReconciliationPayment::QUICK_ENTRY);
+    assert_eq!(PaymentReconciliationPayment::SORT_FIELD, "creation");
+    assert_eq!(PaymentReconciliationPayment::SORT_ORDER, "DESC");
     assert_eq!(
         PaymentReconciliationPayment::FIELD_ORDER,
         [
@@ -207,19 +243,49 @@ fn payment_reconciliation_child_tables_match_erpnext_metadata_and_get_list_pass(
             "cost_center",
         ]
     );
-    assert!(PaymentReconciliationPayment::IS_TABLE);
-    assert!(PaymentReconciliationPayment::QUICK_ENTRY);
     assert_eq!(
-        PaymentReconciliationPayment::fields()[8],
-        FieldSpec::link("currency", "Currency")
-            .options("Currency")
-            .hidden()
-    );
-    assert_eq!(
-        PaymentReconciliationPayment::fields()[12],
-        FieldSpec::small_text("remarks", "Remarks").read_only()
+        PaymentReconciliationPayment::fields(),
+        vec![
+            FieldSpec::link("reference_type", "Reference Type")
+                .options("DocType")
+                .read_only(),
+            FieldSpec::dynamic_link("reference_name")
+                .label("Reference Name")
+                .options("reference_type")
+                .columns(2)
+                .read_only()
+                .in_list_view(),
+            FieldSpec::date("posting_date", "Posting Date")
+                .read_only()
+                .in_list_view(),
+            FieldSpec::data("is_advance", "Is Advance")
+                .read_only()
+                .hidden(),
+            FieldSpec::data("reference_row", "Reference Row")
+                .read_only()
+                .hidden(),
+            FieldSpec::column_break("col_break1"),
+            FieldSpec::currency("amount", "Amount")
+                .options("currency")
+                .columns(2)
+                .read_only()
+                .in_list_view(),
+            FieldSpec::section_break("sec_break1"),
+            FieldSpec::link("currency", "Currency")
+                .options("Currency")
+                .hidden(),
+            FieldSpec::currency("difference_amount", "Difference Amount")
+                .options("currency")
+                .read_only(),
+            FieldSpec::float("exchange_rate", "Exchange Rate").hidden(),
+            FieldSpec::link("cost_center", "Cost Center").options("Cost Center"),
+            FieldSpec::small_text("remarks", "Remarks").read_only(),
+        ]
     );
     assert_eq!(PaymentReconciliationPayment::get_list("ignored"), ());
+    let payment = PaymentReconciliationPayment;
+    assert_eq!(payment.doctype(), "Payment Reconciliation Payment");
+    assert_eq!(payment.module(), "Accounts");
 }
 
 #[test]
