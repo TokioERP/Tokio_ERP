@@ -46,18 +46,11 @@ fn pos_opening_entry_matches_erpnext_metadata() {
             FieldSpec::date("period_end_date", "Period End Date")
                 .in_list_view()
                 .read_only(),
-            FieldSpec::select("status", "Status")
-                .options("Draft\nOpen\nClosed\nCancelled")
-                .default("Draft")
-                .allow_on_submit()
-                .hidden()
-                .read_only(),
             FieldSpec::column_break("column_break_3"),
             FieldSpec::date("posting_date", "Posting Date")
                 .default("Today")
                 .in_list_view()
                 .required(),
-            FieldSpec::check("set_posting_date", "Set Posting Date").default("0"),
             FieldSpec::section_break("section_break_5"),
             FieldSpec::link("company", "Company")
                 .options("Company")
@@ -66,16 +59,9 @@ fn pos_opening_entry_matches_erpnext_metadata() {
                 .options("POS Profile")
                 .in_list_view()
                 .required(),
-            FieldSpec::data("pos_closing_entry", "POS Closing Entry")
-                .allow_on_submit()
-                .read_only(),
             FieldSpec::column_break("column_break_7"),
             FieldSpec::link("user", "Cashier")
                 .options("User")
-                .required(),
-            FieldSpec::section_break("opening_balance_details_section"),
-            FieldSpec::table("balance_details", "Opening Balance Details")
-                .options("POS Opening Entry Detail")
                 .required(),
             FieldSpec::section_break("section_break_9").read_only(),
             FieldSpec::link("amended_from", "Amended From")
@@ -83,6 +69,20 @@ fn pos_opening_entry_matches_erpnext_metadata() {
                 .no_copy()
                 .print_hide()
                 .read_only(),
+            FieldSpec::check("set_posting_date", "Set Posting Date").default("0"),
+            FieldSpec::select("status", "Status")
+                .options("Draft\nOpen\nClosed\nCancelled")
+                .default("Draft")
+                .allow_on_submit()
+                .hidden()
+                .read_only(),
+            FieldSpec::data("pos_closing_entry", "POS Closing Entry")
+                .allow_on_submit()
+                .read_only(),
+            FieldSpec::section_break("opening_balance_details_section"),
+            FieldSpec::table("balance_details", "Opening Balance Details")
+                .options("POS Opening Entry Detail")
+                .required(),
         ]
     );
 }
@@ -120,6 +120,24 @@ fn pos_opening_entry_validation_matches_erpnext() {
 
     assert_eq!(
         entry.validate(&PosOpeningEntryValidationContext {
+            pos_profile_exists: false,
+            ..ok.clone()
+        }),
+        Err(PosOpeningEntryError::PosProfileMissing {
+            pos_profile: "Main POS".to_string(),
+        })
+    );
+    assert_eq!(
+        entry.validate(&PosOpeningEntryValidationContext {
+            pos_profile_disabled: true,
+            ..ok.clone()
+        }),
+        Err(PosOpeningEntryError::PosProfileDisabled {
+            pos_profile: "Main POS".to_string(),
+        })
+    );
+    assert_eq!(
+        entry.validate(&PosOpeningEntryValidationContext {
             pos_profile_company: Some("Other".to_string()),
             ..ok.clone()
         }),
@@ -127,6 +145,31 @@ fn pos_opening_entry_validation_matches_erpnext() {
             pos_profile: "Main POS".to_string(),
             company: "Acme".to_string(),
         })
+    );
+    assert_eq!(
+        entry.validate(&PosOpeningEntryValidationContext {
+            user_enabled: false,
+            ..ok.clone()
+        }),
+        Err(PosOpeningEntryError::UserDisabled {
+            user: "cashier@example.com".to_string(),
+        })
+    );
+    assert_eq!(
+        entry.validate(&PosOpeningEntryValidationContext {
+            open_pos_exists: true,
+            ..ok.clone()
+        }),
+        Err(PosOpeningEntryError::OpenPosExists {
+            pos_profile: "Main POS".to_string(),
+        })
+    );
+    assert_eq!(
+        entry.validate(&PosOpeningEntryValidationContext {
+            open_user_exists: true,
+            ..ok.clone()
+        }),
+        Err(PosOpeningEntryError::UserAlreadyAssigned)
     );
     assert_eq!(
         entry.validate(&PosOpeningEntryValidationContext {

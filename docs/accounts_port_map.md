@@ -184,7 +184,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `pos_invoice_merge_log` | 5 | 3 | 1 | 1 | not_started | |
 | `pos_invoice_reference` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_invoice_reference`. JSON kept external. |
 | `pos_item_group` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_item_group`. JSON kept external. |
-| `pos_opening_entry` | 6 | 3 | 1 | 2 | not_started | |
+| `pos_opening_entry` | 6 | 3 | 1 | 2 | parity_tested | Rust covers DocType metadata, JSON fields order, POS profile/cashier validation, duplicate open POS/user guards, payment-method account validation, cancellation guard, status transitions, realtime cancel payload, and controller hooks in `accounts_pos_opening_entry`. JSON/JS kept external. |
 | `pos_opening_entry_detail` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_opening_entry_detail`. JSON kept external. |
 | `pos_payment_method` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_payment_method`. JSON kept external. |
 | `pos_profile` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, disabled/default-profile validation, company link checks, duplicate groups, payment method rules, accounting dimension checks, defaults, item-group permission helpers, query fallback, and default-profile update planning in `accounts_pos_profile`. JSON/JS kept external. |
