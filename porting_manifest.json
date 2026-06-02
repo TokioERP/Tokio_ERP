@@ -48,7 +48,7 @@
     {
       "source": "accounts/doctype/account/account.py",
       "target": "accounts/doctype/account/account.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/account/chart_of_accounts/__init__.py",

@@ -35,7 +35,7 @@ This is not an MVP list. Every source folder and file is tracked. A row is close
 | `custom` | 1 | 2 | 1 | 1 | 0 | not_started | |
 | `dashboard_chart` | 8 | 7 | 0 | 7 | 0 | not_started | |
 | `dashboard_chart_source` | 2 | 5 | 3 | 1 | 1 | not_started | |
-| `doctype` | 191 | 923 | 504 | 282 | 111 | mapped | Multiple controllers are parity-tested, including `bank_account_subtype`, `pos_profile`, `opening_invoice_creation_tool`, and `pos_closing_entry`; remaining doctypes pending. |
+| `doctype` | 191 | 923 | 504 | 282 | 111 | mapped | Multiple controllers are parity-tested, including `account`, `bank_account_subtype`, `pos_profile`, `opening_invoice_creation_tool`, and `pos_closing_entry`; remaining doctypes pending. |
 | `financial_report_template` | 7 | 14 | 7 | 7 | 0 | parity_tested | Python init files are empty/no-op; Rust preserves template registry names, modules, report types, row counts, and exact source folder paths where needed in `accounts_financial_report_template`. JSON kept external. |
 | `letterhead` | 1 | 2 | 0 | 0 | 0 | not_started | |
 | `module_onboarding` | 2 | 1 | 0 | 1 | 0 | not_started | |
@@ -71,7 +71,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 
 | Doctype Folder | Files | Python | JSON | JS | Status | Notes |
 |---|---:|---:|---:|---:|---|---|
-| `account` | 106 | 9 | 94 | 2 | not_started | |
+| `account` | 106 | 9 | 94 | 2 | parity_tested | Rust covers metadata, account validation, parent/root/type/currency/freeze/default-account guards, conversion plans, child-company account propagation plans, autoname/currency/search helpers, account-number update and merge planning in `accounts_account`. JSON/JS/chart metadata kept external. |
 | `account_category` | 5 | 3 | 1 | 1 | not_started | |
 | `account_closing_balance` | 5 | 3 | 1 | 1 | not_started | |
 | `accounting_dimension` | 5 | 3 | 1 | 1 | not_started | |
