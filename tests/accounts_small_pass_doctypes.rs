@@ -170,6 +170,8 @@ fn tax_ledger_and_loyalty_child_tables_match_erpnext_metadata() {
             FieldSpec::int("redeemed_points", "Redeemed Points").in_list_view(),
         ]
     );
+    assert_eq!(LoyaltyPointEntryRedemption::SORT_FIELD, "creation");
+    assert_eq!(LoyaltyPointEntryRedemption::SORT_ORDER, "DESC");
     let redemption = LoyaltyPointEntryRedemption::new("SINV-0001", "2026-05-30", 25);
     assert_eq!(redemption.redeemed_points, 25);
 }

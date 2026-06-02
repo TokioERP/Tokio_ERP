@@ -142,7 +142,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `ledger_merge` | 5 | 3 | 1 | 1 | not_started | |
 | `ledger_merge_accounts` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_ledger_merge_accounts`. JSON kept external. |
 | `loyalty_point_entry` | 5 | 3 | 1 | 1 | not_started | |
-| `loyalty_point_entry_redemption` | 3 | 2 | 1 | 0 | not_started | |
+| `loyalty_point_entry_redemption` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata covers child table flags, quick entry, sort metadata, field order, and constructor behavior in `accounts_small_pass_doctypes`. JSON kept external. |
 | `loyalty_program` | 6 | 4 | 1 | 1 | not_started | |
 | `loyalty_program_collection` | 3 | 2 | 1 | 0 | not_started | |
 | `mode_of_payment` | 6 | 3 | 1 | 1 | not_started | |

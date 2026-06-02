@@ -44,8 +44,11 @@ impl LoyaltyPointEntry {
         "discretionary_reason",
     ];
     pub const EXCLUDE_FROM_LINKED_WITH: bool = true;
+    pub const IN_CREATE: bool = true;
+    pub const QUICK_ENTRY: bool = true;
     pub const SORT_FIELD: &'static str = "creation";
     pub const SORT_ORDER: &'static str = "DESC";
+    pub const TITLE_FIELD: &'static str = "customer";
     pub const TRACK_CHANGES: bool = true;
 
     pub fn fields() -> Vec<FieldSpec> {

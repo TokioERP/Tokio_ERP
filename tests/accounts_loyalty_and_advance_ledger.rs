@@ -31,6 +31,9 @@ fn loyalty_point_entry_matches_erpnext_metadata_and_query_helpers() {
     assert_eq!(LoyaltyPointEntry::SORT_FIELD, "creation");
     assert_eq!(LoyaltyPointEntry::SORT_ORDER, "DESC");
     assert!(LoyaltyPointEntry::TRACK_CHANGES);
+    assert!(LoyaltyPointEntry::IN_CREATE);
+    assert!(LoyaltyPointEntry::QUICK_ENTRY);
+    assert_eq!(LoyaltyPointEntry::TITLE_FIELD, "customer");
     assert!(LoyaltyPointEntry::EXCLUDE_FROM_LINKED_WITH);
 
     assert_eq!(
