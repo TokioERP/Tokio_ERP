@@ -11,6 +11,10 @@ fn pos_invoice_item_matches_erpnext_metadata_shape() {
     assert_eq!(PosInvoiceItem::AUTONAME, "hash");
     assert_eq!(PosInvoiceItem::DOCUMENT_TYPE, "Document");
     assert!(PosInvoiceItem::EDITABLE_GRID);
+    assert!(PosInvoiceItem::IS_TABLE);
+    assert_eq!(PosInvoiceItem::ROW_FORMAT, "Dynamic");
+    assert_eq!(PosInvoiceItem::SORT_FIELD, "creation");
+    assert_eq!(PosInvoiceItem::SORT_ORDER, "DESC");
     assert_eq!(PosInvoiceItem::FIELD_ORDER.len(), 98);
     assert_eq!(
         &PosInvoiceItem::FIELD_ORDER[..20],

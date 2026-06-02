@@ -14,6 +14,10 @@ impl PosInvoiceItem {
     pub const AUTONAME: &'static str = "hash";
     pub const DOCUMENT_TYPE: &'static str = "Document";
     pub const EDITABLE_GRID: bool = true;
+    pub const IS_TABLE: bool = true;
+    pub const ROW_FORMAT: &'static str = "Dynamic";
+    pub const SORT_FIELD: &'static str = "creation";
+    pub const SORT_ORDER: &'static str = "DESC";
     pub const FIELD_ORDER: [&'static str; 98] = [
         "barcode",
         "has_item_scanned",
