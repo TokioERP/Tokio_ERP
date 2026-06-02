@@ -84,6 +84,17 @@ fn fiscal_year_validates_dates_and_overlaps_like_erpnext() {
         Err(FiscalYearError::InvalidYearEndDate)
     );
 
+    let extra_year = FiscalYear {
+        year: "_Test Fiscal Year 2000".to_string(),
+        year_start_date: "2000-04-01".to_string(),
+        year_end_date: "2002-12-31".to_string(),
+        ..Default::default()
+    };
+    assert_eq!(
+        extra_year.validate(&[]),
+        Err(FiscalYearError::InvalidYearEndDate)
+    );
+
     let short_year = FiscalYear {
         is_short_year: true,
         ..wrong_end
@@ -105,6 +116,13 @@ fn fiscal_year_validates_dates_and_overlaps_like_erpnext() {
         companies: vec![FiscalYearCompany::new("Acme")],
         ..fy
     };
+    assert_eq!(
+        company_specific.validate(&[FiscalYearOverlap {
+            name: "_Test Global FY 2001".to_string(),
+            companies: vec![],
+        }]),
+        Ok(())
+    );
     assert_eq!(
         company_specific.validate(&[FiscalYearOverlap {
             name: "2025".to_string(),
