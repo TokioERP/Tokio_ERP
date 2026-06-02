@@ -1,9 +1,10 @@
 use std::collections::BTreeMap;
 
 use tokio_erp::erpnext::accounts::doctype::bank_statement_import::bank_statement_import::{
-    add_bank_account, bank_statement_import_template_options, get_import_status, is_mt940_format,
-    parse_data_from_template, preprocess_mt940_content, BankStatementImport,
-    BankStatementImportClientConfig, DataImportLog, ImportStatus,
+    add_bank_account, bank_statement_import_template_options, get_import_logs_plan,
+    get_import_status, is_mt940_format, parse_data_from_template, preprocess_mt940_content,
+    upload_bank_statement_plan, BankStatementImport, BankStatementImportClientConfig,
+    DataImportLog, ImportLogsPlan, ImportStatus, UploadBankStatementPlan,
 };
 use tokio_erp::erpnext::{DocumentController, FieldSpec};
 
@@ -258,6 +259,30 @@ fn mapping_and_status_plans_match_erpnext_shapes() {
             success: Some(3),
             failed: Some(2),
             total_records: 5,
+        }
+    );
+}
+
+#[test]
+fn import_logs_and_upload_bank_statement_plans_match_erpnext_helpers() {
+    assert_eq!(
+        get_import_logs_plan("BSI-0001"),
+        ImportLogsPlan {
+            permission_doctype: "Bank Statement Import",
+            doctype: "Data Import Log",
+            fields: ["success", "docname", "messages", "exception", "row_indexes"],
+            data_import: "BSI-0001".to_string(),
+            limit_page_length: 5000,
+            order_by: "log_index",
+        }
+    );
+
+    assert_eq!(
+        upload_bank_statement_plan(Some("_Test Company"), Some("BA-0001")),
+        UploadBankStatementPlan {
+            doctype: "Bank Statement Import",
+            company: Some("_Test Company".to_string()),
+            bank_account: Some("BA-0001".to_string()),
         }
     );
 }

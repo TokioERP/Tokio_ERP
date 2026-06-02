@@ -46,6 +46,23 @@ pub struct ImportStatus {
     pub total_records: usize,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ImportLogsPlan {
+    pub permission_doctype: &'static str,
+    pub doctype: &'static str,
+    pub fields: [&'static str; 5],
+    pub data_import: String,
+    pub limit_page_length: usize,
+    pub order_by: &'static str,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct UploadBankStatementPlan {
+    pub doctype: &'static str,
+    pub company: Option<String>,
+    pub bank_account: Option<String>,
+}
+
 impl BankStatementImport {
     pub const DOCTYPE: &'static str = "Bank Statement Import";
     pub const MODULE: &'static str = "Accounts";
@@ -342,4 +359,26 @@ pub fn get_import_status(status: &str, logs: &[DataImportLog]) -> ImportStatus {
     }
 
     import_status
+}
+
+pub fn get_import_logs_plan(docname: &str) -> ImportLogsPlan {
+    ImportLogsPlan {
+        permission_doctype: "Bank Statement Import",
+        doctype: "Data Import Log",
+        fields: ["success", "docname", "messages", "exception", "row_indexes"],
+        data_import: docname.to_string(),
+        limit_page_length: 5000,
+        order_by: "log_index",
+    }
+}
+
+pub fn upload_bank_statement_plan(
+    company: Option<&str>,
+    bank_account: Option<&str>,
+) -> UploadBankStatementPlan {
+    UploadBankStatementPlan {
+        doctype: "Bank Statement Import",
+        company: company.map(str::to_string),
+        bank_account: bank_account.map(str::to_string),
+    }
 }

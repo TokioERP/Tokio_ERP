@@ -368,7 +368,7 @@
     {
       "source": "accounts/doctype/bank_statement_import/bank_statement_import.py",
       "target": "accounts/doctype/bank_statement_import/bank_statement_import.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_statement_import/test_bank_statement_import.py",
