@@ -102,7 +102,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `budget_account` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust preserves Budget Account child-table metadata, required account/budget amount fields, quick entry, and empty controller hooks in `accounts_small_pass_doctypes`. JSON kept external. |
 | `budget_distribution` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust preserves Budget Distribution child-table metadata, read-only start/end dates, amount/percent list fields, and empty controller behavior in `accounts_small_pass_doctypes`. JSON kept external. |
 | `campaign_item` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_campaign_item`. JSON kept external. |
-| `cashier_closing` | 5 | 3 | 1 | 1 | not_started | |
+| `cashier_closing` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata/client defaults, validate/before-save hooks, time guard, outstanding Sales Invoice query shape, payment total/net amount calculation, default session user setup, and pass/no-op Python test parity in `accounts_cashier_closing`. JSON/JS kept external. |
 | `cashier_closing_payments` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_cashier_closing_payments`. JSON kept external. |
 | `chart_of_accounts_importer` | 6 | 3 | 1 | 1 | not_started | |
 | `cheque_print_template` | 5 | 3 | 1 | 1 | not_started | |
