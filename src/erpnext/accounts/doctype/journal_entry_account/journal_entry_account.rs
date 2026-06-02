@@ -7,6 +7,11 @@ impl JournalEntryAccount {
     pub const DOCTYPE: &'static str = "Journal Entry Account";
     pub const MODULE: &'static str = "Accounts";
     pub const IS_TABLE: bool = true;
+    pub const AUTONAME: &'static str = "hash";
+    pub const NAMING_RULE: &'static str = "Random";
+    pub const ROW_FORMAT: &'static str = "Dynamic";
+    pub const SORT_FIELD: &'static str = "creation";
+    pub const SORT_ORDER: &'static str = "DESC";
     pub const TRACK_CHANGES: bool = true;
     pub const FIELD_ORDER: [&'static str; 32] = [
         "account",

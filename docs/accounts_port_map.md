@@ -133,7 +133,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `item_tax_template_detail` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata including `tax_rate` read-only dependency on `not_applicable` covered in `accounts_small_pass_doctypes`. JSON kept external. |
 | `item_wise_tax_detail` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_item_wise_tax_detail`. JSON kept external. |
 | `journal_entry` | 8 | 3 | 2 | 2 | not_started | |
-| `journal_entry_account` | 4 | 2 | 1 | 0 | not_started | |
+| `journal_entry_account` | 4 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata covers random/hash naming, dynamic row format, sort metadata, field order, field attributes, and empty controller hooks in `accounts_journal_entry_account`. JSON kept external. |
 | `journal_entry_template` | 5 | 3 | 1 | 1 | not_started | |
 | `journal_entry_template_account` | 3 | 2 | 1 | 0 | not_started | |
 | `ledger_health` | 5 | 3 | 1 | 1 | not_started | |

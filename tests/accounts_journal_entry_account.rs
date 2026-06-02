@@ -7,6 +7,11 @@ fn journal_entry_account_matches_erpnext_pass_controller_metadata() {
     assert_eq!(JournalEntryAccount::MODULE, "Accounts");
     assert!(JournalEntryAccount::IS_TABLE);
     assert!(JournalEntryAccount::TRACK_CHANGES);
+    assert_eq!(JournalEntryAccount::AUTONAME, "hash");
+    assert_eq!(JournalEntryAccount::NAMING_RULE, "Random");
+    assert_eq!(JournalEntryAccount::ROW_FORMAT, "Dynamic");
+    assert_eq!(JournalEntryAccount::SORT_FIELD, "creation");
+    assert_eq!(JournalEntryAccount::SORT_ORDER, "DESC");
     assert_eq!(
         JournalEntryAccount::FIELD_ORDER,
         [
