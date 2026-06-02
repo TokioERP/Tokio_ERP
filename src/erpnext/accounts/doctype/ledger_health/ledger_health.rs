@@ -31,8 +31,8 @@ impl LedgerHealth {
         vec![
             FieldSpec::data("voucher_type", "Voucher Type"),
             FieldSpec::data("voucher_no", "Voucher No"),
-            FieldSpec::datetime("checked_on", "Checked On"),
             FieldSpec::check("debit_credit_mismatch", "Debit-Credit mismatch").default("0"),
+            FieldSpec::datetime("checked_on", "Checked On"),
             FieldSpec::check(
                 "general_and_payment_ledger_mismatch",
                 "General and Payment Ledger mismatch",
