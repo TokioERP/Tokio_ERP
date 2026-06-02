@@ -8,8 +8,12 @@ pub struct PaymentEntryReference {
 impl PaymentEntryReference {
     pub const DOCTYPE: &'static str = "Payment Entry Reference";
     pub const MODULE: &'static str = "Accounts";
+    pub const INDEX_WEB_PAGES_FOR_SEARCH: bool = true;
     pub const IS_TABLE: bool = true;
     pub const QUICK_ENTRY: bool = true;
+    pub const ROW_FORMAT: &'static str = "Dynamic";
+    pub const SORT_FIELD: &'static str = "creation";
+    pub const SORT_ORDER: &'static str = "DESC";
     pub const TRACK_CHANGES: bool = true;
     pub const FIELD_ORDER: [&'static str; 20] = [
         "reference_doctype",

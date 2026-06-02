@@ -156,7 +156,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `party_link` | 5 | 3 | 1 | 1 | parity_tested | Python test class is pass/no-op; Rust covers DocType metadata, validate role/link conflicts, create_party_link secondary-role selection, and controller hooks in `accounts_party_link`. JSON/JS kept external. |
 | `payment_entry` | 6 | 3 | 1 | 2 | not_started | |
 | `payment_entry_deduction` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_payment_entry_deduction`. JSON kept external. |
-| `payment_entry_reference` | 3 | 2 | 1 | 0 | not_started | |
+| `payment_entry_reference` | 3 | 2 | 1 | 0 | parity_tested | Rust covers DocType metadata, child table flags, index-web-pages flag, quick entry, row format, sort metadata, field order, field definitions, payment_request_outstanding property lookup, and empty controller hooks in `accounts_payment_entry_reference`. JSON kept external. |
 | `payment_gateway_account` | 6 | 4 | 1 | 1 | not_started | |
 | `payment_ledger_entry` | 5 | 3 | 1 | 1 | not_started | |
 | `payment_order` | 6 | 4 | 1 | 1 | not_started | |
