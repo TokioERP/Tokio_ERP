@@ -76,7 +76,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `account_closing_balance` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, closing entry aggregation with dynamic accounting dimensions, previous closing-entry query planning, voucher/date stamping, and reporting-currency amount/error behavior in `accounts_account_closing_balance`. JSON/JS kept external. |
 | `accounting_dimension` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, fieldname/doctype/default-company validation, conflict warnings, dimension custom-field/property-setter plans, delete/toggle side effects, dimension/default helpers, child expansion, and doctype custom-field creation plans in `accounts_accounting_dimension`. JSON/JS kept external. |
 | `accounting_dimension_detail` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_accounting_dimension_detail`. JSON kept external. |
-| `accounting_dimension_filter` | 5 | 3 | 1 | 1 | not_started | |
+| `accounting_dimension_filter` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, `before_save`, fieldname derivation, duplicate applicable-account validation, and dimension filter map construction in `accounts_accounting_dimension_filter`. JSON/JS kept external; Sales Invoice enforcement is covered through downstream accounting dimension consumers. |
 | `accounting_period` | 5 | 3 | 1 | 1 | not_started | |
 | `accounts_settings` | 6 | 3 | 1 | 2 | not_started | |
 | `advance_payment_ledger_entry` | 5 | 3 | 1 | 1 | not_started | |

@@ -153,7 +153,7 @@
     {
       "source": "accounts/doctype/accounting_dimension_filter/test_accounting_dimension_filter.py",
       "target": "accounts/doctype/accounting_dimension_filter/test_accounting_dimension_filter.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/accounting_period/__init__.py",
