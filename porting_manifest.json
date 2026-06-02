@@ -643,7 +643,7 @@
     {
       "source": "accounts/doctype/currency_exchange_settings/test_currency_exchange_settings.py",
       "target": "accounts/doctype/currency_exchange_settings/test_currency_exchange_settings.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/currency_exchange_settings_details/__init__.py",
