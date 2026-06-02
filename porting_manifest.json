@@ -198,7 +198,7 @@
     {
       "source": "accounts/doctype/advance_payment_ledger_entry/test_advance_payment_ledger_entry.py",
       "target": "accounts/doctype/advance_payment_ledger_entry/test_advance_payment_ledger_entry.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/advance_taxes_and_charges/__init__.py",
