@@ -45,6 +45,12 @@ fn account_iban_filters_match_erpnext_bank_account_and_employee_fields() {
 
     let empty = AutoMatchByAccountIban::default();
     assert_eq!(empty.get_or_filters(None), AccountIbanFilters::default());
+
+    let blank = AutoMatchByAccountIban {
+        bank_party_account_number: Some("".to_string()),
+        bank_party_iban: Some("".to_string()),
+    };
+    assert_eq!(blank.get_or_filters(None), AccountIbanFilters::default());
 }
 
 #[test]
@@ -66,6 +72,15 @@ fn account_iban_match_uses_bank_account_before_employee_like_erpnext() {
         Some(AutoMatchResult::new("Employee", "EMP-0001"))
     );
     assert_eq!(matcher.match_account_in_party(None, None), None);
+
+    let blank = AutoMatchByAccountIban {
+        bank_party_account_number: Some("".to_string()),
+        bank_party_iban: Some("".to_string()),
+    };
+    assert_eq!(
+        blank.match_account_in_party(Some(AutoMatchResult::new("Supplier", "SUP-0001")), None),
+        None
+    );
 }
 
 #[test]

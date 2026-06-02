@@ -231,6 +231,34 @@ fn bank_transaction_fee_validation_and_excluded_fee_handling_match_erpnext() {
         Err(BankTransactionError::IncludedFeeBiggerThanWithdrawal)
     );
 
+    assert_eq!(
+        BankTransaction {
+            withdrawal: 100.0,
+            included_fee: 100.0,
+            ..Default::default()
+        }
+        .validate_included_fee(),
+        Ok(())
+    );
+    assert_eq!(
+        BankTransaction {
+            deposit: 100.0,
+            included_fee: 101.0,
+            ..Default::default()
+        }
+        .validate_included_fee(),
+        Ok(())
+    );
+
+    let mut zero_fee = BankTransaction {
+        deposit: 100.0,
+        excluded_fee: 0.0,
+        ..Default::default()
+    };
+    zero_fee.handle_excluded_fee().unwrap();
+    assert_eq!(zero_fee.deposit, 100.0);
+    assert_eq!(zero_fee.included_fee, 0.0);
+
     let mut deposit_fee = BankTransaction {
         deposit: 100.0,
         withdrawal: 0.0,
@@ -243,6 +271,17 @@ fn bank_transaction_fee_validation_and_excluded_fee_handling_match_erpnext() {
     assert_eq!(deposit_fee.withdrawal, 0.0);
     assert_eq!(deposit_fee.included_fee, 7.0);
     assert_eq!(deposit_fee.excluded_fee, 0.0);
+
+    let mut deposit_fee_to_zero = BankTransaction {
+        deposit: 10.0,
+        withdrawal: 0.0,
+        excluded_fee: 10.0,
+        ..Default::default()
+    };
+    deposit_fee_to_zero.handle_excluded_fee().unwrap();
+    assert_eq!(deposit_fee_to_zero.deposit, 0.0);
+    assert_eq!(deposit_fee_to_zero.withdrawal, 0.0);
+    assert_eq!(deposit_fee_to_zero.included_fee, 10.0);
 
     let mut withdrawal_fee = BankTransaction {
         deposit: 0.0,

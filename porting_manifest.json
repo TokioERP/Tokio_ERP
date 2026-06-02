@@ -383,7 +383,7 @@
     {
       "source": "accounts/doctype/bank_transaction/auto_match_party.py",
       "target": "accounts/doctype/bank_transaction/auto_match_party.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_transaction/bank_transaction.py",
@@ -393,7 +393,7 @@
     {
       "source": "accounts/doctype/bank_transaction/bank_transaction_upload.py",
       "target": "accounts/doctype/bank_transaction/bank_transaction_upload.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_transaction/test_auto_match_party.py",
@@ -403,12 +403,12 @@
     {
       "source": "accounts/doctype/bank_transaction/test_bank_transaction.py",
       "target": "accounts/doctype/bank_transaction/test_bank_transaction.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_transaction/test_bank_transaction_fees.py",
       "target": "accounts/doctype/bank_transaction/test_bank_transaction_fees.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_transaction_mapping/__init__.py",

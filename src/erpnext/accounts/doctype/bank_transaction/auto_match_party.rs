@@ -52,7 +52,11 @@ impl AutoMatchByAccountIban {
     pub fn get_or_filters(&self, party: Option<&str>) -> AccountIbanFilters {
         let mut filters = BTreeMap::new();
 
-        if let Some(account_number) = self.bank_party_account_number.as_deref() {
+        if let Some(account_number) = self
+            .bank_party_account_number
+            .as_deref()
+            .filter(|account_number| !account_number.is_empty())
+        {
             let bank_account_field = if party == Some("Employee") {
                 "bank_ac_no"
             } else {
@@ -61,7 +65,11 @@ impl AutoMatchByAccountIban {
             filters.insert(bank_account_field.to_string(), account_number.to_string());
         }
 
-        if let Some(iban) = self.bank_party_iban.as_deref() {
+        if let Some(iban) = self
+            .bank_party_iban
+            .as_deref()
+            .filter(|iban| !iban.is_empty())
+        {
             filters.insert("iban".to_string(), iban.to_string());
         }
 
@@ -73,7 +81,16 @@ impl AutoMatchByAccountIban {
         bank_account_party: Option<AutoMatchResult>,
         employee_name: Option<&str>,
     ) -> Option<AutoMatchResult> {
-        if self.bank_party_account_number.is_none() && self.bank_party_iban.is_none() {
+        let has_account_number = self
+            .bank_party_account_number
+            .as_deref()
+            .is_some_and(|account_number| !account_number.is_empty());
+        let has_iban = self
+            .bank_party_iban
+            .as_deref()
+            .is_some_and(|iban| !iban.is_empty());
+
+        if !has_account_number && !has_iban {
             return None;
         }
 
