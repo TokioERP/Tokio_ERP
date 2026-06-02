@@ -150,7 +150,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `monthly_distribution` | 7 | 4 | 1 | 1 | parity_tested | Python test class is pass/no-op; Rust covers DocType metadata, get_months, validate total rounding, periodwise distribution helpers, percentage summing, and static dashboard data in `accounts_monthly_distribution` and `accounts_static_dashboards`. JSON/JS kept external. |
 | `monthly_distribution_percentage` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_monthly_distribution_percentage`. JSON kept external. |
 | `opening_invoice_creation_tool` | 6 | 3 | 1 | 1 | parity_tested | Rust covers onload summary helpers, row defaults, mandatory party validation, party creation plans, invoice dict generation, sync/enqueue/no-op import planning, realtime payloads, and temporary opening account lookup in `accounts_opening_invoice_creation_tool`. JSON/JS kept external. |
-| `opening_invoice_creation_tool_item` | 3 | 2 | 1 | 0 | not_started | |
+| `opening_invoice_creation_tool_item` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata covers child table flags, quick entry, row format, sort metadata, field order, field dependencies/defaults, and empty controller hooks in `accounts_opening_invoice_creation_tool`. JSON kept external. |
 | `overdue_payment` | 3 | 2 | 1 | 0 | not_started | |
 | `party_account` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_party_account`. JSON kept external. |
 | `party_link` | 5 | 3 | 1 | 1 | not_started | |
