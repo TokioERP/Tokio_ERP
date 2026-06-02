@@ -313,7 +313,7 @@
     {
       "source": "accounts/doctype/bank_clearance/bank_clearance.py",
       "target": "accounts/doctype/bank_clearance/bank_clearance.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_clearance/test_bank_clearance.py",

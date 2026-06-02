@@ -88,7 +88,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `bank_account` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, setup/search/sort flags, address/contact hooks, autoname, company-account validation, duplicate account guard, default-account reset planning, party/company lookup helpers, and details permission/cache plan in `accounts_bank_account`. JSON/JS kept external. |
 | `bank_account_subtype` | 5 | 3 | 1 | 1 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_bank_account_subtype`. JSON/JS kept external. |
 | `bank_account_type` | 5 | 3 | 1 | 1 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_bank_account_type`. JSON/JS kept external. |
-| `bank_clearance` | 6 | 3 | 1 | 1 | not_started | |
+| `bank_clearance` | 6 | 3 | 1 | 1 | parity_tested | Rust covers metadata/client hooks, hook-driven payment entry loading, date/account guards, amount formatting, clearance-date validation/update planning, and Journal Entry/Payment Entry/Purchase Invoice/POS Sales Invoice query source planning in `accounts_bank_clearance`. JSON/JS kept external. |
 | `bank_clearance_detail` | 4 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_bank_clearance_detail`. JSON kept external. |
 | `bank_guarantee` | 5 | 3 | 1 | 1 | not_started | |
 | `bank_reconciliation_tool` | 5 | 3 | 1 | 1 | not_started | |
