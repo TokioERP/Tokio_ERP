@@ -46,8 +46,12 @@ fn payment_reconciliation_allocation_matches_erpnext_virtual_child_metadata() {
         PaymentReconciliationAllocation::DOCTYPE,
         "Payment Reconciliation Allocation"
     );
+    assert_eq!(PaymentReconciliationAllocation::MODULE, "Accounts");
     assert!(PaymentReconciliationAllocation::IS_TABLE);
     assert!(PaymentReconciliationAllocation::IS_VIRTUAL);
+    assert_eq!(PaymentReconciliationAllocation::ROW_FORMAT, "Dynamic");
+    assert_eq!(PaymentReconciliationAllocation::SORT_FIELD, "creation");
+    assert_eq!(PaymentReconciliationAllocation::SORT_ORDER, "DESC");
     assert!(PaymentReconciliationAllocation::TRACK_CHANGES);
     assert_eq!(
         PaymentReconciliationAllocation::FIELD_ORDER,
@@ -77,31 +81,76 @@ fn payment_reconciliation_allocation_matches_erpnext_virtual_child_metadata() {
             "dimension_col_break",
         ]
     );
-    assert_eq!(PaymentReconciliationAllocation::fields().len(), 23);
     assert_eq!(
-        PaymentReconciliationAllocation::fields()[0],
-        FieldSpec::dynamic_link("invoice_number")
-            .label("Invoice Number")
-            .options("invoice_type")
-            .required()
-            .read_only()
-            .in_list_view()
-    );
-    assert_eq!(
-        PaymentReconciliationAllocation::fields()[8],
-        FieldSpec::data("is_advance", "Is Advance")
-            .read_only()
-            .hidden()
-    );
-    assert_eq!(
-        PaymentReconciliationAllocation::fields()[16],
-        FieldSpec::link("currency", "Currency")
-            .options("Currency")
-            .hidden()
-    );
-    assert_eq!(
-        PaymentReconciliationAllocation::fields()[20],
-        FieldSpec::section_break("accounting_dimensions_section").label("Accounting Dimensions")
+        PaymentReconciliationAllocation::fields(),
+        vec![
+            FieldSpec::dynamic_link("invoice_number")
+                .label("Invoice Number")
+                .options("invoice_type")
+                .required()
+                .read_only()
+                .in_list_view(),
+            FieldSpec::currency("allocated_amount", "Allocated Amount")
+                .options("currency")
+                .required()
+                .in_list_view(),
+            FieldSpec::column_break("column_break_3"),
+            FieldSpec::section_break("section_break_5"),
+            FieldSpec::link("difference_account", "Difference Account")
+                .options("Account")
+                .read_only(),
+            FieldSpec::column_break("column_break_7"),
+            FieldSpec::currency("difference_amount", "Difference Amount")
+                .options("Currency")
+                .read_only()
+                .in_list_view(),
+            FieldSpec::dynamic_link("reference_name")
+                .label("Reference Name")
+                .options("reference_type")
+                .required()
+                .read_only()
+                .in_list_view(),
+            FieldSpec::data("is_advance", "Is Advance")
+                .read_only()
+                .hidden(),
+            FieldSpec::link("reference_type", "Reference Type")
+                .options("DocType")
+                .required()
+                .read_only(),
+            FieldSpec::link("invoice_type", "Invoice Type")
+                .options("DocType")
+                .required()
+                .read_only(),
+            FieldSpec::section_break("section_break_6"),
+            FieldSpec::column_break("column_break_8"),
+            FieldSpec::currency("unreconciled_amount", "Unreconciled Amount")
+                .options("currency")
+                .read_only()
+                .hidden(),
+            FieldSpec::currency("amount", "Amount")
+                .options("currency")
+                .read_only()
+                .hidden(),
+            FieldSpec::data("reference_row", "Reference Row")
+                .read_only()
+                .hidden(),
+            FieldSpec::link("currency", "Currency")
+                .options("Currency")
+                .hidden(),
+            FieldSpec::float("exchange_rate", "Exchange Rate").read_only(),
+            FieldSpec::link("cost_center", "Cost Center").options("Cost Center"),
+            FieldSpec::date("gain_loss_posting_date", "Difference Posting Date"),
+            FieldSpec::section_break("accounting_dimensions_section")
+                .label("Accounting Dimensions"),
+            FieldSpec::column_break("dimension_col_break"),
+            FieldSpec::date(
+                "debit_or_credit_note_posting_date",
+                "Debit / Credit Note Posting Date",
+            ),
+        ]
     );
     assert_eq!(PaymentReconciliationAllocation::get_list("ignored"), ());
+    let allocation = PaymentReconciliationAllocation;
+    assert_eq!(allocation.doctype(), "Payment Reconciliation Allocation");
+    assert_eq!(allocation.module(), "Accounts");
 }

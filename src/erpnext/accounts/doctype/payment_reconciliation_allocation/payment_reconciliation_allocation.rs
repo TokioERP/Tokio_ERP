@@ -8,6 +8,9 @@ impl PaymentReconciliationAllocation {
     pub const MODULE: &'static str = "Accounts";
     pub const IS_TABLE: bool = true;
     pub const IS_VIRTUAL: bool = true;
+    pub const ROW_FORMAT: &'static str = "Dynamic";
+    pub const SORT_FIELD: &'static str = "creation";
+    pub const SORT_ORDER: &'static str = "DESC";
     pub const TRACK_CHANGES: bool = true;
     pub const FIELD_ORDER: [&'static str; 23] = [
         "reference_type",
