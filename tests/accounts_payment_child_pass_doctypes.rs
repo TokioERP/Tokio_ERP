@@ -79,8 +79,12 @@ fn advance_taxes_and_charges_matches_erpnext_metadata_shape() {
 #[test]
 fn payment_order_reference_matches_erpnext_metadata_shape() {
     assert_eq!(PaymentOrderReference::DOCTYPE, "Payment Order Reference");
+    assert_eq!(PaymentOrderReference::MODULE, "Accounts");
+    assert!(PaymentOrderReference::INDEX_WEB_PAGES_FOR_SEARCH);
     assert!(PaymentOrderReference::IS_TABLE);
     assert!(PaymentOrderReference::QUICK_ENTRY);
+    assert_eq!(PaymentOrderReference::SORT_FIELD, "creation");
+    assert_eq!(PaymentOrderReference::SORT_ORDER, "DESC");
     assert!(PaymentOrderReference::TRACK_CHANGES);
     assert_eq!(
         PaymentOrderReference::FIELD_ORDER,
@@ -100,12 +104,49 @@ fn payment_order_reference_matches_erpnext_metadata_shape() {
         ]
     );
     assert_eq!(
-        PaymentOrderReference::fields()[0],
-        FieldSpec::link("reference_doctype", "Type")
-            .options("DocType")
-            .required()
-            .read_only()
-            .in_list_view()
+        PaymentOrderReference::fields(),
+        vec![
+            FieldSpec::link("reference_doctype", "Type")
+                .options("DocType")
+                .required()
+                .read_only()
+                .in_list_view(),
+            FieldSpec::dynamic_link("reference_name")
+                .label("Name")
+                .options("reference_doctype")
+                .required()
+                .read_only()
+                .in_list_view(),
+            FieldSpec::currency("amount", "Amount")
+                .required()
+                .read_only()
+                .in_list_view(),
+            FieldSpec::column_break("column_break_4"),
+            FieldSpec::link("supplier", "Supplier")
+                .options("Supplier")
+                .read_only()
+                .in_standard_filter(),
+            FieldSpec::link("payment_request", "Payment Request")
+                .options("Payment Request")
+                .read_only(),
+            FieldSpec::link("mode_of_payment", "Mode of Payment")
+                .options("Mode of Payment")
+                .fetch_from("payment_request.mode_of_payment")
+                .read_only(),
+            FieldSpec::section_break("bank_account_details").label("Bank Account Details"),
+            FieldSpec::link("bank_account", "Bank Account")
+                .options("Bank Account")
+                .required()
+                .read_only(),
+            FieldSpec::column_break("column_break_10"),
+            FieldSpec::link("account", "Account")
+                .options("Account")
+                .read_only(),
+            FieldSpec::data("payment_reference", "Payment Reference")
+                .read_only()
+                .no_copy()
+                .print_hide(),
+        ]
     );
     let row = PaymentOrderReference::new("Purchase Invoice", "PINV-0001", 500.0, "BANK-001");
     assert_eq!(row.reference_name.as_deref(), Some("PINV-0001"));

@@ -160,7 +160,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `payment_gateway_account` | 6 | 4 | 1 | 1 | not_started | |
 | `payment_ledger_entry` | 5 | 3 | 1 | 1 | not_started | |
 | `payment_order` | 6 | 4 | 1 | 1 | not_started | |
-| `payment_order_reference` | 3 | 2 | 1 | 0 | not_started | |
+| `payment_order_reference` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata covers child table flags, index-web-pages flag, quick entry, sort metadata, field order, field dependencies/defaults, and empty controller hooks in `accounts_payment_child_pass_doctypes`. JSON kept external. |
 | `payment_reconciliation` | 5 | 3 | 1 | 1 | not_started | |
 | `payment_reconciliation_allocation` | 3 | 2 | 1 | 0 | not_started | |
 | `payment_reconciliation_invoice` | 3 | 2 | 1 | 0 | not_started | |
