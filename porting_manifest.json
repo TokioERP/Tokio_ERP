@@ -588,7 +588,7 @@
     {
       "source": "accounts/doctype/cost_center/test_cost_center.py",
       "target": "accounts/doctype/cost_center/test_cost_center.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/cost_center_allocation/__init__.py",
