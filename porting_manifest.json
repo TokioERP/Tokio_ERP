@@ -753,7 +753,7 @@
     {
       "source": "accounts/doctype/exchange_rate_revaluation/test_exchange_rate_revaluation.py",
       "target": "accounts/doctype/exchange_rate_revaluation/test_exchange_rate_revaluation.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/exchange_rate_revaluation_account/__init__.py",
@@ -783,7 +783,7 @@
     {
       "source": "accounts/doctype/finance_book/test_finance_book.py",
       "target": "accounts/doctype/finance_book/test_finance_book.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/financial_report_row/__init__.py",
@@ -1033,7 +1033,7 @@
     {
       "source": "accounts/doctype/ledger_merge/test_ledger_merge.py",
       "target": "accounts/doctype/ledger_merge/test_ledger_merge.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/ledger_merge_accounts/__init__.py",
@@ -1058,7 +1058,7 @@
     {
       "source": "accounts/doctype/loyalty_point_entry/test_loyalty_point_entry.py",
       "target": "accounts/doctype/loyalty_point_entry/test_loyalty_point_entry.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/loyalty_point_entry_redemption/__init__.py",
@@ -1673,7 +1673,7 @@
     {
       "source": "accounts/doctype/pos_profile_user/test_pos_profile_user.py",
       "target": "accounts/doctype/pos_profile_user/test_pos_profile_user.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_search_fields/__init__.py",
