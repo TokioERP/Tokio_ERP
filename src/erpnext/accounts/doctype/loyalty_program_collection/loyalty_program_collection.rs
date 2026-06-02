@@ -18,17 +18,24 @@ impl LoyaltyProgramCollection {
     ];
     pub const IS_TABLE: bool = true;
     pub const QUICK_ENTRY: bool = true;
+    pub const SORT_FIELD: &'static str = "creation";
+    pub const SORT_ORDER: &'static str = "DESC";
     pub const TRACK_CHANGES: bool = true;
 
     pub fn fields() -> Vec<FieldSpec> {
         vec![
             FieldSpec::data("tier_name", "Tier Name")
                 .required()
+                .columns(3)
                 .in_list_view(),
-            FieldSpec::currency("min_spent", "Minimum Total Spent").in_list_view(),
+            FieldSpec::currency("min_spent", "Minimum Total Spent")
+                .columns(3)
+                .in_list_view(),
             FieldSpec::column_break("column_break_3"),
             FieldSpec::currency("collection_factor", "Collection Factor (=1 LP)")
                 .required()
+                .columns(3)
+                .description("For how much spent = 1 Loyalty Point")
                 .in_list_view(),
         ]
     }

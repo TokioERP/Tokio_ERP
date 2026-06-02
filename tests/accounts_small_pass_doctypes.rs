@@ -183,14 +183,21 @@ fn loyalty_collection_budget_distribution_and_dunning_text_match_erpnext_metadat
         vec![
             FieldSpec::data("tier_name", "Tier Name")
                 .required()
+                .columns(3)
                 .in_list_view(),
-            FieldSpec::currency("min_spent", "Minimum Total Spent").in_list_view(),
+            FieldSpec::currency("min_spent", "Minimum Total Spent")
+                .columns(3)
+                .in_list_view(),
             FieldSpec::column_break("column_break_3"),
             FieldSpec::currency("collection_factor", "Collection Factor (=1 LP)")
                 .required()
+                .columns(3)
+                .description("For how much spent = 1 Loyalty Point")
                 .in_list_view(),
         ]
     );
+    assert_eq!(LoyaltyProgramCollection::SORT_FIELD, "creation");
+    assert_eq!(LoyaltyProgramCollection::SORT_ORDER, "DESC");
 
     assert_eq!(
         BudgetDistribution::fields(),

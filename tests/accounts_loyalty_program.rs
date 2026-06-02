@@ -40,6 +40,7 @@ fn loyalty_program_matches_erpnext_metadata() {
     assert_eq!(LoyaltyProgram::AUTONAME, "field:loyalty_program_name");
     assert_eq!(LoyaltyProgram::SORT_FIELD, "creation");
     assert_eq!(LoyaltyProgram::SORT_ORDER, "DESC");
+    assert!(LoyaltyProgram::QUICK_ENTRY);
     assert!(LoyaltyProgram::TRACK_CHANGES);
 
     let fields = LoyaltyProgram::fields();

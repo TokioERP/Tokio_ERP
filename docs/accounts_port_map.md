@@ -144,7 +144,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `loyalty_point_entry` | 5 | 3 | 1 | 1 | not_started | |
 | `loyalty_point_entry_redemption` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata covers child table flags, quick entry, sort metadata, field order, and constructor behavior in `accounts_small_pass_doctypes`. JSON kept external. |
 | `loyalty_program` | 6 | 4 | 1 | 1 | not_started | |
-| `loyalty_program_collection` | 3 | 2 | 1 | 0 | not_started | |
+| `loyalty_program_collection` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata covers child table flags, quick entry, sort metadata, column widths, collection-factor description, field order, and empty controller hooks in `accounts_small_pass_doctypes`. JSON kept external. |
 | `mode_of_payment` | 6 | 3 | 1 | 1 | not_started | |
 | `mode_of_payment_account` | 3 | 2 | 1 | 0 | not_started | |
 | `monthly_distribution` | 7 | 4 | 1 | 1 | not_started | |

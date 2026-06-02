@@ -108,6 +108,7 @@ impl LoyaltyProgram {
         "loyalty_program_help",
     ];
     pub const AUTONAME: &'static str = "field:loyalty_program_name";
+    pub const QUICK_ENTRY: bool = true;
     pub const SORT_FIELD: &'static str = "creation";
     pub const SORT_ORDER: &'static str = "DESC";
     pub const TRACK_CHANGES: bool = true;
