@@ -338,7 +338,7 @@
     {
       "source": "accounts/doctype/bank_guarantee/bank_guarantee.py",
       "target": "accounts/doctype/bank_guarantee/bank_guarantee.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_guarantee/test_bank_guarantee.py",
