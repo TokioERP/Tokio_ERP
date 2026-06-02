@@ -128,8 +128,13 @@ impl Default for ExchangeRateRevaluation {
 impl ExchangeRateRevaluation {
     pub const DOCTYPE: &'static str = "Exchange Rate Revaluation";
     pub const MODULE: &'static str = "Accounts";
+    pub const ALLOW_IMPORT: bool = true;
     pub const AUTONAME: &'static str = "ACC-ERR-.YYYY.-.#####";
     pub const IS_SUBMITTABLE: bool = true;
+    pub const NAMING_RULE: &'static str = "Expression (old style)";
+    pub const SORT_FIELD: &'static str = "creation";
+    pub const SORT_ORDER: &'static str = "DESC";
+    pub const TRACK_CHANGES: bool = true;
     pub const FIELD_ORDER: [&'static str; 13] = [
         "posting_date",
         "rounding_loss_allowance",
@@ -165,24 +170,25 @@ impl ExchangeRateRevaluation {
         vec![
             FieldSpec::date("posting_date", "Posting Date")
                 .default("Today")
-                .required()
-                .in_list_view(),
-            FieldSpec::float("rounding_loss_allowance", "Rounding Loss Allowance")
-                .default("0.05")
-                .description("Only values between [0,1) are allowed. Like {0.00, 0.04, 0.09, ...}\nEx: If allowance is set at 0.07, accounts that have balance of 0.07 in either of the currencies will be considered as zero balance account")
-                .precision("9"),
+                .in_list_view()
+                .required(),
             FieldSpec::column_break("column_break_2"),
             FieldSpec::link("company", "Company")
                 .options("Company")
-                .required()
-                .in_list_view(),
+                .in_list_view()
+                .required(),
             FieldSpec::section_break("section_break_4"),
             FieldSpec::button("get_entries", "Get Entries"),
             FieldSpec::table("accounts", "Exchange Rate Revaluation Account")
                 .options("Exchange Rate Revaluation Account")
-                .required()
-                .no_copy(),
+                .no_copy()
+                .required(),
             FieldSpec::section_break("section_break_6"),
+            FieldSpec::link("amended_from", "Amended From")
+                .options("Exchange Rate Revaluation")
+                .no_copy()
+                .print_hide()
+                .read_only(),
             FieldSpec::currency("gain_loss_unbooked", "Gain/Loss from Revaluation")
                 .options("Company:company:default_currency")
                 .read_only(),
@@ -190,15 +196,14 @@ impl ExchangeRateRevaluation {
                 .options("Company:company:default_currency")
                 .description("Gain/Loss accumulated in foreign currency account. Accounts with '0' balance in either Base or Account currency")
                 .read_only(),
-            FieldSpec::column_break("column_break_10"),
             FieldSpec::currency("total_gain_loss", "Total Gain/Loss")
                 .options("Company:company:default_currency")
                 .read_only(),
-            FieldSpec::link("amended_from", "Amended From")
-                .options("Exchange Rate Revaluation")
-                .no_copy()
-                .print_hide()
-                .read_only(),
+            FieldSpec::column_break("column_break_10"),
+            FieldSpec::float("rounding_loss_allowance", "Rounding Loss Allowance")
+                .default("0.05")
+                .description("Only values between [0,1) are allowed. Like {0.00, 0.04, 0.09, ...}\nEx: If allowance is set at 0.07, accounts that have balance of 0.07 in either of the currencies will be considered as zero balance account")
+                .precision("9"),
         ]
     }
 

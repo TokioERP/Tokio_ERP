@@ -22,8 +22,16 @@ fn exchange_rate_revaluation_matches_erpnext_metadata() {
         "Exchange Rate Revaluation"
     );
     assert_eq!(ExchangeRateRevaluation::MODULE, "Accounts");
+    assert!(ExchangeRateRevaluation::ALLOW_IMPORT);
     assert_eq!(ExchangeRateRevaluation::AUTONAME, "ACC-ERR-.YYYY.-.#####");
     assert!(ExchangeRateRevaluation::IS_SUBMITTABLE);
+    assert_eq!(
+        ExchangeRateRevaluation::NAMING_RULE,
+        "Expression (old style)"
+    );
+    assert_eq!(ExchangeRateRevaluation::SORT_FIELD, "creation");
+    assert_eq!(ExchangeRateRevaluation::SORT_ORDER, "DESC");
+    assert!(ExchangeRateRevaluation::TRACK_CHANGES);
     assert_eq!(
         ExchangeRateRevaluation::FIELD_ORDER,
         [
@@ -43,31 +51,47 @@ fn exchange_rate_revaluation_matches_erpnext_metadata() {
         ]
     );
 
-    let fields = ExchangeRateRevaluation::fields();
-    assert!(fields.contains(
-        &FieldSpec::date("posting_date", "Posting Date")
-            .default("Today")
-            .required()
-            .in_list_view()
-    ));
-    assert!(fields.contains(
-        &FieldSpec::link("company", "Company")
-            .options("Company")
-            .required()
-            .in_list_view()
-    ));
-    assert!(fields.contains(
-        &FieldSpec::table("accounts", "Exchange Rate Revaluation Account")
-            .options("Exchange Rate Revaluation Account")
-            .required()
-            .no_copy()
-    ));
-    assert!(fields.contains(
-        &FieldSpec::float("rounding_loss_allowance", "Rounding Loss Allowance")
-            .default("0.05")
-            .precision("9")
-            .description("Only values between [0,1) are allowed. Like {0.00, 0.04, 0.09, ...}\nEx: If allowance is set at 0.07, accounts that have balance of 0.07 in either of the currencies will be considered as zero balance account")
-    ));
+    assert_eq!(
+        ExchangeRateRevaluation::fields(),
+        vec![
+            FieldSpec::date("posting_date", "Posting Date")
+                .default("Today")
+                .in_list_view()
+                .required(),
+            FieldSpec::column_break("column_break_2"),
+            FieldSpec::link("company", "Company")
+                .options("Company")
+                .in_list_view()
+                .required(),
+            FieldSpec::section_break("section_break_4"),
+            FieldSpec::button("get_entries", "Get Entries"),
+            FieldSpec::table("accounts", "Exchange Rate Revaluation Account")
+                .options("Exchange Rate Revaluation Account")
+                .no_copy()
+                .required(),
+            FieldSpec::section_break("section_break_6"),
+            FieldSpec::link("amended_from", "Amended From")
+                .options("Exchange Rate Revaluation")
+                .no_copy()
+                .print_hide()
+                .read_only(),
+            FieldSpec::currency("gain_loss_unbooked", "Gain/Loss from Revaluation")
+                .options("Company:company:default_currency")
+                .read_only(),
+            FieldSpec::currency("gain_loss_booked", "Gain/Loss already booked")
+                .options("Company:company:default_currency")
+                .description("Gain/Loss accumulated in foreign currency account. Accounts with '0' balance in either Base or Account currency")
+                .read_only(),
+            FieldSpec::currency("total_gain_loss", "Total Gain/Loss")
+                .options("Company:company:default_currency")
+                .read_only(),
+            FieldSpec::column_break("column_break_10"),
+            FieldSpec::float("rounding_loss_allowance", "Rounding Loss Allowance")
+                .default("0.05")
+                .description("Only values between [0,1) are allowed. Like {0.00, 0.04, 0.09, ...}\nEx: If allowance is set at 0.07, accounts that have balance of 0.07 in either of the currencies will be considered as zero balance account")
+                .precision("9"),
+        ]
+    );
 
     let controller = ExchangeRateRevaluation::default();
     assert_eq!(controller.doctype(), "Exchange Rate Revaluation");
