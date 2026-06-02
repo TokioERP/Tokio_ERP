@@ -188,7 +188,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `pos_opening_entry_detail` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_opening_entry_detail`. JSON kept external. |
 | `pos_payment_method` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_payment_method`. JSON kept external. |
 | `pos_profile` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, disabled/default-profile validation, company link checks, duplicate groups, payment method rules, accounting dimension checks, defaults, item-group permission helpers, query fallback, and default-profile update planning in `accounts_pos_profile`. JSON/JS kept external. |
-| `pos_profile_user` | 5 | 3 | 1 | 1 | not_started | |
+| `pos_profile_user` | 5 | 3 | 1 | 1 | parity_tested | Python controller/test are pass/no-op; Rust covers child table metadata, quick entry, sort metadata, track changes, field order, field definitions, constructor behavior, and empty controller hooks in `accounts_small_pass_doctypes`. JSON/JS kept external. |
 | `pos_search_fields` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_search_fields`. JSON kept external. |
 | `pos_settings` | 5 | 3 | 1 | 1 | not_started | |
 | `pricing_rule` | 6 | 4 | 1 | 1 | not_started | |

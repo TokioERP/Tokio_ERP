@@ -73,6 +73,9 @@ fn mode_of_payment_account_and_pos_profile_user_match_erpnext_metadata() {
                 .in_list_view(),
             FieldSpec::link("default_account", "Default Account")
                 .options("Account")
+                .description(
+                    "Default account will be automatically updated in POS Invoice when this mode is selected.",
+                )
                 .in_list_view(),
         ]
     );
@@ -82,9 +85,12 @@ fn mode_of_payment_account_and_pos_profile_user_match_erpnext_metadata() {
     assert!(account.custom_hooks().is_empty());
 
     assert_eq!(PosProfileUser::DOCTYPE, "POS Profile User");
+    assert_eq!(PosProfileUser::MODULE, "Accounts");
     assert_eq!(PosProfileUser::FIELD_ORDER, ["default", "user"]);
     assert!(PosProfileUser::IS_TABLE);
     assert!(PosProfileUser::QUICK_ENTRY);
+    assert_eq!(PosProfileUser::SORT_FIELD, "creation");
+    assert_eq!(PosProfileUser::SORT_ORDER, "DESC");
     assert!(PosProfileUser::TRACK_CHANGES);
     assert_eq!(
         PosProfileUser::fields(),
@@ -100,6 +106,9 @@ fn mode_of_payment_account_and_pos_profile_user_match_erpnext_metadata() {
     let user = PosProfileUser::new(true, "cashier@example.com");
     assert!(user.default);
     assert_eq!(user.user.as_deref(), Some("cashier@example.com"));
+    assert_eq!(user.doctype(), "POS Profile User");
+    assert_eq!(user.module(), "Accounts");
+    assert!(user.custom_hooks().is_empty());
 }
 
 #[test]

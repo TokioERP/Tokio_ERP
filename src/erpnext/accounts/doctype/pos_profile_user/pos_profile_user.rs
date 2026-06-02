@@ -12,6 +12,8 @@ impl PosProfileUser {
     pub const FIELD_ORDER: [&'static str; 2] = ["default", "user"];
     pub const IS_TABLE: bool = true;
     pub const QUICK_ENTRY: bool = true;
+    pub const SORT_FIELD: &'static str = "creation";
+    pub const SORT_ORDER: &'static str = "DESC";
     pub const TRACK_CHANGES: bool = true;
 
     pub fn new(default: bool, user: impl Into<String>) -> Self {
