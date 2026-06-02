@@ -97,7 +97,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `bank_transaction_mapping` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_bank_transaction_mapping`. JSON kept external. |
 | `bank_transaction_payments` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_bank_transaction_payments`. JSON kept external. |
 | `bisect_accounting_statements` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, date-order validation, BFS/DFS bisect-node generation order, build-tree root/current-period setup, report-summary difference math, cached node summary fetch/update including ERPNext's swapped cached summary assignment, left/right/up navigation messages, and controller hooks in `accounts_bisect_accounting_statements`. JSON/JS kept external; Python test file is pass/no-op. |
-| `bisect_nodes` | 5 | 3 | 1 | 1 | not_started | |
+| `bisect_nodes` | 5 | 3 | 1 | 1 | parity_tested | Python controller and test are pass/no-op; Rust preserves Bisect Nodes metadata, autoincrement node links, period/summary/generated fields, and empty controller hooks in `accounts_reconciliation_and_bisect_pass`. JSON/JS kept external. |
 | `budget` | 5 | 3 | 1 | 1 | not_started | |
 | `budget_account` | 3 | 2 | 1 | 0 | not_started | |
 | `budget_distribution` | 3 | 2 | 1 | 0 | not_started | |

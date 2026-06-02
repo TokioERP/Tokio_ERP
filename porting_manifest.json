@@ -458,7 +458,7 @@
     {
       "source": "accounts/doctype/bisect_nodes/test_bisect_nodes.py",
       "target": "accounts/doctype/bisect_nodes/test_bisect_nodes.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/budget/__init__.py",
