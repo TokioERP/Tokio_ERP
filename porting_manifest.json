@@ -108,7 +108,7 @@
     {
       "source": "accounts/doctype/account_closing_balance/account_closing_balance.py",
       "target": "accounts/doctype/account_closing_balance/account_closing_balance.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/account_closing_balance/test_account_closing_balance.py",
