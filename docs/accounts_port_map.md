@@ -84,7 +84,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `allowed_dimension` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_allowed_dimension`. JSON kept external. |
 | `allowed_to_transact_with` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_allowed_to_transact_with`. JSON kept external. |
 | `applicable_on_account` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_applicable_on_account`. JSON kept external. |
-| `bank` | 6 | 4 | 1 | 1 | not_started | |
+| `bank` | 6 | 4 | 1 | 1 | parity_tested | Rust covers bank metadata, setup/sort flags, address/contact lifecycle hooks, dashboard metadata, and no-op test parity in `accounts_bank`. JSON/JS kept external. |
 | `bank_account` | 5 | 3 | 1 | 1 | not_started | |
 | `bank_account_subtype` | 5 | 3 | 1 | 1 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_bank_account_subtype`. JSON/JS kept external. |
 | `bank_account_type` | 5 | 3 | 1 | 1 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_bank_account_type`. JSON/JS kept external. |

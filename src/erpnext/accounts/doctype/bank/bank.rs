@@ -45,6 +45,8 @@ impl Bank {
     pub const DOCUMENT_TYPE: &'static str = "Setup";
     pub const EDITABLE_GRID: bool = true;
     pub const QUICK_ENTRY: bool = true;
+    pub const SORT_FIELD: &'static str = "creation";
+    pub const SORT_ORDER: &'static str = "DESC";
     pub const TRACK_CHANGES: bool = true;
 
     pub fn new(name: impl Into<String>) -> Self {

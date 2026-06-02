@@ -28,8 +28,11 @@ fn bank_matches_erpnext_metadata() {
     );
     assert!(Bank::ALLOW_IMPORT);
     assert!(Bank::ALLOW_RENAME);
+    assert_eq!(Bank::DOCUMENT_TYPE, "Setup");
     assert!(Bank::EDITABLE_GRID);
     assert!(Bank::QUICK_ENTRY);
+    assert_eq!(Bank::SORT_FIELD, "creation");
+    assert_eq!(Bank::SORT_ORDER, "DESC");
     assert!(Bank::TRACK_CHANGES);
 
     assert_eq!(
