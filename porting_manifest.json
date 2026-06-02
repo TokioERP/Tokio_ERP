@@ -183,7 +183,7 @@
     {
       "source": "accounts/doctype/accounts_settings/test_accounts_settings.py",
       "target": "accounts/doctype/accounts_settings/test_accounts_settings.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/advance_payment_ledger_entry/__init__.py",
