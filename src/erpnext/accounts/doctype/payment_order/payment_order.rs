@@ -97,10 +97,6 @@ impl PaymentOrder {
             FieldSpec::link("company", "Company")
                 .options("Company")
                 .required(),
-            FieldSpec::select("payment_order_type", "Payment Order Type")
-                .options("\nPayment Request\nPayment Entry")
-                .read_only()
-                .required(),
             FieldSpec::link("party", "Supplier")
                 .options("Supplier")
                 .depends_on("eval: doc.payment_order_type=='Payment Request';")
@@ -109,17 +105,6 @@ impl PaymentOrder {
             FieldSpec::date("posting_date", "Posting Date")
                 .default("Today")
                 .in_list_view(),
-            FieldSpec::link("company_bank", "Bank")
-                .options("Bank")
-                .depends_on("company_bank_account")
-                .fetch_from("company_bank_account.bank")
-                .in_list_view(),
-            FieldSpec::link("company_bank_account", "Company Bank Account")
-                .options("Bank Account")
-                .required(),
-            FieldSpec::data("account", "Account")
-                .depends_on("company_bank_account")
-                .fetch_from("company_bank_account.account"),
             FieldSpec::section_break("section_break_5"),
             FieldSpec::table("references", "Payment Order Reference")
                 .options("Payment Order Reference")
@@ -129,6 +114,21 @@ impl PaymentOrder {
                 .no_copy()
                 .print_hide()
                 .read_only(),
+            FieldSpec::select("payment_order_type", "Payment Order Type")
+                .options("\nPayment Request\nPayment Entry")
+                .read_only()
+                .required(),
+            FieldSpec::link("company_bank_account", "Company Bank Account")
+                .options("Bank Account")
+                .required(),
+            FieldSpec::link("company_bank", "Bank")
+                .options("Bank")
+                .depends_on("company_bank_account")
+                .fetch_from("company_bank_account.bank")
+                .in_list_view(),
+            FieldSpec::data("account", "Account")
+                .depends_on("company_bank_account")
+                .fetch_from("company_bank_account.account"),
         ]
     }
 
