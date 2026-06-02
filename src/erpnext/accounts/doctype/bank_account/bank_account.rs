@@ -110,6 +110,8 @@ impl BankAccount {
     pub const ALLOW_RENAME: bool = true;
     pub const DOCUMENT_TYPE: &'static str = "Setup";
     pub const SEARCH_FIELDS: &'static str = "bank,account";
+    pub const SORT_FIELD: &'static str = "creation";
+    pub const SORT_ORDER: &'static str = "DESC";
     pub const TRACK_CHANGES: bool = true;
 
     pub fn new(account_name: impl Into<String>, bank: impl Into<String>) -> Self {

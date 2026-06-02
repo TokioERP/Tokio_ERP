@@ -268,7 +268,7 @@
     {
       "source": "accounts/doctype/bank_account/bank_account.py",
       "target": "accounts/doctype/bank_account/bank_account.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_account/test_bank_account.py",

@@ -47,6 +47,10 @@ fn bank_account_matches_erpnext_metadata_and_fields() {
     );
     assert!(BankAccount::ALLOW_IMPORT);
     assert!(BankAccount::ALLOW_RENAME);
+    assert_eq!(BankAccount::DOCUMENT_TYPE, "Setup");
+    assert_eq!(BankAccount::SEARCH_FIELDS, "bank,account");
+    assert_eq!(BankAccount::SORT_FIELD, "creation");
+    assert_eq!(BankAccount::SORT_ORDER, "DESC");
     assert!(BankAccount::TRACK_CHANGES);
 
     let fields = BankAccount::fields();
