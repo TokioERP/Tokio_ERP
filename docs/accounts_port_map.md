@@ -146,7 +146,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `loyalty_program` | 6 | 4 | 1 | 1 | not_started | |
 | `loyalty_program_collection` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata covers child table flags, quick entry, sort metadata, column widths, collection-factor description, field order, and empty controller hooks in `accounts_small_pass_doctypes`. JSON kept external. |
 | `mode_of_payment` | 6 | 3 | 1 | 1 | not_started | |
-| `mode_of_payment_account` | 3 | 2 | 1 | 0 | not_started | |
+| `mode_of_payment_account` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata covers child table flags, sort metadata, default-account description, field order, and empty controller hooks in `accounts_mode_of_payment`. JSON kept external. |
 | `monthly_distribution` | 7 | 4 | 1 | 1 | not_started | |
 | `monthly_distribution_percentage` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_monthly_distribution_percentage`. JSON kept external. |
 | `opening_invoice_creation_tool` | 6 | 3 | 1 | 1 | parity_tested | Rust covers onload summary helpers, row defaults, mandatory party validation, party creation plans, invoice dict generation, sync/enqueue/no-op import planning, realtime payloads, and temporary opening account lookup in `accounts_opening_invoice_creation_tool`. JSON/JS kept external. |

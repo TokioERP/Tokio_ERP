@@ -45,6 +45,35 @@ fn mode_of_payment_matches_erpnext_metadata() {
 }
 
 #[test]
+fn mode_of_payment_account_matches_erpnext_metadata() {
+    assert_eq!(ModeOfPaymentAccount::DOCTYPE, "Mode of Payment Account");
+    assert_eq!(ModeOfPaymentAccount::MODULE, "Accounts");
+    assert_eq!(ModeOfPaymentAccount::FIELD_ORDER, ["company", "default_account"]);
+    assert!(ModeOfPaymentAccount::IS_TABLE);
+    assert_eq!(ModeOfPaymentAccount::SORT_FIELD, "creation");
+    assert_eq!(ModeOfPaymentAccount::SORT_ORDER, "DESC");
+
+    assert_eq!(
+        ModeOfPaymentAccount::fields(),
+        vec![
+            FieldSpec::link("company", "Company")
+                .options("Company")
+                .in_list_view(),
+            FieldSpec::link("default_account", "Default Account")
+                .options("Account")
+                .description(
+                    "Default account will be automatically updated in POS Invoice when this mode is selected.",
+                )
+                .in_list_view(),
+        ]
+    );
+
+    let row = ModeOfPaymentAccount::new("Acme", "Cash - AC");
+    assert_eq!(row.doctype(), "Mode of Payment Account");
+    assert_eq!(row.module(), "Accounts");
+}
+
+#[test]
 fn mode_of_payment_validate_matches_erpnext_order_and_errors() {
     let mut account_companies = BTreeMap::new();
     account_companies.insert("Cash - AC".to_string(), "Acme".to_string());

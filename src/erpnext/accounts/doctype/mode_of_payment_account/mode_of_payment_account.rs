@@ -11,6 +11,8 @@ impl ModeOfPaymentAccount {
     pub const MODULE: &'static str = "Accounts";
     pub const FIELD_ORDER: [&'static str; 2] = ["company", "default_account"];
     pub const IS_TABLE: bool = true;
+    pub const SORT_FIELD: &'static str = "creation";
+    pub const SORT_ORDER: &'static str = "DESC";
 
     pub fn new(company: impl Into<String>, default_account: impl Into<String>) -> Self {
         Self {
@@ -26,6 +28,9 @@ impl ModeOfPaymentAccount {
                 .in_list_view(),
             FieldSpec::link("default_account", "Default Account")
                 .options("Account")
+                .description(
+                    "Default account will be automatically updated in POS Invoice when this mode is selected.",
+                )
                 .in_list_view(),
         ]
     }
