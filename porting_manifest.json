@@ -353,7 +353,7 @@
     {
       "source": "accounts/doctype/bank_reconciliation_tool/bank_reconciliation_tool.py",
       "target": "accounts/doctype/bank_reconciliation_tool/bank_reconciliation_tool.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/bank_reconciliation_tool/test_bank_reconciliation_tool.py",
