@@ -27,6 +27,8 @@ fn ledger_merge_matches_erpnext_metadata() {
         LedgerMerge::AUTONAME,
         "format:{account_name} merger on {creation}"
     );
+    assert_eq!(LedgerMerge::NAMING_RULE, "Expression");
+    assert!(LedgerMerge::HIDE_TOOLBAR);
     assert_eq!(LedgerMerge::SORT_FIELD, "creation");
     assert_eq!(LedgerMerge::SORT_ORDER, "DESC");
     assert!(LedgerMerge::TRACK_CHANGES);
@@ -34,23 +36,17 @@ fn ledger_merge_matches_erpnext_metadata() {
     assert_eq!(
         LedgerMerge::fields(),
         vec![
-            FieldSpec::section_break("section_break_1"),
-            FieldSpec::select("root_type", "Root Type")
-                .options("\nAsset\nLiability\nIncome\nExpense\nEquity")
-                .required()
-                .set_only_once(),
             FieldSpec::link("account", "Account")
                 .options("Account")
                 .depends_on("root_type")
                 .required()
                 .set_only_once(),
-            FieldSpec::data("account_name", "Account Name")
-                .depends_on("account")
-                .fetch_from("account.account_name")
-                .fetch_if_empty()
-                .read_only()
-                .required(),
+            FieldSpec::section_break("section_break_1"),
             FieldSpec::column_break("column_break_3"),
+            FieldSpec::table("merge_accounts", "Accounts to Merge")
+                .options("Ledger Merge Accounts")
+                .required(),
+            FieldSpec::section_break("section_break_5").depends_on("account"),
             FieldSpec::link("company", "Company")
                 .options("Company")
                 .required()
@@ -59,15 +55,21 @@ fn ledger_merge_matches_erpnext_metadata() {
                 .options("Pending\nSuccess\nPartial Success\nError")
                 .in_list_view()
                 .read_only(),
+            FieldSpec::select("root_type", "Root Type")
+                .options("\nAsset\nLiability\nIncome\nExpense\nEquity")
+                .required()
+                .set_only_once(),
+            FieldSpec::data("account_name", "Account Name")
+                .depends_on("account")
+                .fetch_from("account.account_name")
+                .fetch_if_empty()
+                .read_only()
+                .required(),
             FieldSpec::check("is_group", "Is Group")
                 .default("0")
                 .depends_on("account")
                 .fetch_from("account.is_group")
                 .read_only(),
-            FieldSpec::section_break("section_break_5").depends_on("account"),
-            FieldSpec::table("merge_accounts", "Accounts to Merge")
-                .options("Ledger Merge Accounts")
-                .required(),
         ]
     );
 }
@@ -97,6 +99,17 @@ fn ledger_merge_start_merge_matches_erpnext_enqueue_rules() {
     assert_eq!(plan.job_id, "ledger_merge::Cash merger on 2026-06-01");
     assert_eq!(plan.docname, "Cash merger on 2026-06-01");
     assert!(!plan.now);
+
+    let test_plan = ledger_merge
+        .start_merge_plan(LedgerMergeStartContext {
+            scheduler_inactive: true,
+            in_test: true,
+            developer_mode: false,
+            job_enqueued: false,
+        })
+        .expect("in-test enqueue plan")
+        .expect("not already enqueued");
+    assert!(test_plan.now);
 
     assert_eq!(
         ledger_merge.start_merge_plan(LedgerMergeStartContext {

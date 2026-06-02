@@ -77,29 +77,25 @@ impl LedgerMerge {
         "merge_accounts",
     ];
     pub const AUTONAME: &'static str = "format:{account_name} merger on {creation}";
+    pub const NAMING_RULE: &'static str = "Expression";
+    pub const HIDE_TOOLBAR: bool = true;
     pub const SORT_FIELD: &'static str = "creation";
     pub const SORT_ORDER: &'static str = "DESC";
     pub const TRACK_CHANGES: bool = true;
 
     pub fn fields() -> Vec<FieldSpec> {
         vec![
-            FieldSpec::section_break("section_break_1"),
-            FieldSpec::select("root_type", "Root Type")
-                .options("\nAsset\nLiability\nIncome\nExpense\nEquity")
-                .required()
-                .set_only_once(),
             FieldSpec::link("account", "Account")
                 .options("Account")
                 .depends_on("root_type")
                 .required()
                 .set_only_once(),
-            FieldSpec::data("account_name", "Account Name")
-                .depends_on("account")
-                .fetch_from("account.account_name")
-                .fetch_if_empty()
-                .read_only()
-                .required(),
+            FieldSpec::section_break("section_break_1"),
             FieldSpec::column_break("column_break_3"),
+            FieldSpec::table("merge_accounts", "Accounts to Merge")
+                .options("Ledger Merge Accounts")
+                .required(),
+            FieldSpec::section_break("section_break_5").depends_on("account"),
             FieldSpec::link("company", "Company")
                 .options("Company")
                 .required()
@@ -108,15 +104,21 @@ impl LedgerMerge {
                 .options("Pending\nSuccess\nPartial Success\nError")
                 .in_list_view()
                 .read_only(),
+            FieldSpec::select("root_type", "Root Type")
+                .options("\nAsset\nLiability\nIncome\nExpense\nEquity")
+                .required()
+                .set_only_once(),
+            FieldSpec::data("account_name", "Account Name")
+                .depends_on("account")
+                .fetch_from("account.account_name")
+                .fetch_if_empty()
+                .read_only()
+                .required(),
             FieldSpec::check("is_group", "Is Group")
                 .default("0")
                 .depends_on("account")
                 .fetch_from("account.is_group")
                 .read_only(),
-            FieldSpec::section_break("section_break_5").depends_on("account"),
-            FieldSpec::table("merge_accounts", "Accounts to Merge")
-                .options("Ledger Merge Accounts")
-                .required(),
         ]
     }
 

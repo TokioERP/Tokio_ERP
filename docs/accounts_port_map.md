@@ -139,7 +139,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `ledger_health` | 5 | 3 | 1 | 1 | not_started | |
 | `ledger_health_monitor` | 5 | 3 | 1 | 1 | parity_tested | Python controller and test are pass/no-op; Rust metadata and controller behavior covered by `accounts_ledger_health_monitor`. JSON kept external. |
 | `ledger_health_monitor_company` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_ledger_health_monitor_company`. JSON kept external. |
-| `ledger_merge` | 5 | 3 | 1 | 1 | not_started | |
+| `ledger_merge` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, JSON fields order, scheduler/job enqueue branching, in-test/developer immediate execution flag, merge status/progress/error tracking, and refresh publication in `accounts_ledger_merge`. Account merge DB side effects are represented by injected merge outcomes. JSON/JS kept external. |
 | `ledger_merge_accounts` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_ledger_merge_accounts`. JSON kept external. |
 | `loyalty_point_entry` | 5 | 3 | 1 | 1 | not_started | |
 | `loyalty_point_entry_redemption` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata covers child table flags, quick entry, sort metadata, field order, and constructor behavior in `accounts_small_pass_doctypes`. JSON kept external. |
