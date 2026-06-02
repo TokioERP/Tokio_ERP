@@ -12,6 +12,13 @@ pub struct LedgerHealth {
 impl LedgerHealth {
     pub const DOCTYPE: &'static str = "Ledger Health";
     pub const MODULE: &'static str = "Accounts";
+    pub const AUTONAME: &'static str = "autoincrement";
+    pub const NAMING_RULE: &'static str = "Autoincrement";
+    pub const IN_CREATE: bool = true;
+    pub const INDEX_WEB_PAGES_FOR_SEARCH: bool = true;
+    pub const READ_ONLY: bool = true;
+    pub const SORT_FIELD: &'static str = "modified";
+    pub const SORT_ORDER: &'static str = "DESC";
     pub const FIELD_ORDER: [&'static str; 5] = [
         "voucher_type",
         "voucher_no",

@@ -129,6 +129,14 @@ fn tax_ledger_and_loyalty_child_tables_match_erpnext_metadata() {
     );
 
     assert_eq!(LedgerHealth::DOCTYPE, "Ledger Health");
+    assert_eq!(LedgerHealth::MODULE, "Accounts");
+    assert_eq!(LedgerHealth::AUTONAME, "autoincrement");
+    assert_eq!(LedgerHealth::NAMING_RULE, "Autoincrement");
+    assert!(LedgerHealth::IN_CREATE);
+    assert!(LedgerHealth::INDEX_WEB_PAGES_FOR_SEARCH);
+    assert!(LedgerHealth::READ_ONLY);
+    assert_eq!(LedgerHealth::SORT_FIELD, "modified");
+    assert_eq!(LedgerHealth::SORT_ORDER, "DESC");
     assert_eq!(
         LedgerHealth::FIELD_ORDER,
         [
@@ -241,6 +249,9 @@ fn journal_entry_template_account_matches_erpnext_metadata() {
     );
     assert!(JournalEntryTemplateAccount::IS_TABLE);
     assert!(JournalEntryTemplateAccount::TRACK_CHANGES);
+    assert_eq!(JournalEntryTemplateAccount::ROW_FORMAT, "Dynamic");
+    assert_eq!(JournalEntryTemplateAccount::SORT_FIELD, "creation");
+    assert_eq!(JournalEntryTemplateAccount::SORT_ORDER, "DESC");
     assert_eq!(
         JournalEntryTemplateAccount::fields(),
         vec![
@@ -256,7 +267,8 @@ fn journal_entry_template_account_matches_erpnext_metadata() {
                 .options("party_type")
                 .in_list_view(),
             FieldSpec::section_break("accounting_dimensions_section")
-                .label("Accounting Dimensions"),
+                .label("Accounting Dimensions")
+                .collapsible(),
             FieldSpec::link("cost_center", "Cost Center").options("Cost Center"),
             FieldSpec::column_break("dimension_col_break"),
             FieldSpec::link("project", "Project").options("Project"),

@@ -22,6 +22,9 @@ impl JournalEntryTemplateAccount {
         "project",
     ];
     pub const IS_TABLE: bool = true;
+    pub const ROW_FORMAT: &'static str = "Dynamic";
+    pub const SORT_FIELD: &'static str = "creation";
+    pub const SORT_ORDER: &'static str = "DESC";
     pub const TRACK_CHANGES: bool = true;
 
     pub fn new(account: impl Into<String>) -> Self {
@@ -45,7 +48,8 @@ impl JournalEntryTemplateAccount {
                 .options("party_type")
                 .in_list_view(),
             FieldSpec::section_break("accounting_dimensions_section")
-                .label("Accounting Dimensions"),
+                .label("Accounting Dimensions")
+                .collapsible(),
             FieldSpec::link("cost_center", "Cost Center").options("Cost Center"),
             FieldSpec::column_break("dimension_col_break"),
             FieldSpec::link("project", "Project").options("Project"),
