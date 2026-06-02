@@ -888,7 +888,7 @@
     {
       "source": "accounts/doctype/invoice_discounting/test_invoice_discounting.py",
       "target": "accounts/doctype/invoice_discounting/test_invoice_discounting.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/item_tax_template/__init__.py",

@@ -238,6 +238,15 @@ fn invoice_discounting_builds_disbursement_and_close_loan_journal_plans() {
     assert_eq!(close.accounts[2].credit_in_account_currency, 45.0);
     assert_eq!(close.accounts[3].account, "AR Unpaid - WP");
     assert_eq!(close.accounts[3].debit_in_account_currency, 45.0);
+
+    let after_period = doc.close_loan_plan(
+        "Main - CC",
+        "2026-05-30",
+        &BTreeMap::from([("SI-0001".to_string(), 45.0)]),
+    );
+    assert_eq!(after_period.accounts.len(), 2);
+    assert_eq!(after_period.accounts[0].account, "Short Term Loan - WP");
+    assert_eq!(after_period.accounts[1].account, "Bank - WP");
 }
 
 #[test]
@@ -285,5 +294,29 @@ fn invoice_discounting_filters_invoices_and_party_account_by_status() {
             )],
         ),
         Some("AR Discounted - WP".to_string())
+    );
+    assert_eq!(
+        get_party_account_based_on_invoice_discounting(
+            "SI-0001",
+            &[(
+                "SI-0001".to_string(),
+                "AR Discounted - WP".to_string(),
+                "AR Unpaid - WP".to_string(),
+                InvoiceDiscountingStatus::Settled,
+            )],
+        ),
+        Some("AR Unpaid - WP".to_string())
+    );
+    assert_eq!(
+        get_party_account_based_on_invoice_discounting(
+            "SI-0001",
+            &[(
+                "SI-0001".to_string(),
+                "AR Discounted - WP".to_string(),
+                "AR Unpaid - WP".to_string(),
+                InvoiceDiscountingStatus::Sanctioned,
+            )],
+        ),
+        None
     );
 }

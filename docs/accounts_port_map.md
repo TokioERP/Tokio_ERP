@@ -128,7 +128,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `fiscal_year` | 7 | 4 | 1 | 1 | parity_tested | Rust covers metadata, one-year date validation, short-year bypass, overlap rules including company-specific fiscal years over global years, auto-create planning, cached date lookup shape, and dashboard metadata in `accounts_fiscal_year`/`accounts_static_dashboards`. JSON kept external. |
 | `fiscal_year_company` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_fiscal_year_company`. JSON kept external. |
 | `gl_entry` | 6 | 3 | 1 | 1 | not_started | |
-| `invoice_discounting` | 7 | 4 | 1 | 2 | not_started | |
+| `invoice_discounting` | 7 | 4 | 1 | 2 | parity_tested | Rust covers metadata, validation, duplicate/outstanding guards, total/status/end-date updates, sales invoice discount flags, GL entry plans, disbursement and settlement journal plans, invoice filtering, party-account routing for disbursed/settled states, and dashboard metadata in `accounts_invoice_discounting`/`accounts_static_dashboards`. JSON kept external. |
 | `item_tax_template` | 6 | 4 | 1 | 1 | not_started | |
 | `item_tax_template_detail` | 3 | 2 | 1 | 0 | not_started | |
 | `item_wise_tax_detail` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_item_wise_tax_detail`. JSON kept external. |
