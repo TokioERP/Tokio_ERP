@@ -139,3 +139,48 @@ fn after_rename_updates_matching_formula_rows_and_ignores_like_operators() {
         Some(r#"["account_category","in",["New Category","Other"]]"#)
     );
 }
+
+#[test]
+fn after_rename_accepts_python_literal_formulas_like_erpnext_ast_literal_eval() {
+    let rows = vec![
+        (
+            "ROW-1".to_string(),
+            r#"['account_category', '=', 'Old Category']"#.to_string(),
+        ),
+        (
+            "ROW-2".to_string(),
+            r#"{'or': [['account_category', 'in', ['Old Category', 'Other']], ['account_category', 'not like', '%Old Category%']]}"#
+                .to_string(),
+        ),
+    ];
+
+    let updated = update_formula_rows_for_rename("Old Category", "New Category", &rows);
+
+    assert_eq!(updated.len(), 2);
+    assert_eq!(
+        updated.get("ROW-1").map(String::as_str),
+        Some(r#"["account_category","=","New Category"]"#)
+    );
+    assert_eq!(
+        updated.get("ROW-2").map(String::as_str),
+        Some(
+            r#"{"or":[["account_category","in",["New Category","Other"]],["account_category","not like","%Old Category%"]]}"#
+        )
+    );
+}
+
+#[test]
+fn after_rename_keeps_python_literal_keywords_inside_strings() {
+    let rows = vec![(
+        "ROW-1".to_string(),
+        r#"['account_category', 'in', ['None Category', 'True Category', 'Old Category']]"#
+            .to_string(),
+    )];
+
+    let updated = update_formula_rows_for_rename("Old Category", "New Category", &rows);
+
+    assert_eq!(
+        updated.get("ROW-1").map(String::as_str),
+        Some(r#"["account_category","in",["None Category","True Category","New Category"]]"#)
+    );
+}

@@ -170,7 +170,7 @@ pub fn update_formula_rows_for_rename(
     let mut updated_rows = BTreeMap::new();
 
     for (row_name, formula) in rows {
-        let Ok(parsed) = serde_json::from_str::<Value>(formula) else {
+        let Some(parsed) = parse_formula_literal(formula) else {
             continue;
         };
 
@@ -181,6 +181,63 @@ pub fn update_formula_rows_for_rename(
     }
 
     updated_rows
+}
+
+fn parse_formula_literal(formula: &str) -> Option<Value> {
+    serde_json::from_str::<Value>(formula)
+        .or_else(|_| python_literal_to_json(formula).and_then(|json| serde_json::from_str(&json)))
+        .ok()
+}
+
+fn python_literal_to_json(input: &str) -> Result<String, serde_json::Error> {
+    let mut output = String::with_capacity(input.len());
+    let mut chars = input.chars().peekable();
+
+    while let Some(ch) = chars.next() {
+        if ch == '\'' || ch == '"' {
+            let quote = ch;
+            let mut literal = String::new();
+
+            while let Some(next) = chars.next() {
+                if next == '\\' {
+                    if let Some(escaped) = chars.next() {
+                        literal.push(match escaped {
+                            '\'' if quote == '\'' => '\'',
+                            '"' if quote == '"' => '"',
+                            '\\' => '\\',
+                            other => other,
+                        });
+                    }
+                } else if next == quote {
+                    break;
+                } else {
+                    literal.push(next);
+                }
+            }
+
+            output.push_str(&serde_json::to_string(&literal)?);
+        } else if ch.is_ascii_alphabetic() || ch == '_' {
+            let mut token = String::from(ch);
+            while let Some(next) = chars.peek().copied() {
+                if next.is_ascii_alphanumeric() || next == '_' {
+                    token.push(next);
+                    chars.next();
+                } else {
+                    break;
+                }
+            }
+            output.push_str(match token.as_str() {
+                "None" => "null",
+                "True" => "true",
+                "False" => "false",
+                _ => token.as_str(),
+            });
+        } else {
+            output.push(ch);
+        }
+    }
+
+    Ok(output)
 }
 
 fn update_formula_value(value: Value, old_name: &str, new_name: &str) -> Value {

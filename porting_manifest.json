@@ -93,7 +93,7 @@
     {
       "source": "accounts/doctype/account_category/account_category.py",
       "target": "accounts/doctype/account_category/account_category.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/account_category/test_account_category.py",
