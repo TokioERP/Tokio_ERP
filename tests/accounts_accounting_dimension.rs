@@ -301,6 +301,23 @@ fn accounting_dimension_delete_and_toggle_plans_match_erpnext_side_effects() {
 }
 
 #[test]
+fn accounting_dimension_delete_keeps_budget_options_trailing_newline_like_erpnext() {
+    let doc = AccountingDimension {
+        document_type: "Branch".to_string(),
+        fieldname: Some("branch".to_string()),
+        ..Default::default()
+    };
+
+    let delete_plan =
+        delete_accounting_dimension_plan(&doc, &["Budget"], "\nCost Center\nProject\nBranch");
+
+    assert_eq!(
+        delete_plan.budget_against_options,
+        "\nCost Center\nProject\n"
+    );
+}
+
+#[test]
 fn accounting_dimension_helpers_return_dimensions_defaults_children_and_create_plan() {
     let records = vec![
         AccountingDimensionRecord {

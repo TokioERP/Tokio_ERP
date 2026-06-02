@@ -128,7 +128,7 @@
     {
       "source": "accounts/doctype/accounting_dimension/test_accounting_dimension.py",
       "target": "accounts/doctype/accounting_dimension/test_accounting_dimension.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/accounting_dimension_detail/__init__.py",

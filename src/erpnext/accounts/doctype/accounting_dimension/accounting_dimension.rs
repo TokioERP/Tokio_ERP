@@ -377,9 +377,7 @@ pub fn delete_accounting_dimension_plan(
             .iter()
             .map(|doctype| (*doctype).to_string())
             .collect(),
-        budget_against_options: format!("\nCost Center\nProject\n{}", value_list.join("\n"))
-            .trim_end()
-            .to_string(),
+        budget_against_options: format!("\nCost Center\nProject\n{}", value_list.join("\n")),
         clear_cache_doctypes: doclist
             .iter()
             .map(|doctype| (*doctype).to_string())
