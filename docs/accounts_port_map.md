@@ -776,6 +776,76 @@ Target: `src/erpnext/accounts/doctype/discounted_invoice`
 | `discounted_invoice.py` | `discounted_invoice.rs` | parity_tested | No-op child table controller and discounted invoice metadata represented in Rust. |
 | `discounted_invoice.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
 
+## Doctype Detail: `exchange_rate_revaluation`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/exchange_rate_revaluation`
+Target: `src/erpnext/accounts/doctype/exchange_rate_revaluation`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- Rust covers validation, submit/cancel hooks, account-balance calculation, exchange gain/loss totals, zero-gain filtering, journal condition checks, JV planning, account-detail lookup, and last-GL-entry exchange-rate behavior.
+- Dashboard metadata is represented by Rust static dashboard helper.
+- DocType metadata:
+  - `name`: `Exchange Rate Revaluation`
+  - `module`: `Accounts`
+  - `allow_import`: enabled
+  - `autoname`: `ACC-ERR-.YYYY.-.#####`
+  - `is_submittable`: enabled
+  - `naming_rule`: `Expression (old style)`
+  - `sort_field`: `creation`
+  - `sort_order`: `DESC`
+  - `track_changes`: enabled
+  - `field_order`: `posting_date`, `rounding_loss_allowance`, `column_break_2`, `company`, `section_break_4`, `get_entries`, `accounts`, `section_break_6`, `gain_loss_unbooked`, `gain_loss_booked`, `column_break_10`, `total_gain_loss`, `amended_from`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `exchange_rate_revaluation.py` | `exchange_rate_revaluation.rs` | parity_tested | Controller metadata, validation, GLE aggregation, balance recalculation, journal condition checks, revaluation/zero-balance JV plans, mandatory account/party checks, and hooks represented in Rust. |
+| `exchange_rate_revaluation_dashboard.py` | `exchange_rate_revaluation_dashboard.rs` | parity_tested | Static dashboard data represented and tested in Rust. |
+| `test_exchange_rate_revaluation.py` | `tests/accounts_exchange_rate_revaluation.rs` | parity_tested | Rust tests cover deterministic equivalents of ERPNext validation, balance, and JV-planning behavior; DB writes and actual Journal Entry submission remain integration boundary. |
+| `exchange_rate_revaluation.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants and JSON fields order. |
+| `exchange_rate_revaluation.js` | ERPNext client script retained | external_kept | Client-side form behavior remains UI/Frappe-owned. |
+
+## Doctype Detail: `finance_book`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/finance_book`
+Target: `src/erpnext/accounts/doctype/finance_book`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- No custom hooks, validation, or calculations are defined; the class body is `pass`.
+- Dashboard metadata is represented by Rust static dashboard helper.
+- DocType metadata:
+  - `name`: `Finance Book`
+  - `module`: `Accounts`
+  - `allow_import`: enabled
+  - `autoname`: `field:finance_book_name`
+  - `document_type`: `Document`
+  - `icon`: `fa fa-book`
+  - `quick_entry`: enabled
+  - `search_fields`: `finance_book_name`
+  - `sort_field`: `creation`
+  - `sort_order`: `DESC`
+  - `track_changes`: enabled
+  - `track_seen`: enabled
+  - `field_order`: `finance_book_name`
+  - `finance_book_name`: `Data`, label `Name`, `unique: 1`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `finance_book.py` | `finance_book.rs` | parity_tested | No-op controller and Finance Book metadata represented in Rust. |
+| `finance_book_dashboard.py` | `finance_book_dashboard.rs` | parity_tested | Static dashboard data represented and tested in Rust. |
+| `test_finance_book.py` | `tests/accounts_small_pass_doctypes.rs` | parity_tested | Rust tests cover deterministic metadata/controller behavior; GL propagation from Journal Entry remains integration boundary. |
+| `finance_book.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants and unique field metadata. |
+| `finance_book.js` | ERPNext client script retained | external_kept | Client-side form behavior remains UI/Frappe-owned. |
+
 ## Doctype Detail: `fiscal_year_company`
 
 Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/fiscal_year_company`
