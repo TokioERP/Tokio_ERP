@@ -32,11 +32,11 @@ fn party_link_matches_erpnext_metadata() {
                 .options("DocType")
                 .in_list_view()
                 .required(),
+            FieldSpec::column_break("column_break_2"),
             FieldSpec::link("secondary_role", "Secondary Role")
                 .options("DocType")
                 .depends_on("primary_role")
                 .mandatory_depends_on("primary_role"),
-            FieldSpec::column_break("column_break_2"),
             FieldSpec::dynamic_link("primary_party")
                 .label("Primary Party")
                 .options("primary_role")

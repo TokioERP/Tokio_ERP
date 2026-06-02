@@ -153,7 +153,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `opening_invoice_creation_tool_item` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata covers child table flags, quick entry, row format, sort metadata, field order, field dependencies/defaults, and empty controller hooks in `accounts_opening_invoice_creation_tool`. JSON kept external. |
 | `overdue_payment` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata covers child table flags, index-web-pages flag, quick entry, sort metadata, field order, field dependencies/defaults, and empty controller hooks in `accounts_payment_child_pass_doctypes`. JSON kept external. |
 | `party_account` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_party_account`. JSON kept external. |
-| `party_link` | 5 | 3 | 1 | 1 | not_started | |
+| `party_link` | 5 | 3 | 1 | 1 | parity_tested | Python test class is pass/no-op; Rust covers DocType metadata, validate role/link conflicts, create_party_link secondary-role selection, and controller hooks in `accounts_party_link`. JSON/JS kept external. |
 | `payment_entry` | 6 | 3 | 1 | 2 | not_started | |
 | `payment_entry_deduction` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_payment_entry_deduction`. JSON kept external. |
 | `payment_entry_reference` | 3 | 2 | 1 | 0 | not_started | |
