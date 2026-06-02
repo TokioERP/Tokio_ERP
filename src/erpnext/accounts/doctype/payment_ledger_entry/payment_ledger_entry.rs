@@ -152,9 +152,6 @@ impl PaymentLedgerEntry {
     pub fn fields() -> Vec<FieldSpec> {
         vec![
             FieldSpec::date("posting_date", "Posting Date").search_index(),
-            FieldSpec::link("company", "Company")
-                .options("Company")
-                .search_index(),
             FieldSpec::select("account_type", "Account Type").options("Receivable\nPayable"),
             FieldSpec::link("account", "Account")
                 .options("Account")
@@ -166,11 +163,6 @@ impl PaymentLedgerEntry {
                 .label("Party")
                 .options("party_type")
                 .search_index(),
-            FieldSpec::date("due_date", "Due Date"),
-            FieldSpec::data("voucher_detail_no", "Voucher Detail No").search_index(),
-            FieldSpec::link("cost_center", "Cost Center").options("Cost Center"),
-            FieldSpec::link("project", "Project").options("Project"),
-            FieldSpec::link("finance_book", "Finance Book").options("Finance Book"),
             FieldSpec::link("voucher_type", "Voucher Type")
                 .options("DocType")
                 .in_standard_filter()
@@ -200,7 +192,15 @@ impl PaymentLedgerEntry {
             FieldSpec::check("delinked", "DeLinked")
                 .default("0")
                 .in_list_view(),
+            FieldSpec::link("company", "Company")
+                .options("Company")
+                .search_index(),
+            FieldSpec::link("cost_center", "Cost Center").options("Cost Center"),
+            FieldSpec::link("project", "Project").options("Project"),
+            FieldSpec::date("due_date", "Due Date"),
+            FieldSpec::link("finance_book", "Finance Book").options("Finance Book"),
             FieldSpec::text("remarks", "Remarks"),
+            FieldSpec::data("voucher_detail_no", "Voucher Detail No").search_index(),
         ]
     }
 

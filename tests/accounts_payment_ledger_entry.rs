@@ -45,30 +45,60 @@ fn payment_ledger_entry_matches_erpnext_metadata() {
         ]
     );
 
-    let fields = PaymentLedgerEntry::fields();
-    assert_eq!(fields.len(), 20);
     assert_eq!(
-        fields[0],
-        FieldSpec::date("posting_date", "Posting Date").search_index()
-    );
-    assert_eq!(
-        fields[2],
-        FieldSpec::select("account_type", "Account Type").options("Receivable\nPayable")
-    );
-    assert_eq!(
-        fields[12],
-        FieldSpec::dynamic_link("voucher_no")
-            .label("Voucher No")
-            .options("voucher_type")
-            .in_list_view()
-            .in_standard_filter()
-            .search_index()
-    );
-    assert_eq!(
-        fields[15],
-        FieldSpec::currency("amount", "Amount")
-            .options("Company:company:default_currency")
-            .in_list_view()
+        PaymentLedgerEntry::fields(),
+        vec![
+            FieldSpec::date("posting_date", "Posting Date").search_index(),
+            FieldSpec::select("account_type", "Account Type").options("Receivable\nPayable"),
+            FieldSpec::link("account", "Account")
+                .options("Account")
+                .search_index(),
+            FieldSpec::link("party_type", "Party Type")
+                .options("DocType")
+                .search_index(),
+            FieldSpec::dynamic_link("party")
+                .label("Party")
+                .options("party_type")
+                .search_index(),
+            FieldSpec::link("voucher_type", "Voucher Type")
+                .options("DocType")
+                .in_standard_filter()
+                .search_index(),
+            FieldSpec::dynamic_link("voucher_no")
+                .label("Voucher No")
+                .options("voucher_type")
+                .in_list_view()
+                .in_standard_filter()
+                .search_index(),
+            FieldSpec::link("against_voucher_type", "Against Voucher Type")
+                .options("DocType")
+                .in_standard_filter()
+                .search_index(),
+            FieldSpec::dynamic_link("against_voucher_no")
+                .label("Against Voucher No")
+                .options("against_voucher_type")
+                .in_list_view()
+                .in_standard_filter()
+                .search_index(),
+            FieldSpec::currency("amount", "Amount")
+                .options("Company:company:default_currency")
+                .in_list_view(),
+            FieldSpec::link("account_currency", "Currency").options("Currency"),
+            FieldSpec::currency("amount_in_account_currency", "Amount in Account Currency")
+                .options("account_currency"),
+            FieldSpec::check("delinked", "DeLinked")
+                .default("0")
+                .in_list_view(),
+            FieldSpec::link("company", "Company")
+                .options("Company")
+                .search_index(),
+            FieldSpec::link("cost_center", "Cost Center").options("Cost Center"),
+            FieldSpec::link("project", "Project").options("Project"),
+            FieldSpec::date("due_date", "Due Date"),
+            FieldSpec::link("finance_book", "Finance Book").options("Finance Book"),
+            FieldSpec::text("remarks", "Remarks"),
+            FieldSpec::data("voucher_detail_no", "Voucher Detail No").search_index(),
+        ]
     );
 }
 
