@@ -36,6 +36,12 @@ impl MonthlyDistribution {
     pub const DOCTYPE: &'static str = "Monthly Distribution";
     pub const MODULE: &'static str = "Accounts";
     pub const FIELD_ORDER: [&'static str; 3] = ["distribution_id", "fiscal_year", "percentages"];
+    pub const AUTONAME: &'static str = "field:distribution_id";
+    pub const DESCRIPTION: &'static str =
+        "Helps you distribute the Budget/Target across months if you have seasonality in your business.";
+    pub const ICON: &'static str = "fa fa-bar-chart";
+    pub const SORT_FIELD: &'static str = "creation";
+    pub const SORT_ORDER: &'static str = "DESC";
 
     pub fn fields() -> Vec<FieldSpec> {
         vec![

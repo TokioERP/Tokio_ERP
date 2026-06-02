@@ -13,6 +13,14 @@ fn monthly_distribution_matches_erpnext_metadata() {
         MonthlyDistribution::FIELD_ORDER,
         ["distribution_id", "fiscal_year", "percentages"]
     );
+    assert_eq!(MonthlyDistribution::AUTONAME, "field:distribution_id");
+    assert_eq!(
+        MonthlyDistribution::DESCRIPTION,
+        "Helps you distribute the Budget/Target across months if you have seasonality in your business."
+    );
+    assert_eq!(MonthlyDistribution::ICON, "fa fa-bar-chart");
+    assert_eq!(MonthlyDistribution::SORT_FIELD, "creation");
+    assert_eq!(MonthlyDistribution::SORT_ORDER, "DESC");
     assert_eq!(
         MonthlyDistribution::fields(),
         vec![
