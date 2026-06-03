@@ -1268,7 +1268,7 @@
     {
       "source": "accounts/doctype/payment_gateway_account/test_payment_gateway_account.py",
       "target": "accounts/doctype/payment_gateway_account/test_payment_gateway_account.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_ledger_entry/__init__.py",
@@ -1503,7 +1503,7 @@
     {
       "source": "accounts/doctype/pos_closing_entry/test_pos_closing_entry.py",
       "target": "accounts/doctype/pos_closing_entry/test_pos_closing_entry.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_closing_entry_detail/__init__.py",
@@ -1623,7 +1623,7 @@
     {
       "source": "accounts/doctype/pos_opening_entry/test_pos_opening_entry.py",
       "target": "accounts/doctype/pos_opening_entry/test_pos_opening_entry.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_opening_entry_detail/__init__.py",
