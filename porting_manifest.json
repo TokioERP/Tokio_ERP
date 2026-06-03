@@ -2323,7 +2323,7 @@
     {
       "source": "accounts/doctype/subscription/test_subscription.py",
       "target": "accounts/doctype/subscription/test_subscription.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/subscription_invoice/__init__.py",

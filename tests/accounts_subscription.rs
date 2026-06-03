@@ -13,6 +13,7 @@ fn subscription_matches_erpnext_metadata() {
     assert_eq!(Subscription::DOCTYPE, "Subscription");
     assert_eq!(Subscription::MODULE, "Accounts");
     assert_eq!(Subscription::AUTONAME, "ACC-SUB-.YYYY.-.#####");
+    assert_eq!(Subscription::NAMING_RULE, "Expression (old style)");
     assert_eq!(
         Subscription::FIELD_ORDER,
         [
@@ -53,6 +54,7 @@ fn subscription_matches_erpnext_metadata() {
     );
     assert!(Subscription::EDITABLE_GRID);
     assert!(Subscription::INDEX_WEB_PAGES_FOR_SEARCH);
+    assert_eq!(Subscription::ROW_FORMAT, "Dynamic");
     assert_eq!(Subscription::SORT_FIELD, "creation");
     assert_eq!(Subscription::SORT_ORDER, "DESC");
     assert!(Subscription::TRACK_CHANGES);
@@ -63,13 +65,37 @@ fn subscription_matches_erpnext_metadata() {
         &FieldSpec::link("party_type", "Party Type")
             .options("DocType")
             .required()
+            .set_only_once()
     ));
     assert!(fields.contains(
         &FieldSpec::dynamic_link("party")
             .label("Party")
             .options("party_type")
             .required()
+            .set_only_once()
             .in_list_view()
+    ));
+    assert!(fields.contains(
+        &FieldSpec::date("trial_period_start", "Trial Period Start Date")
+            .allow_on_submit()
+            .set_only_once()
+    ));
+    assert!(fields.contains(
+        &FieldSpec::date("trial_period_end", "Trial Period End Date")
+            .depends_on("eval:doc.trial_period_start")
+            .set_only_once()
+    ));
+    assert!(fields.contains(
+        &FieldSpec::check("follow_calendar_months", "Follow Calendar Months")
+            .default("0")
+            .description("If this is checked subsequent new invoices will be created on calendar  month and quarter start dates irrespective of current invoice start date")
+            .set_only_once()
+    ));
+    assert!(fields.contains(
+        &FieldSpec::date("end_date", "Subscription End Date").set_only_once()
+    ));
+    assert!(fields.contains(
+        &FieldSpec::date("start_date", "Subscription Start Date").set_only_once()
     ));
     assert!(fields.contains(
         &FieldSpec::select("generate_invoice_at", "Generate Invoice At")

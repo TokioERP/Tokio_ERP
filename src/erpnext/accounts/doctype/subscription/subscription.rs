@@ -295,6 +295,7 @@ impl Subscription {
     pub const DOCTYPE: &'static str = "Subscription";
     pub const MODULE: &'static str = "Accounts";
     pub const AUTONAME: &'static str = "ACC-SUB-.YYYY.-.#####";
+    pub const NAMING_RULE: &'static str = "Expression (old style)";
     pub const FIELD_ORDER: [&'static str; 33] = [
         "party_type",
         "party",
@@ -332,6 +333,7 @@ impl Subscription {
     ];
     pub const EDITABLE_GRID: bool = true;
     pub const INDEX_WEB_PAGES_FOR_SEARCH: bool = true;
+    pub const ROW_FORMAT: &'static str = "Dynamic";
     pub const SORT_FIELD: &'static str = "creation";
     pub const SORT_ORDER: &'static str = "DESC";
     pub const TRACK_CHANGES: bool = true;
@@ -366,9 +368,12 @@ impl Subscription {
                 .no_copy(),
             FieldSpec::section_break("subscription_period").label("Subscription Period"),
             FieldSpec::date("cancelation_date", "Cancelation Date").read_only(),
-            FieldSpec::date("trial_period_start", "Trial Period Start Date").allow_on_submit(),
+            FieldSpec::date("trial_period_start", "Trial Period Start Date")
+                .allow_on_submit()
+                .set_only_once(),
             FieldSpec::date("trial_period_end", "Trial Period End Date")
-                .depends_on("eval:doc.trial_period_start"),
+                .depends_on("eval:doc.trial_period_start")
+                .set_only_once(),
             FieldSpec::column_break("column_break_11"),
             FieldSpec::date("current_invoice_start", "Current Invoice Start Date")
                 .read_only()
@@ -405,11 +410,13 @@ impl Subscription {
                 .collapsible(),
             FieldSpec::link("party_type", "Party Type")
                 .options("DocType")
-                .required(),
+                .required()
+                .set_only_once(),
             FieldSpec::dynamic_link("party")
                 .label("Party")
                 .options("party_type")
                 .required()
+                .set_only_once()
                 .in_list_view(),
             FieldSpec::link("sales_tax_template", "Sales Taxes and Charges Template")
                 .options("Sales Taxes and Charges Template")
@@ -422,15 +429,16 @@ impl Subscription {
             .depends_on("eval:doc.party_type === 'Supplier'"),
             FieldSpec::check("follow_calendar_months", "Follow Calendar Months")
                 .default("0")
-                .description("If this is checked subsequent new invoices will be created on calendar  month and quarter start dates irrespective of current invoice start date"),
+                .description("If this is checked subsequent new invoices will be created on calendar  month and quarter start dates irrespective of current invoice start date")
+                .set_only_once(),
             FieldSpec::check(
                 "generate_new_invoices_past_due_date",
                 "Generate New Invoices Past Due Date",
             )
             .default("0")
             .description("New invoices will be generated as per schedule even if current invoices are unpaid or past due date"),
-            FieldSpec::date("end_date", "Subscription End Date"),
-            FieldSpec::date("start_date", "Subscription Start Date"),
+            FieldSpec::date("end_date", "Subscription End Date").set_only_once(),
+            FieldSpec::date("start_date", "Subscription Start Date").set_only_once(),
             FieldSpec::link("cost_center", "Cost Center").options("Cost Center"),
             FieldSpec::link("company", "Company").options("Company"),
             FieldSpec::check("submit_invoice", "Submit Generated Invoices").default("1"),
