@@ -190,7 +190,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `pos_profile` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, disabled/default-profile validation, company link checks, duplicate groups, payment method rules, accounting dimension checks, defaults, item-group permission helpers, query fallback, and default-profile update planning in `accounts_pos_profile`. JSON/JS kept external. |
 | `pos_profile_user` | 5 | 3 | 1 | 1 | parity_tested | Python controller/test are pass/no-op; Rust covers child table metadata, quick entry, sort metadata, track changes, field order, field definitions, constructor behavior, and empty controller hooks in `accounts_small_pass_doctypes`. JSON/JS kept external. |
 | `pos_search_fields` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_search_fields`. JSON kept external. |
-| `pos_settings` | 5 | 3 | 1 | 1 | not_started | |
+| `pos_settings` | 5 | 3 | 1 | 1 | parity_tested | Rust covers DocType metadata, JSON fields order, duplicate POS invoice-field validation, invoice-type change guard while POS Opening Entries are open, and controller hooks in `accounts_pos_settings`. JSON kept external. |
 | `pricing_rule` | 6 | 4 | 1 | 1 | not_started | |
 | `pricing_rule_brand` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pricing_rule_brand`. JSON kept external. |
 | `pricing_rule_detail` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pricing_rule_detail`. JSON kept external. |
@@ -1632,6 +1632,36 @@ Target: `src/erpnext/accounts/doctype/pos_opening_entry_detail`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `pos_opening_entry_detail.py` | `pos_opening_entry_detail.rs` | parity_tested | No-op child table controller and POS opening detail metadata represented in Rust. |
 | `pos_opening_entry_detail.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `pos_settings`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/pos_settings`
+Target: `src/erpnext/accounts/doctype/pos_settings`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- Rust covers `validate`, `validate_invoice_fields`, and `validate_invoice_type`.
+- Duplicate POS invoice fields are rejected like ERPNext `Counter(invoice_fields)` duplicate detection.
+- Invoice type change is rejected when open submitted POS Opening Entries exist.
+- DocType metadata:
+  - `name`: `POS Settings`
+  - `module`: `Accounts`
+  - `issingle`: enabled
+  - `quick_entry`: enabled
+  - `sort_field`: `creation`
+  - `sort_order`: `DESC`
+  - `track_changes`: enabled
+  - `field_order`: `invoice_type`, `column_break_vwwt`, `post_change_gl_entries`, `section_break_gyos`, `invoice_fields`, `pos_search_fields`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `pos_settings.py` | `pos_settings.rs` | parity_tested | Validation, metadata, and controller hooks represented in Rust. |
+| `test_pos_settings.py` | `tests/accounts_pos_settings.rs` | parity_tested | Python test class is pass/no-op; Rust tests cover deterministic validation behavior. |
+| `pos_settings.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
 
 ## Doctype Detail: `pos_payment_method`
 
