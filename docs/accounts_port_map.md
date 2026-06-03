@@ -136,7 +136,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `journal_entry_account` | 4 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata covers random/hash naming, dynamic row format, sort metadata, field order, field attributes, and empty controller hooks in `accounts_journal_entry_account`. JSON kept external. |
 | `journal_entry_template` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, naming-series passthrough, party validation for receivable/payable accounts, party-without-party-type guard, and pass/no-op Python test parity in `accounts_journal_entry_template`. JSON kept external. |
 | `journal_entry_template_account` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata covers dynamic row format, sort metadata, collapsible accounting-dimensions section, field order, and empty controller hooks in `accounts_small_pass_doctypes`. JSON kept external. |
-| `ledger_health` | 5 | 3 | 1 | 1 | not_started | |
+| `ledger_health` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, pass/no-op controller behavior, and ERPNext ledger health check test rows for debit-credit and GL/payment-ledger mismatch entry creation in `accounts_ledger_health`/`accounts_small_pass_doctypes`. Report execution and DB writes remain external integration. JSON kept external. |
 | `ledger_health_monitor` | 5 | 3 | 1 | 1 | parity_tested | Python controller and test are pass/no-op; Rust metadata and controller behavior covered by `accounts_ledger_health_monitor`. JSON kept external. |
 | `ledger_health_monitor_company` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_ledger_health_monitor_company`. JSON kept external. |
 | `ledger_merge` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, JSON fields order, scheduler/job enqueue branching, in-test/developer immediate execution flag, merge status/progress/error tracking, and refresh publication in `accounts_ledger_merge`. Account merge DB side effects are represented by injected merge outcomes. JSON/JS kept external. |
@@ -940,6 +940,39 @@ Target: `src/erpnext/accounts/doctype/item_wise_tax_detail`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `item_wise_tax_detail.py` | `item_wise_tax_detail.rs` | parity_tested | No-op child table controller and item-wise tax metadata represented in Rust. |
 | `item_wise_tax_detail.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `ledger_health`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/ledger_health`
+Target: `src/erpnext/accounts/doctype/ledger_health`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- The controller class body is `pass`; ledger health rows are created by `erpnext.accounts.utils.run_ledger_health_checks`.
+- Rust covers the Ledger Health metadata, empty controller hooks, and deterministic health-check entry creation from voucher-wise balance and general/payment-ledger comparison report rows.
+- The ERPNext test cases are represented by Rust rows where debit-credit mismatch creates one `LedgerHealth` entry with `debit_credit_mismatch = true`, and GL/payment-ledger discrepancy creates one entry with `general_and_payment_ledger_mismatch = true`.
+- Report execution, database mutation, and `frappe.new_doc(...).save()` remain external integration boundaries.
+- DocType metadata:
+  - `name`: `Ledger Health`
+  - `module`: `Accounts`
+  - `autoname`: `autoincrement`
+  - `naming_rule`: `Autoincrement`
+  - `in_create`: enabled
+  - `index_web_pages_for_search`: enabled
+  - `read_only`: enabled
+  - `sort_field`: `modified`
+  - `sort_order`: `DESC`
+  - `field_order`: `voucher_type`, `voucher_no`, `checked_on`, `debit_credit_mismatch`, `general_and_payment_ledger_mismatch`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `ledger_health.py` | `ledger_health.rs` | parity_tested | No-op controller, metadata, and health-check entry shaping represented in Rust. |
+| `test_ledger_health.py` | `tests/accounts_ledger_health.rs` | parity_tested | Rust covers both ERPNext mismatch test rows and disabled-monitor no-op behavior. |
+| `ledger_health.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
 
 ## Doctype Detail: `ledger_health_monitor_company`
 

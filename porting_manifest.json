@@ -993,7 +993,7 @@
     {
       "source": "accounts/doctype/ledger_health/test_ledger_health.py",
       "target": "accounts/doctype/ledger_health/test_ledger_health.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/ledger_health_monitor/__init__.py",
