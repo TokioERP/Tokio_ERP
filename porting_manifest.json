@@ -628,7 +628,7 @@
     {
       "source": "accounts/doctype/coupon_code/test_coupon_code.py",
       "target": "accounts/doctype/coupon_code/test_coupon_code.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/currency_exchange_settings/__init__.py",

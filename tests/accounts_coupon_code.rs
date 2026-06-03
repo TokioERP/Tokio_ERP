@@ -37,51 +37,52 @@ fn coupon_code_matches_erpnext_metadata() {
     assert_eq!(CouponCode::TITLE_FIELD, "coupon_name");
     assert!(CouponCode::TRACK_CHANGES);
 
-    let fields = CouponCode::fields();
-    assert_eq!(fields.len(), 15);
     assert_eq!(
-        fields[0],
-        FieldSpec::data("coupon_name", "Coupon Name")
-            .description("e.g. \"Summer Holiday 2019 Offer 20\"")
-            .required()
-            .unique()
-    );
-    assert_eq!(
-        fields[1],
-        FieldSpec::select("coupon_type", "Coupon Type")
-            .options("Promotional\nGift Card")
-            .in_list_view()
-            .required()
-    );
-    assert_eq!(
-        fields[2],
-        FieldSpec::link("customer", "Customer")
-            .options("Customer")
-            .depends_on("eval: doc.coupon_type == \"Gift Card\"")
-    );
-    assert_eq!(fields[3], FieldSpec::column_break("column_break_4"));
-    assert_eq!(
-        fields[4],
-        FieldSpec::data("coupon_code", "Coupon Code")
-            .description("unique e.g. SAVE20  To be used to get discount")
-            .no_copy()
-            .set_only_once()
-            .unique()
-    );
-    assert_eq!(
-        fields[5],
-        FieldSpec::check(
-            "from_external_ecomm_platform",
-            "From External Ecomm Platform"
-        )
-        .default("0")
-    );
-    assert_eq!(
-        fields[6],
-        FieldSpec::link("pricing_rule", "Pricing Rule")
-            .options("Pricing Rule")
-            .depends_on("eval: !doc.from_external_ecomm_platform")
-            .mandatory_depends_on("eval: !doc.from_external_ecomm_platform")
+        CouponCode::fields(),
+        vec![
+            FieldSpec::data("coupon_name", "Coupon Name")
+                .description("e.g. \"Summer Holiday 2019 Offer 20\"")
+                .required()
+                .unique(),
+            FieldSpec::select("coupon_type", "Coupon Type")
+                .options("Promotional\nGift Card")
+                .in_list_view()
+                .required(),
+            FieldSpec::link("customer", "Customer")
+                .options("Customer")
+                .depends_on("eval: doc.coupon_type == \"Gift Card\""),
+            FieldSpec::column_break("column_break_4"),
+            FieldSpec::data("coupon_code", "Coupon Code")
+                .description("unique e.g. SAVE20  To be used to get discount")
+                .no_copy()
+                .set_only_once()
+                .unique(),
+            FieldSpec::link("pricing_rule", "Pricing Rule")
+                .options("Pricing Rule")
+                .depends_on("eval: !doc.from_external_ecomm_platform")
+                .mandatory_depends_on("eval: !doc.from_external_ecomm_platform"),
+            FieldSpec::section_break("uses").label("Validity and Usage"),
+            FieldSpec::date("valid_from", "Valid From").in_list_view(),
+            FieldSpec::date("valid_upto", "Valid Up To"),
+            FieldSpec::int("maximum_use", "Maximum Use")
+                .depends_on("eval: doc.coupon_type == \"Promotional\""),
+            FieldSpec::int("used", "Used")
+                .default("0")
+                .no_copy()
+                .read_only(),
+            FieldSpec::column_break("column_break_11"),
+            FieldSpec::text_editor("description", "Coupon Description"),
+            FieldSpec::link("amended_from", "Amended From")
+                .options("Coupon Code")
+                .no_copy()
+                .print_hide()
+                .read_only(),
+            FieldSpec::check(
+                "from_external_ecomm_platform",
+                "From External Ecomm Platform",
+            )
+            .default("0"),
+        ]
     );
 }
 

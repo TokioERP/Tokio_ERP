@@ -110,7 +110,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `cost_center` | 8 | 4 | 1 | 2 | parity_tested | Rust covers metadata/tree flags, autoname with number/company abbr, mandatory root/parent validation, parent group guard, group-ledger conversion blockers, GL/allocation checks as inputs, before/after rename planning, `get_name_with_number`, dashboard report links, and ERPNext test parity for child-node validation in `accounts_cost_center` and `accounts_static_dashboards`. JSON/JS/README kept external. |
 | `cost_center_allocation` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, validation order, total percentage guard, last-GL-entry valid-from guard, future-allocation warning date, main-cost-center-as-child error, main/child allocation conflict checks, date helper, clear-cache hook, and ERPNext validation test parity in `accounts_cost_center_allocation`. JSON/JS kept external; downstream GL splitting remains covered by GL/JV consumers. |
 | `cost_center_allocation_percentage` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_cost_center_allocation_percentage`. JSON kept external. |
-| `coupon_code` | 5 | 3 | 1 | 1 | not_started | |
+| `coupon_code` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, JSON fields order, autoname trimming/promotional/gift-card code generation, gift-card customer/maximum-use validation, controller hooks, and deterministic ERPNext test behavior in `accounts_coupon_code`. Sales Order pricing-rule application remains downstream integration. JSON/JS kept external. |
 | `currency_exchange_settings` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, provider endpoint selection for exchangerate.host/frankfurter.app/frankfurter.dev, access-key guard, generated request/result rows, placeholder substitution for request URL/params/result keys, response URL capture, invalid-key and non-numeric-rate errors, validate hook, and pass/no-op Python test parity in `accounts_currency_exchange_settings`. JSON/JS kept external. |
 | `currency_exchange_settings_details` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_currency_exchange_settings_details`. JSON kept external. |
 | `currency_exchange_settings_result` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_currency_exchange_settings_result`. JSON kept external. |
@@ -742,6 +742,39 @@ Target: `src/erpnext/accounts/doctype/customer_item`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `customer_item.py` | `customer_item.rs` | parity_tested | No-op child table controller and customer metadata represented in Rust. |
 | `customer_item.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `coupon_code`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/coupon_code`
+Target: `src/erpnext/accounts/doctype/coupon_code`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- Rust covers `autoname` trimming/name assignment, promotional coupon-code derivation, gift-card hash-derived coupon-code generation, gift-card maximum-use/customer validation, metadata, and controller hooks.
+- DocType metadata:
+  - `name`: `Coupon Code`
+  - `module`: `Accounts`
+  - `allow_import`: enabled
+  - `autoname`: `field:coupon_name`
+  - `document_type`: `Other`
+  - `editable_grid`: enabled
+  - `naming_rule`: `By fieldname`
+  - `sort_field`: `creation`
+  - `sort_order`: `DESC`
+  - `title_field`: `coupon_name`
+  - `track_changes`: enabled
+  - `field_order`: `coupon_name`, `coupon_type`, `customer`, `column_break_4`, `coupon_code`, `from_external_ecomm_platform`, `pricing_rule`, `uses`, `valid_from`, `valid_upto`, `maximum_use`, `used`, `column_break_11`, `description`, `amended_from`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `coupon_code.py` | `coupon_code.rs` | parity_tested | Autoname, validation, hooks, and Coupon Code metadata represented in Rust. |
+| `test_coupon_code.py` | `tests/accounts_coupon_code.rs` | parity_tested | Rust tests cover deterministic controller behavior and metadata; Sales Order pricing-rule application remains downstream integration. |
+| `coupon_code.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants and JSON fields order. |
+| `coupon_code.js` | ERPNext client script retained | external_kept | Client-side form behavior remains UI/Frappe-owned. |
 
 ## Doctype Detail: `discounted_invoice`
 

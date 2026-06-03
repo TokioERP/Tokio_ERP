@@ -91,11 +91,6 @@ impl CouponCode {
                 .no_copy()
                 .set_only_once()
                 .unique(),
-            FieldSpec::check(
-                "from_external_ecomm_platform",
-                "From External Ecomm Platform",
-            )
-            .default("0"),
             FieldSpec::link("pricing_rule", "Pricing Rule")
                 .options("Pricing Rule")
                 .depends_on("eval: !doc.from_external_ecomm_platform")
@@ -116,6 +111,11 @@ impl CouponCode {
                 .no_copy()
                 .print_hide()
                 .read_only(),
+            FieldSpec::check(
+                "from_external_ecomm_platform",
+                "From External Ecomm Platform",
+            )
+            .default("0"),
         ]
     }
 
