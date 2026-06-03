@@ -1113,7 +1113,7 @@
     {
       "source": "accounts/doctype/mode_of_payment/test_mode_of_payment.py",
       "target": "accounts/doctype/mode_of_payment/test_mode_of_payment.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/mode_of_payment_account/__init__.py",
@@ -1168,7 +1168,7 @@
     {
       "source": "accounts/doctype/opening_invoice_creation_tool/test_opening_invoice_creation_tool.py",
       "target": "accounts/doctype/opening_invoice_creation_tool/test_opening_invoice_creation_tool.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/opening_invoice_creation_tool_item/__init__.py",
@@ -1213,7 +1213,7 @@
     {
       "source": "accounts/doctype/party_link/test_party_link.py",
       "target": "accounts/doctype/party_link/test_party_link.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_entry/__init__.py",
