@@ -27,6 +27,22 @@ pub struct PaymentStatusUpdate {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct PaymentEntryOrderSource {
+    pub name: String,
+    pub docstatus: i32,
+    pub party_bank_account: Option<String>,
+    pub paid_amount: f64,
+    pub paid_to: Option<String>,
+    pub party: Option<String>,
+    pub mode_of_payment: Option<String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum PaymentOrderError {
+    PaymentEntryMustBeSubmitted,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct JournalEntryPlan {
     pub payment_order: String,
     pub posting_date: String,
@@ -230,4 +246,28 @@ pub fn make_journal_entry_plan(
         accounts,
         ignore_mandatory: true,
     }
+}
+
+pub fn make_payment_order_from_payment_entry(
+    source: &PaymentEntryOrderSource,
+    target_doc: Option<PaymentOrder>,
+) -> Result<PaymentOrder, PaymentOrderError> {
+    if source.docstatus != 1 {
+        return Err(PaymentOrderError::PaymentEntryMustBeSubmitted);
+    }
+
+    let mut target = target_doc.unwrap_or_default();
+    target.payment_order_type = "Payment Entry".to_string();
+    target.references.push(PaymentOrderReference {
+        reference_doctype: Some("Payment Entry".to_string()),
+        reference_name: Some(source.name.clone()),
+        bank_account: source.party_bank_account.clone(),
+        amount: source.paid_amount,
+        account: source.paid_to.clone(),
+        supplier: source.party.clone(),
+        mode_of_payment: source.mode_of_payment.clone(),
+        ..Default::default()
+    });
+
+    Ok(target)
 }

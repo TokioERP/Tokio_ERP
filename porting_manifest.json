@@ -1303,7 +1303,7 @@
     {
       "source": "accounts/doctype/payment_order/test_payment_order.py",
       "target": "accounts/doctype/payment_order/test_payment_order.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_order_reference/__init__.py",

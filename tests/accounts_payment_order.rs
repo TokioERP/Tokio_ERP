@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
 use tokio_erp::erpnext::accounts::doctype::payment_order::payment_order::{
-    make_journal_entry_plan, PaymentOrder, PaymentStatusUpdate,
+    make_journal_entry_plan, make_payment_order_from_payment_entry, PaymentEntryOrderSource,
+    PaymentOrder, PaymentOrderError, PaymentStatusUpdate,
 };
 use tokio_erp::erpnext::accounts::doctype::payment_order_reference::payment_order_reference::PaymentOrderReference;
 use tokio_erp::erpnext::{DocumentController, FieldSpec};
@@ -129,6 +130,54 @@ fn payment_order_status_updates_match_erpnext_submit_and_cancel() {
             field: "payment_order_status".to_string(),
             status: "Payment Ordered".to_string(),
         }]
+    );
+}
+
+#[test]
+fn payment_order_from_payment_entry_matches_erpnext_mapper() {
+    let source = PaymentEntryOrderSource {
+        name: "PAY-0001".to_string(),
+        docstatus: 1,
+        party_bank_account: Some("BANK-001".to_string()),
+        paid_amount: 250.0,
+        paid_to: Some("HDFC - TC".to_string()),
+        party: Some("_Test Supplier".to_string()),
+        mode_of_payment: Some("Wire".to_string()),
+    };
+    let target = PaymentOrder {
+        company: "_Test Company".to_string(),
+        company_bank_account: Some("BANK-001".to_string()),
+        ..Default::default()
+    };
+
+    let doc = make_payment_order_from_payment_entry(&source, Some(target)).unwrap();
+
+    assert_eq!(doc.payment_order_type, "Payment Entry");
+    assert_eq!(doc.company, "_Test Company");
+    assert_eq!(doc.references.len(), 1);
+    assert_eq!(
+        doc.references[0],
+        PaymentOrderReference {
+            reference_doctype: Some("Payment Entry".to_string()),
+            reference_name: Some("PAY-0001".to_string()),
+            bank_account: Some("BANK-001".to_string()),
+            amount: 250.0,
+            account: Some("HDFC - TC".to_string()),
+            supplier: Some("_Test Supplier".to_string()),
+            mode_of_payment: Some("Wire".to_string()),
+            ..Default::default()
+        }
+    );
+
+    assert_eq!(
+        make_payment_order_from_payment_entry(
+            &PaymentEntryOrderSource {
+                docstatus: 0,
+                ..source
+            },
+            None,
+        ),
+        Err(PaymentOrderError::PaymentEntryMustBeSubmitted)
     );
 }
 
