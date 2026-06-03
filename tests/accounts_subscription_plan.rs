@@ -11,6 +11,7 @@ fn subscription_plan_matches_erpnext_metadata() {
     assert_eq!(SubscriptionPlan::DOCTYPE, "Subscription Plan");
     assert_eq!(SubscriptionPlan::MODULE, "Accounts");
     assert_eq!(SubscriptionPlan::AUTONAME, Some("field:plan_name"));
+    assert_eq!(SubscriptionPlan::NAMING_RULE, "By fieldname");
     assert_eq!(
         SubscriptionPlan::FIELD_ORDER,
         [

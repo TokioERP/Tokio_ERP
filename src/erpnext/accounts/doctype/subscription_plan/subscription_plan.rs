@@ -133,6 +133,7 @@ impl SubscriptionPlan {
     pub const DOCTYPE: &'static str = "Subscription Plan";
     pub const MODULE: &'static str = "Accounts";
     pub const AUTONAME: Option<&'static str> = Some("field:plan_name");
+    pub const NAMING_RULE: &'static str = "By fieldname";
     pub const FIELD_ORDER: [&'static str; 20] = [
         "plan_name",
         "currency",
