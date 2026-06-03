@@ -158,7 +158,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `payment_entry_deduction` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_payment_entry_deduction`. JSON kept external. |
 | `payment_entry_reference` | 3 | 2 | 1 | 0 | parity_tested | Rust covers DocType metadata, child table flags, index-web-pages flag, quick entry, row format, sort metadata, field order, field definitions, payment_request_outstanding property lookup, and empty controller hooks in `accounts_payment_entry_reference`. JSON kept external. |
 | `payment_gateway_account` | 6 | 4 | 1 | 1 | parity_tested | Python test class is pass/no-op; Rust covers DocType metadata, JSON fields order, autoname, validate currency/default handling, default-unset update plan, controller hooks, and static dashboard data in `accounts_payment_gateway_account` and `accounts_static_dashboards`. JSON/JS kept external. |
-| `payment_ledger_entry` | 5 | 3 | 1 | 1 | not_started | |
+| `payment_ledger_entry` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, account/company/type validation, ledger active/group/company checks, accounting-dimension allow/restrict and mandatory PL/BS checks, on-update validation/outstanding-update gating, doctype index planning, and deterministic ERPNext payment-ledger expected rows in `accounts_payment_ledger_entry`. Actual payment/invoice/JV persistence remains external integration. JSON kept external. |
 | `payment_order` | 6 | 4 | 1 | 1 | parity_tested | Rust covers metadata, submit/cancel payment-status updates, Payment Entry to Payment Order mapping, Journal Entry planning by supplier/mode of payment, and controller hooks in `accounts_payment_order`. Journal Entry save/msgprint and DB writes remain external integration. JSON/dashboard kept external. |
 | `payment_order_reference` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata covers child table flags, index-web-pages flag, quick entry, sort metadata, field order, field dependencies/defaults, and empty controller hooks in `accounts_payment_child_pass_doctypes`. JSON kept external. |
 | `payment_reconciliation` | 5 | 3 | 1 | 1 | not_started | |
@@ -1156,6 +1156,39 @@ Target: `src/erpnext/accounts/doctype/payment_entry_deduction`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `payment_entry_deduction.py` | `payment_entry_deduction.rs` | parity_tested | No-op child table controller and deduction metadata represented in Rust. |
 | `payment_entry_deduction.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `payment_ledger_entry`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/payment_ledger_entry`
+Target: `src/erpnext/accounts/doctype/payment_ledger_entry`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- Rust covers `validate_account`, `validate_account_details`, `validate_allowed_dimensions`, `validate_dimensions_for_pl_and_bs`, and `on_update` decision planning.
+- Rust mirrors `on_update` branches for `from_repost`, `delinked`, `adv_adj`, outstanding doctypes, update-outstanding flag, and reverse-depreciation skip.
+- Rust covers `on_doctype_update` index planning for `against_voucher_no/against_voucher_type` and `voucher_no/voucher_type`.
+- ERPNext payment-ledger tests are represented by deterministic expected row helpers for invoice/payment and invoice/Journal Entry rows, including partial payments and credit/debit note sign handling.
+- Sales Invoice, Payment Entry, Journal Entry, GL Entry, and Payment Ledger Entry database persistence remain external integration boundaries.
+- DocType metadata:
+  - `name`: `Payment Ledger Entry`
+  - `module`: `Accounts`
+  - `allow_rename`: enabled
+  - `in_create`: enabled
+  - `index_web_pages_for_search`: enabled
+  - `search_fields`: `voucher_no, against_voucher_no`
+  - `sort_field`: `creation`
+  - `sort_order`: `DESC`
+  - `field_order`: `posting_date`, `company`, `account_type`, `account`, `party_type`, `party`, `due_date`, `voucher_detail_no`, `cost_center`, `finance_book`, `voucher_type`, `voucher_no`, `against_voucher_type`, `against_voucher_no`, `amount`, `account_currency`, `amount_in_account_currency`, `delinked`, `remarks`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `payment_ledger_entry.py` | `payment_ledger_entry.rs` | parity_tested | Validation, on-update gating, index planning, expected ledger row shaping, metadata, and hooks represented in Rust. |
+| `test_payment_ledger_entry.py` | `tests/accounts_payment_ledger_entry.rs` | parity_tested | Rust covers deterministic controller behavior and ERPNext expected payment-ledger row shapes; transaction persistence remains external integration. |
+| `payment_ledger_entry.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
 
 ## Doctype Detail: `payment_order`
 

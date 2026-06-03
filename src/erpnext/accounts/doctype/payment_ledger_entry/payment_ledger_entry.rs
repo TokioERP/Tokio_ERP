@@ -118,6 +118,35 @@ pub struct PaymentLedgerOnUpdatePlan {
     pub adv_adj: bool,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct PaymentLedgerExpectedRow {
+    pub voucher_type: String,
+    pub voucher_no: String,
+    pub against_voucher_type: String,
+    pub against_voucher_no: String,
+    pub amount: f64,
+    pub delinked: bool,
+}
+
+impl PaymentLedgerExpectedRow {
+    pub fn new(
+        voucher_type: impl Into<String>,
+        voucher_no: impl Into<String>,
+        against_voucher_type: impl Into<String>,
+        against_voucher_no: impl Into<String>,
+        amount: f64,
+    ) -> Self {
+        Self {
+            voucher_type: voucher_type.into(),
+            voucher_no: voucher_no.into(),
+            against_voucher_type: against_voucher_type.into(),
+            against_voucher_no: against_voucher_no.into(),
+            amount,
+            delinked: false,
+        }
+    }
+}
+
 impl PaymentLedgerEntry {
     pub const DOCTYPE: &'static str = "Payment Ledger Entry";
     pub const MODULE: &'static str = "Accounts";
@@ -362,6 +391,39 @@ impl PaymentLedgerEntry {
         }
         .filter(|value| !value.is_empty())
     }
+}
+
+pub fn expected_invoice_payment_rows(
+    invoice_doctype: &str,
+    invoice_name: &str,
+    payment_doctype: &str,
+    payment_name: &str,
+    invoice_amount: f64,
+    allocated_amount: f64,
+) -> Vec<PaymentLedgerExpectedRow> {
+    vec![
+        PaymentLedgerExpectedRow::new(
+            invoice_doctype,
+            invoice_name,
+            invoice_doctype,
+            invoice_name,
+            invoice_amount,
+        ),
+        PaymentLedgerExpectedRow::new(
+            payment_doctype,
+            payment_name,
+            invoice_doctype,
+            invoice_name,
+            -allocated_amount,
+        ),
+    ]
+}
+
+pub fn payment_ledger_entry_doctype_update_indices() -> Vec<Vec<&'static str>> {
+    vec![
+        vec!["against_voucher_no", "against_voucher_type"],
+        vec!["voucher_no", "voucher_type"],
+    ]
 }
 
 impl DocumentController for PaymentLedgerEntry {

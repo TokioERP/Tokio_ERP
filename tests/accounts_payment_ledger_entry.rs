@@ -2,8 +2,10 @@ use std::collections::HashMap;
 
 use tokio_erp::erpnext::accounts::doctype::accounting_dimension_filter::accounting_dimension_filter::DimensionFilterInfo;
 use tokio_erp::erpnext::accounts::doctype::payment_ledger_entry::payment_ledger_entry::{
-    AccountSnapshot, AccountingDimensionCheck, PaymentLedgerEntry, PaymentLedgerEntryError,
-    PaymentLedgerEntryFlags, PaymentLedgerOnUpdatePlan,
+    expected_invoice_payment_rows, payment_ledger_entry_doctype_update_indices, AccountSnapshot,
+    AccountingDimensionCheck,
+    PaymentLedgerEntry, PaymentLedgerEntryError, PaymentLedgerEntryFlags, PaymentLedgerOnUpdatePlan,
+    PaymentLedgerExpectedRow,
 };
 use tokio_erp::erpnext::{DocumentController, FieldSpec};
 
@@ -272,4 +274,85 @@ fn payment_ledger_entry_on_update_plan_matches_erpnext_conditions() {
     });
     assert!(!repost.validate_frozen_account);
     assert_eq!(repost.update_outstanding, None);
+}
+
+#[test]
+fn payment_ledger_entry_expected_rows_match_erpnext_payment_tests() {
+    assert_eq!(
+        expected_invoice_payment_rows(
+            "Sales Invoice",
+            "SINV-0001",
+            "Payment Entry",
+            "PAY-0001",
+            100.0,
+            100.0,
+        ),
+        vec![
+            PaymentLedgerExpectedRow::new(
+                "Sales Invoice",
+                "SINV-0001",
+                "Sales Invoice",
+                "SINV-0001",
+                100.0,
+            ),
+            PaymentLedgerExpectedRow::new(
+                "Payment Entry",
+                "PAY-0001",
+                "Sales Invoice",
+                "SINV-0001",
+                -100.0,
+            ),
+        ]
+    );
+
+    assert_eq!(
+        expected_invoice_payment_rows(
+            "Sales Invoice",
+            "SINV-0002",
+            "Payment Entry",
+            "PAY-0002",
+            100.0,
+            50.0,
+        )[1]
+        .amount,
+        -50.0
+    );
+
+    assert_eq!(
+        expected_invoice_payment_rows(
+            "Sales Invoice",
+            "SINV-0003",
+            "Journal Entry",
+            "JV-0001",
+            -100.0,
+            -100.0,
+        ),
+        vec![
+            PaymentLedgerExpectedRow::new(
+                "Sales Invoice",
+                "SINV-0003",
+                "Sales Invoice",
+                "SINV-0003",
+                -100.0,
+            ),
+            PaymentLedgerExpectedRow::new(
+                "Journal Entry",
+                "JV-0001",
+                "Sales Invoice",
+                "SINV-0003",
+                100.0,
+            ),
+        ]
+    );
+}
+
+#[test]
+fn payment_ledger_entry_doctype_update_indices_match_erpnext() {
+    assert_eq!(
+        payment_ledger_entry_doctype_update_indices(),
+        vec![
+            vec!["against_voucher_no", "against_voucher_type"],
+            vec!["voucher_no", "voucher_type"],
+        ]
+    );
 }
