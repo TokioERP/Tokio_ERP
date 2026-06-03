@@ -117,7 +117,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `customer_group_item` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_customer_group_item`. JSON kept external. |
 | `customer_item` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_customer_item`. JSON kept external. |
 | `discounted_invoice` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_discounted_invoice`. JSON kept external. |
-| `dunning` | 6 | 3 | 1 | 2 | not_started | |
+| `dunning` | 6 | 3 | 1 | 2 | parity_tested | Rust covers metadata, currency validation, overdue-days/interest/totals calculation, party detail copying, dunning level assignment, cancel ignored doctypes, linked dunning status update planning, and dunning letter text language/default fallback with template rendering in `accounts_dunning`. Sales Invoice/Payment Entry persistence remains external integration. JSON/JS kept external. |
 | `dunning_letter_text` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and child table behavior covered in `accounts_small_pass_doctypes`. JSON kept external. |
 | `dunning_type` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, script naming from dunning type plus company abbreviation, controller hooks, and pass/no-op Python test parity in `accounts_dunning_type`. JSON kept external. |
 | `exchange_rate_revaluation` | 6 | 4 | 1 | 1 | parity_tested | Rust covers DocType metadata, JSON fields order, dashboard data, rounding allowance validation, gain/loss totals, zero-gain filtering, GLE balance aggregation, account-balance recalculation for normal and zero-balance cases, journal-condition checks, revaluation/zero-balance JV planning, mandatory party/account validation, last-GLE exchange-rate helper, and controller hooks in `accounts_exchange_rate_revaluation`/`accounts_static_dashboards`. Database writes and actual Journal Entry submission remain external integration. JSON/JS kept external. |
@@ -808,6 +808,36 @@ Target: `src/erpnext/accounts/doctype/discounted_invoice`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `discounted_invoice.py` | `discounted_invoice.rs` | parity_tested | No-op child table controller and discounted invoice metadata represented in Rust. |
 | `discounted_invoice.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `dunning`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/dunning`
+Target: `src/erpnext/accounts/doctype/dunning`
+
+### Behavior
+
+- Python controller inherits `erpnext.controllers.accounts_controller.AccountsController`.
+- Rust covers `validate` order: same-currency validation, overdue-days/interest calculation, totals calculation, party detail copying, and dunning level assignment.
+- Rust covers `on_cancel` ignored linked doctypes from ERPNext.
+- Rust covers linked dunning status update planning when Sales Invoice outstanding changes, including resolved/unresolved transitions and payment schedule outstanding checks.
+- Rust covers `get_dunning_letter_text` language lookup, default language fallback, and simple template rendering with document context.
+- Sales Invoice creation, Payment Entry submission/cancellation, mapper DB fetches, and actual Dunning persistence remain external integration boundaries.
+- DocType metadata:
+  - `name`: `Dunning`
+  - `module`: `Accounts`
+  - `autoname`: `naming_series:`
+  - `is_submittable`: enabled
+  - `field_order`: `naming_series`, `customer`, `customer_name`, `column_break_3`, `company`, `posting_date`, `posting_time`, `status`, `section_break_9`, `currency`, `column_break_11`, `conversion_rate`, `section_break_6`, `dunning_type`, `column_break_8`, `rate_of_interest`, `section_break_12`, `overdue_payments`, `section_break_28`, `total_interest`, `dunning_fee`, `column_break_17`, `dunning_amount`, `base_dunning_amount`, `section_break_32`, `spacer`, `column_break_33`, `total_outstanding`, `grand_total`, `printing_settings_section`, `language`, `body_text`, `column_break_22`, `letter_head`, `closing_text`, `accounting_details_section`, `income_account`, `column_break_48`, `cost_center`, `amended_from`, `address_and_contact_tab`, `address_and_contact_section`, `customer_address`, `address_display`, `column_break_vodj`, `contact_person`, `contact_display`, `contact_mobile`, `contact_email`, `section_break_xban`, `column_break_16`, `company_address`, `company_address_display`, `column_break_lqmf`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `dunning.py` | `dunning.rs` | parity_tested | Validation, totals, cancel behavior, linked status planning, letter text helper, metadata, and hooks represented in Rust. |
+| `test_dunning.py` | `tests/accounts_dunning.rs` | parity_tested | Rust covers deterministic behavior from ERPNext tests; invoice/payment persistence remains external integration. |
+| `dunning.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+| `dunning.js` | ERPNext client script retained | external_kept | Client-side form behavior remains UI/Frappe-owned. |
 
 ## Doctype Detail: `exchange_rate_revaluation`
 

@@ -708,7 +708,7 @@
     {
       "source": "accounts/doctype/dunning/test_dunning.py",
       "target": "accounts/doctype/dunning/test_dunning.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/dunning_letter_text/__init__.py",
