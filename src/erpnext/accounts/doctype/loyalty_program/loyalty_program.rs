@@ -233,6 +233,25 @@ pub fn select_loyalty_tier(
     selected
 }
 
+pub fn calculate_points_earned(
+    posting_date: &str,
+    program_from_date: &str,
+    program_to_date: Option<&str>,
+    grand_total: f64,
+    loyalty_amount: f64,
+    returned_amount: f64,
+    collection_factor: f64,
+) -> i32 {
+    if posting_date < program_from_date
+        || program_to_date.is_some_and(|to_date| posting_date > to_date)
+    {
+        return 0;
+    }
+
+    let eligible_amount = grand_total - cint(loyalty_amount) as f64 - returned_amount;
+    cint(eligible_amount / collection_factor)
+}
+
 pub fn get_redeemption_factor(
     loyalty_program_conversion_factor: Option<f64>,
     customer_loyalty_program_conversion_factor: Option<f64>,
@@ -314,4 +333,12 @@ pub fn validate_loyalty_points(
         .flatten(),
         sales_order_loyalty_amount: None,
     }))
+}
+
+fn cint(value: f64) -> i32 {
+    if value.is_finite() {
+        value.trunc() as i32
+    } else {
+        0
+    }
 }

@@ -1,7 +1,7 @@
 use tokio_erp::erpnext::accounts::doctype::loyalty_program::loyalty_program::{
-    get_loyalty_details_plan, get_redeemption_factor, select_loyalty_tier, validate_loyalty_points,
-    LoyaltyPointValidationContext, LoyaltyPointValidationUpdate, LoyaltyProgram,
-    LoyaltyProgramError,
+    calculate_points_earned, get_loyalty_details_plan, get_redeemption_factor, select_loyalty_tier,
+    validate_loyalty_points, LoyaltyPointValidationContext, LoyaltyPointValidationUpdate,
+    LoyaltyProgram, LoyaltyProgramError,
 };
 use tokio_erp::erpnext::accounts::doctype::loyalty_program_collection::loyalty_program_collection::LoyaltyProgramCollection;
 use tokio_erp::erpnext::{DocumentController, FieldSpec};
@@ -153,23 +153,80 @@ fn loyalty_program_query_and_tier_helpers_match_erpnext() {
     let tiers = vec![
         LoyaltyProgramCollection {
             tier_name: Some("Gold".to_string()),
-            min_spent: 1000.0,
-            collection_factor: 2.0,
+            min_spent: 20_000.0,
+            collection_factor: 1_000.0,
         },
         LoyaltyProgramCollection {
             tier_name: Some("Silver".to_string()),
+            min_spent: 10_000.0,
+            collection_factor: 1_000.0,
+        },
+        LoyaltyProgramCollection {
+            tier_name: Some("Bronze".to_string()),
             min_spent: 0.0,
-            collection_factor: 1.0,
+            collection_factor: 1_000.0,
         },
     ];
-    assert_eq!(
-        select_loyalty_tier(&tiers, 900.0, 150.0),
-        Some(("Gold".to_string(), 2.0))
-    );
+    let cases = [
+        (0.0, 6_000.0, "Bronze"),
+        (0.0, 15_000.0, "Silver"),
+        (0.0, 25_000.0, "Gold"),
+        (4_000.0, 500.0, "Bronze"),
+        (8_000.0, 3_000.0, "Silver"),
+        (18_000.0, 3_000.0, "Gold"),
+        (22_000.0, 5_000.0, "Gold"),
+    ];
+    for (total_spent, current_transaction_amount, expected_tier) in cases {
+        assert_eq!(
+            select_loyalty_tier(&tiers, total_spent, current_transaction_amount),
+            Some((expected_tier.to_string(), 1_000.0))
+        );
+    }
+
     assert_eq!(get_redeemption_factor(Some(0.25), None), Ok(0.25));
     assert_eq!(
         get_redeemption_factor(None, None),
         Err(LoyaltyProgramError::CustomerNotEnrolled)
+    );
+}
+
+#[test]
+fn loyalty_program_points_earned_formula_matches_erpnext_test_helper() {
+    assert_eq!(
+        calculate_points_earned(
+            "2026-06-03",
+            "2026-01-01",
+            Some("2026-12-31"),
+            10_000.0,
+            10.9,
+            2_500.0,
+            1_000.0,
+        ),
+        7
+    );
+    assert_eq!(
+        calculate_points_earned(
+            "2025-12-31",
+            "2026-01-01",
+            None,
+            10_000.0,
+            0.0,
+            0.0,
+            1_000.0
+        ),
+        0
+    );
+    assert_eq!(
+        calculate_points_earned(
+            "2027-01-01",
+            "2026-01-01",
+            Some("2026-12-31"),
+            10_000.0,
+            0.0,
+            0.0,
+            1_000.0,
+        ),
+        0
     );
 }
 

@@ -143,7 +143,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `ledger_merge_accounts` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_ledger_merge_accounts`. JSON kept external. |
 | `loyalty_point_entry` | 5 | 3 | 1 | 1 | parity_tested | Python controller is pass/no-op; Rust covers metadata, JSON fields order, linked-with exclusion flag, query planning for active loyalty point entries including today fallback/explicit expiry date, and redemption aggregation in `accounts_loyalty_and_advance_ledger`. Sales-invoice-driven entry creation remains external integration. JSON/JS kept external. |
 | `loyalty_point_entry_redemption` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata covers child table flags, quick entry, sort metadata, field order, and constructor behavior in `accounts_small_pass_doctypes`. JSON kept external. |
-| `loyalty_program` | 6 | 4 | 1 | 1 | not_started | |
+| `loyalty_program` | 6 | 4 | 1 | 1 | parity_tested | Rust covers metadata, lowest-tier validation, loyalty details query planning, tier selection table from ERPNext tests, redemption factor lookup, loyalty point validation/update behavior, points-earned formula, and controller hooks in `accounts_loyalty_program`. Sales Invoice lifecycle/DB mutation remains external integration. JSON/dashboard kept external. |
 | `loyalty_program_collection` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata covers child table flags, quick entry, sort metadata, column widths, collection-factor description, field order, and empty controller hooks in `accounts_small_pass_doctypes`. JSON kept external. |
 | `mode_of_payment` | 6 | 3 | 1 | 1 | parity_tested | Python test class is pass/no-op; Rust covers DocType metadata, JSON fields order, validate account-company matching, duplicate company rejection, POS-profile disable guard, controller hooks, and child-account metadata in `accounts_mode_of_payment`. JSON/JS kept external. |
 | `mode_of_payment_account` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata covers child table flags, sort metadata, default-account description, field order, and empty controller hooks in `accounts_mode_of_payment`. JSON kept external. |
@@ -1031,6 +1031,38 @@ Target: `src/erpnext/accounts/doctype/ledger_merge_accounts`
 | `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
 | `ledger_merge_accounts.py` | `ledger_merge_accounts.rs` | parity_tested | No-op child table controller and ledger merge account metadata represented in Rust. |
 | `ledger_merge_accounts.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
+
+## Doctype Detail: `loyalty_program`
+
+Source: `../erpnext/apps/erpnext/erpnext/accounts/doctype/loyalty_program`
+Target: `src/erpnext/accounts/doctype/loyalty_program`
+
+### Behavior
+
+- Python controller inherits `frappe.model.document.Document`.
+- Rust covers `validate`/`validate_lowest_tier`, loyalty details query shape, tier selection, redemption factor lookup, loyalty point validation/update behavior for Sales Invoice and Sales Order, and the ERPNext test helper formula for points earned.
+- ERPNext `test_tier_selection` is mirrored with the same total-spent/current-transaction tier cases for Bronze, Silver, and Gold.
+- ERPNext `get_points_earned` is represented by deterministic Rust math: in-period check, returned amount subtraction, `cint(loyalty_amount)` subtraction, and `cint(eligible_amount / collection_factor)`.
+- Sales Invoice insert/submit/cancel side effects, Loyalty Point Entry persistence, dashboard DB queries, and Frappe whitelisted calls remain external integration boundaries.
+- DocType metadata:
+  - `name`: `Loyalty Program`
+  - `module`: `Accounts`
+  - `autoname`: `field:loyalty_program_name`
+  - `quick_entry`: enabled
+  - `sort_field`: `creation`
+  - `sort_order`: `DESC`
+  - `track_changes`: enabled
+  - `field_order`: `loyalty_program_name`, `loyalty_program_type`, `from_date`, `to_date`, `column_break_7`, `customer_group`, `customer_territory`, `auto_opt_in`, `rules`, `collection_rules`, `redemption`, `conversion_factor`, `expiry_duration`, `column_break_10`, `expense_account`, `company`, `accounting_dimensions_section`, `cost_center`, `dimension_col_break`, `project`, `help_section`, `loyalty_program_help`
+
+### File Status
+
+| Source File | Target / Handling | Status | Notes |
+|---|---|---|---|
+| `__init__.py` | `mod.rs` | parity_tested | Python package marker represented by Rust module declarations. |
+| `loyalty_program.py` | `loyalty_program.rs` | parity_tested | Validation, query planning, tiering, redemption, loyalty point validation, points-earned math, metadata, and hooks represented in Rust. |
+| `loyalty_program_dashboard.py` | `loyalty_program_dashboard.rs` | parity_tested | Static dashboard data retained in Rust dashboard module. |
+| `test_loyalty_program.py` | `tests/accounts_loyalty_program.rs` | parity_tested | Deterministic controller/helper behavior and ERPNext tier/points formula test cases represented in Rust; invoice lifecycle remains external integration. |
+| `loyalty_program.json` | ERPNext metadata retained | external_kept | Runtime DocType schema remains owned by ERPNext/Frappe. Rust mirrors behavior-relevant metadata constants. |
 
 ## Doctype Detail: `monthly_distribution_percentage`
 
