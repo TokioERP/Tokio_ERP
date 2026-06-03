@@ -241,7 +241,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `subscription` | 6 | 3 | 1 | 2 | not_started | |
 | `subscription_invoice` | 5 | 3 | 1 | 1 | not_started | |
 | `subscription_plan` | 6 | 4 | 1 | 1 | parity_tested | Rust covers metadata including naming rule, interval count validation, fixed/price-list/monthly/prorated rate math, dashboard references, and controller hooks in `accounts_subscription_plan`. JSON/dashboard/Python test kept external. |
-| `subscription_plan_detail` | 3 | 2 | 1 | 0 | not_started | |
+| `subscription_plan_detail` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust covers child-table metadata, field order, sort flags, fields, and controller behavior in `accounts_subscription_plan_detail`. JSON kept external. |
 | `subscription_settings` | 5 | 3 | 1 | 1 | parity_tested | Python controller is pass/no-op; Rust covers singleton metadata including grid/page/toolbar/row flags, defaults, fields, and controller behavior in `accounts_subscription_settings`. JSON/JS/test kept external. |
 | `supplier_group_item` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_supplier_static_items`. JSON kept external. |
 | `supplier_item` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_supplier_static_items`. JSON kept external. |

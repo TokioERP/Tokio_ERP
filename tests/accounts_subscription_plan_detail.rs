@@ -9,6 +9,8 @@ fn subscription_plan_detail_matches_erpnext_metadata() {
     assert!(SubscriptionPlanDetail::IS_TABLE);
     assert!(SubscriptionPlanDetail::EDITABLE_GRID);
     assert!(SubscriptionPlanDetail::QUICK_ENTRY);
+    assert_eq!(SubscriptionPlanDetail::SORT_FIELD, "creation");
+    assert_eq!(SubscriptionPlanDetail::SORT_ORDER, "DESC");
     assert!(SubscriptionPlanDetail::TRACK_CHANGES);
     assert_eq!(
         SubscriptionPlanDetail::fields(),
