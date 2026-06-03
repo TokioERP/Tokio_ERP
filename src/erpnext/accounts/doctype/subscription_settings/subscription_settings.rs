@@ -12,8 +12,11 @@ impl SubscriptionSettings {
     pub const MODULE: &'static str = "Accounts";
     pub const FIELD_ORDER: [&'static str; 3] = ["grace_period", "cancel_after_grace", "prorate"];
     pub const EDITABLE_GRID: bool = true;
+    pub const GRID_PAGE_LENGTH: u16 = 50;
+    pub const HIDE_TOOLBAR: bool = false;
     pub const IS_SINGLE: bool = true;
     pub const QUICK_ENTRY: bool = true;
+    pub const ROW_FORMAT: &'static str = "Dynamic";
     pub const SORT_FIELD: &'static str = "creation";
     pub const SORT_ORDER: &'static str = "DESC";
     pub const TRACK_CHANGES: bool = true;

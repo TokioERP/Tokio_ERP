@@ -10,8 +10,11 @@ fn subscription_settings_matches_erpnext_metadata() {
         ["grace_period", "cancel_after_grace", "prorate"]
     );
     assert!(SubscriptionSettings::EDITABLE_GRID);
+    assert_eq!(SubscriptionSettings::GRID_PAGE_LENGTH, 50);
+    assert!(!SubscriptionSettings::HIDE_TOOLBAR);
     assert!(SubscriptionSettings::IS_SINGLE);
     assert!(SubscriptionSettings::QUICK_ENTRY);
+    assert_eq!(SubscriptionSettings::ROW_FORMAT, "Dynamic");
     assert_eq!(SubscriptionSettings::SORT_FIELD, "creation");
     assert_eq!(SubscriptionSettings::SORT_ORDER, "DESC");
     assert!(SubscriptionSettings::TRACK_CHANGES);
