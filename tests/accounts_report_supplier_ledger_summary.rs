@@ -97,9 +97,11 @@ fn supplier_ledger_summary_columns_and_supplier_group_filter_shape_match_erpnext
             PartyLedgerColumn::currency("Opening Balance", "opening_balance", 120),
         ]
     );
-    assert!(report
-        .columns
-        .contains(&PartyLedgerColumn::currency("Debit Note", "return_amount", 120)));
+    assert!(report.columns.contains(&PartyLedgerColumn::currency(
+        "Debit Note",
+        "return_amount",
+        120
+    )));
     assert_eq!(
         report.rows[0].supplier_group.as_deref(),
         Some("All Supplier Groups")

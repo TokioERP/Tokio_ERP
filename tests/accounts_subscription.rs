@@ -91,12 +91,10 @@ fn subscription_matches_erpnext_metadata() {
             .description("If this is checked subsequent new invoices will be created on calendar  month and quarter start dates irrespective of current invoice start date")
             .set_only_once()
     ));
-    assert!(fields.contains(
-        &FieldSpec::date("end_date", "Subscription End Date").set_only_once()
-    ));
-    assert!(fields.contains(
-        &FieldSpec::date("start_date", "Subscription Start Date").set_only_once()
-    ));
+    assert!(fields.contains(&FieldSpec::date("end_date", "Subscription End Date").set_only_once()));
+    assert!(
+        fields.contains(&FieldSpec::date("start_date", "Subscription Start Date").set_only_once())
+    );
     assert!(fields.contains(
         &FieldSpec::select("generate_invoice_at", "Generate Invoice At")
             .options("End of the current subscription period\nBeginning of the current subscription period\nDays before the current subscription period")

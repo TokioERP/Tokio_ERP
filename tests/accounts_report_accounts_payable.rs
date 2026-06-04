@@ -116,8 +116,20 @@ fn accounts_payable_foreign_currency_supplier_and_project_rows_match_erpnext_tes
     let mut balances: BTreeMap<VoucherBalanceKey, VoucherBalanceRow> = BTreeMap::new();
     let mut invoices = Vec::new();
 
-    init_voucher_balance(&mut balances, &mut invoices, &invoice, &payable_filters, &[]);
-    update_voucher_balance(&mut balances, &invoice, &payable_filters, &BTreeMap::new(), &[]);
+    init_voucher_balance(
+        &mut balances,
+        &mut invoices,
+        &invoice,
+        &payable_filters,
+        &[],
+    );
+    update_voucher_balance(
+        &mut balances,
+        &invoice,
+        &payable_filters,
+        &BTreeMap::new(),
+        &[],
+    );
     let rows = prepare_voucher_balance_rows(&balances, &payable_filters, 2, &[]);
 
     assert_eq!(rows.len(), 1);
@@ -188,10 +200,7 @@ fn accounts_payable_payment_terms_template_and_project_filters_match_erpnext_tes
     );
     assert_eq!(
         add_project_and_cost_center_conditions(&payable_filters, &["Main - TC".to_string()]),
-        vec![
-            "cost_center IN ('Main - TC')",
-            "project IN ('PROJ-AP')",
-        ]
+        vec!["cost_center IN ('Main - TC')", "project IN ('PROJ-AP')",]
     );
 
     let mut row = PaymentTermAllocationRow {

@@ -48,7 +48,10 @@ fn mode_of_payment_matches_erpnext_metadata() {
 fn mode_of_payment_account_matches_erpnext_metadata() {
     assert_eq!(ModeOfPaymentAccount::DOCTYPE, "Mode of Payment Account");
     assert_eq!(ModeOfPaymentAccount::MODULE, "Accounts");
-    assert_eq!(ModeOfPaymentAccount::FIELD_ORDER, ["company", "default_account"]);
+    assert_eq!(
+        ModeOfPaymentAccount::FIELD_ORDER,
+        ["company", "default_account"]
+    );
     assert!(ModeOfPaymentAccount::IS_TABLE);
     assert_eq!(ModeOfPaymentAccount::SORT_FIELD, "creation");
     assert_eq!(ModeOfPaymentAccount::SORT_ORDER, "DESC");
