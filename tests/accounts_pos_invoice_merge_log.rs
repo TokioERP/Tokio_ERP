@@ -2,15 +2,16 @@ use std::collections::BTreeMap;
 
 use tokio_erp::erpnext::accounts::doctype::pos_invoice_merge_log::pos_invoice_merge_log::{
     cancel_merge_logs_plan, check_scheduler_status, consolidate_pos_invoices_plan,
-    create_merge_logs_plan, enqueue_job_plan, get_error_message, get_invoice_customer_map,
-    split_invoices, split_invoices_by_accounting_dimension, unconsolidate_pos_invoices_plan,
-    EnqueueJobKind, ErrorMessage, MergeInvoicesBasedOn, PosInvoiceMergeLog,
+    create_merge_logs_plan, distinguish_return_pos_invoices_plan, enqueue_job_plan,
+    get_error_message, get_invoice_customer_map, split_invoices,
+    split_invoices_by_accounting_dimension, unconsolidate_pos_invoices_plan, EnqueueJobKind,
+    ErrorMessage, MergeInvoicesBasedOn, NewSalesInvoicePlan, PosInvoiceMergeLog,
     PosInvoiceMergeLogAction, PosInvoiceMergeLogCancelCandidate, PosInvoiceMergeLogClosingEntry,
     PosInvoiceMergeLogDocument, PosInvoiceMergeLogError, PosInvoiceMergeLogInvoice,
     PosInvoiceMergeLogItem, PosInvoiceMergeLogItemWiseTaxDetail, PosInvoiceMergeLogPayment,
-    PosInvoiceMergeLogProfileDefaults, PosInvoiceMergeLogSourceInvoice,
-    PosInvoiceMergeLogSplitInvoice, PosInvoiceMergeLogTax, PosInvoiceMergeLogUpdateInvoice,
-    SchedulerStatus,
+    PosInvoiceMergeLogProfileDefaults, PosInvoiceMergeLogReturnInvoice,
+    PosInvoiceMergeLogSourceInvoice, PosInvoiceMergeLogSplitInvoice, PosInvoiceMergeLogTax,
+    PosInvoiceMergeLogUpdateInvoice, SchedulerStatus,
 };
 use tokio_erp::erpnext::{DocumentController, FieldSpec};
 
@@ -692,6 +693,53 @@ fn pos_invoice_merge_log_cancel_merge_logs_plan_skips_already_cancelled_logs() {
             },
             PosInvoiceMergeLogAction::UpdateOpeningEntry { for_cancel: true },
         ]
+    );
+}
+
+#[test]
+fn pos_invoice_merge_log_distinguishes_returns_by_consolidated_original_invoice() {
+    let returns = vec![
+        PosInvoiceMergeLogReturnInvoice {
+            name: "POS-RET-1".to_string(),
+            return_against: "POS-SALE-1".to_string(),
+            return_against_consolidated_invoice: Some("SI-OLD-1".to_string()),
+        },
+        PosInvoiceMergeLogReturnInvoice {
+            name: "POS-RET-2".to_string(),
+            return_against: "POS-SALE-2".to_string(),
+            return_against_consolidated_invoice: None,
+        },
+        PosInvoiceMergeLogReturnInvoice {
+            name: "POS-RET-3".to_string(),
+            return_against: "POS-SALE-3".to_string(),
+            return_against_consolidated_invoice: Some("SI-OLD-1".to_string()),
+        },
+    ];
+
+    assert_eq!(
+        distinguish_return_pos_invoices_plan(&returns, Some("SI-NEW-1")),
+        BTreeMap::from([
+            (Some("SI-NEW-1".to_string()), vec!["POS-RET-2".to_string()],),
+            (
+                Some("SI-OLD-1".to_string()),
+                vec!["POS-RET-1".to_string(), "POS-RET-3".to_string()],
+            ),
+        ])
+    );
+}
+
+#[test]
+fn pos_invoice_merge_log_new_sales_invoice_plan_matches_erpnext_defaults() {
+    let log = PosInvoiceMergeLog::new("_Test Company", "2026-06-04", "12:00:00", "_Test Customer");
+
+    assert_eq!(
+        log.get_new_sales_invoice_plan(),
+        NewSalesInvoicePlan {
+            customer: Some("_Test Customer".to_string()),
+            is_pos: true,
+            posting_date: None,
+            posting_time: None,
+        }
     );
 }
 

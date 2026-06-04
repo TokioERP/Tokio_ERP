@@ -117,6 +117,21 @@ pub struct PosInvoiceMergeLogCancelCandidate {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PosInvoiceMergeLogReturnInvoice {
+    pub name: String,
+    pub return_against: String,
+    pub return_against_consolidated_invoice: Option<String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct NewSalesInvoicePlan {
+    pub customer: Option<String>,
+    pub is_pos: bool,
+    pub posting_date: Option<String>,
+    pub posting_time: Option<String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PosInvoiceMergeLogError {
     DuplicatePosInvoices {
         invoice: String,
@@ -638,6 +653,15 @@ impl PosInvoiceMergeLog {
         Ok(())
     }
 
+    pub fn get_new_sales_invoice_plan(&self) -> NewSalesInvoicePlan {
+        NewSalesInvoicePlan {
+            customer: self.customer.clone(),
+            is_pos: true,
+            posting_date: None,
+            posting_time: None,
+        }
+    }
+
     pub fn merge_pos_invoice_into_plan(
         &self,
         data: &[PosInvoiceMergeLogDocument],
@@ -1001,6 +1025,30 @@ pub fn get_invoice_customer_map(
             )
         })
         .collect()
+}
+
+pub fn distinguish_return_pos_invoices_plan(
+    data: &[PosInvoiceMergeLogReturnInvoice],
+    sales_invoice_doc: Option<&str>,
+) -> BTreeMap<Option<String>, Vec<String>> {
+    let default_key = sales_invoice_doc.map(str::to_string);
+    let mut return_invoices = BTreeMap::from([(default_key.clone(), Vec::new())]);
+
+    for doc in data {
+        if let Some(sales_invoice) = doc.return_against_consolidated_invoice.as_deref() {
+            return_invoices
+                .entry(Some(sales_invoice.to_string()))
+                .or_default()
+                .push(doc.name.clone());
+        } else {
+            return_invoices
+                .entry(default_key.clone())
+                .or_default()
+                .push(doc.name.clone());
+        }
+    }
+
+    return_invoices
 }
 
 pub fn consolidate_pos_invoices_plan(
