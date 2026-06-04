@@ -2028,7 +2028,7 @@
     {
       "source": "accounts/doctype/repost_accounting_ledger/__init__.py",
       "target": "accounts/doctype/repost_accounting_ledger/mod.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/repost_accounting_ledger/repost_accounting_ledger.py",
@@ -2043,7 +2043,7 @@
     {
       "source": "accounts/doctype/repost_accounting_ledger_items/__init__.py",
       "target": "accounts/doctype/repost_accounting_ledger_items/mod.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/repost_accounting_ledger_items/repost_accounting_ledger_items.py",
@@ -2053,7 +2053,7 @@
     {
       "source": "accounts/doctype/repost_allowed_types/__init__.py",
       "target": "accounts/doctype/repost_allowed_types/mod.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/repost_allowed_types/repost_allowed_types.py",
@@ -2063,7 +2063,7 @@
     {
       "source": "accounts/doctype/repost_payment_ledger/__init__.py",
       "target": "accounts/doctype/repost_payment_ledger/mod.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/repost_payment_ledger/repost_payment_ledger.py",
@@ -2078,7 +2078,7 @@
     {
       "source": "accounts/doctype/repost_payment_ledger_items/__init__.py",
       "target": "accounts/doctype/repost_payment_ledger_items/mod.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/repost_payment_ledger_items/repost_payment_ledger_items.py",
@@ -2108,7 +2108,7 @@
     {
       "source": "accounts/doctype/sales_invoice_advance/__init__.py",
       "target": "accounts/doctype/sales_invoice_advance/mod.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/sales_invoice_advance/sales_invoice_advance.py",
@@ -2128,7 +2128,7 @@
     {
       "source": "accounts/doctype/sales_invoice_payment/__init__.py",
       "target": "accounts/doctype/sales_invoice_payment/mod.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/sales_invoice_payment/sales_invoice_payment.py",
@@ -2138,7 +2138,7 @@
     {
       "source": "accounts/doctype/sales_invoice_reference/__init__.py",
       "target": "accounts/doctype/sales_invoice_reference/mod.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/sales_invoice_reference/sales_invoice_reference.py",
@@ -2148,7 +2148,7 @@
     {
       "source": "accounts/doctype/sales_invoice_timesheet/__init__.py",
       "target": "accounts/doctype/sales_invoice_timesheet/mod.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/sales_invoice_timesheet/sales_invoice_timesheet.py",
@@ -2158,7 +2158,7 @@
     {
       "source": "accounts/doctype/sales_partner_item/__init__.py",
       "target": "accounts/doctype/sales_partner_item/mod.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/sales_partner_item/sales_partner_item.py",
@@ -2168,7 +2168,7 @@
     {
       "source": "accounts/doctype/sales_taxes_and_charges/__init__.py",
       "target": "accounts/doctype/sales_taxes_and_charges/mod.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/sales_taxes_and_charges/sales_taxes_and_charges.py",
@@ -2178,7 +2178,7 @@
     {
       "source": "accounts/doctype/sales_taxes_and_charges_template/__init__.py",
       "target": "accounts/doctype/sales_taxes_and_charges_template/mod.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/sales_taxes_and_charges_template/sales_taxes_and_charges_template.py",
@@ -2198,7 +2198,7 @@
     {
       "source": "accounts/doctype/share_balance/__init__.py",
       "target": "accounts/doctype/share_balance/mod.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/share_balance/share_balance.py",
@@ -2208,7 +2208,7 @@
     {
       "source": "accounts/doctype/share_transfer/__init__.py",
       "target": "accounts/doctype/share_transfer/mod.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/share_transfer/share_transfer.py",
@@ -2223,7 +2223,7 @@
     {
       "source": "accounts/doctype/share_type/__init__.py",
       "target": "accounts/doctype/share_type/mod.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/share_type/share_type.py",
@@ -2243,7 +2243,7 @@
     {
       "source": "accounts/doctype/shareholder/__init__.py",
       "target": "accounts/doctype/shareholder/mod.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/shareholder/shareholder.py",
