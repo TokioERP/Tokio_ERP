@@ -124,6 +124,38 @@ pub struct PosInvoiceMergeLogReturnInvoice {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PosInvoiceMergeLogSubmitInvoice {
+    pub name: String,
+    pub is_return: bool,
+    pub return_against: Option<String>,
+    pub return_against_consolidated_invoice: Option<String>,
+}
+
+impl PosInvoiceMergeLogSubmitInvoice {
+    pub fn sale(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            is_return: false,
+            return_against: None,
+            return_against_consolidated_invoice: None,
+        }
+    }
+
+    pub fn return_invoice(
+        name: impl Into<String>,
+        return_against: impl Into<String>,
+        return_against_consolidated_invoice: Option<String>,
+    ) -> Self {
+        Self {
+            name: name.into(),
+            is_return: true,
+            return_against: Some(return_against.into()),
+            return_against_consolidated_invoice,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct NewSalesInvoicePlan {
     pub customer: Option<String>,
     pub is_pos: bool,
@@ -237,6 +269,7 @@ pub enum PosInvoiceMergeLogAction {
     SetMergeLogConsolidatedCreditNote {
         sales_invoice: String,
     },
+    SaveMergeLog,
     CreateMergeLogDocument {
         posting_date: String,
         posting_time: String,
@@ -805,6 +838,74 @@ impl PosInvoiceMergeLog {
         }
 
         (actions, credit_notes)
+    }
+
+    pub fn on_submit_side_effect_plan(
+        &self,
+        pos_invoice_docs: &[PosInvoiceMergeLogSubmitInvoice],
+        generated_sales_invoice_name: Option<&str>,
+        generated_credit_note_names: &[String],
+    ) -> Vec<PosInvoiceMergeLogAction> {
+        let sales = pos_invoice_docs
+            .iter()
+            .filter(|invoice| !invoice.is_return)
+            .map(|invoice| invoice.name.clone())
+            .collect::<Vec<_>>();
+        let returns = pos_invoice_docs
+            .iter()
+            .filter(|invoice| invoice.is_return)
+            .map(|invoice| PosInvoiceMergeLogReturnInvoice {
+                name: invoice.name.clone(),
+                return_against: invoice.return_against.clone().unwrap_or_default(),
+                return_against_consolidated_invoice: invoice
+                    .return_against_consolidated_invoice
+                    .clone(),
+            })
+            .collect::<Vec<_>>();
+
+        let mut actions = Vec::new();
+        let mut sales_invoice = None;
+        if !sales.is_empty() {
+            if let Some(generated_sales_invoice_name) = generated_sales_invoice_name {
+                actions.extend(self.process_merging_into_sales_invoice_plan(
+                    generated_sales_invoice_name,
+                    &sales,
+                    false,
+                    false,
+                ));
+                sales_invoice = Some(generated_sales_invoice_name.to_string());
+            }
+        }
+
+        let mut credit_notes = BTreeMap::new();
+        if !returns.is_empty() {
+            let distinguished_returns =
+                distinguish_return_pos_invoices_plan(&returns, sales_invoice.as_deref());
+            let (credit_note_actions, credit_note_map) = self
+                .process_merging_into_credit_notes_plan(
+                    &distinguished_returns,
+                    generated_credit_note_names,
+                );
+            actions.extend(credit_note_actions);
+            credit_notes = credit_note_map;
+        }
+
+        actions.push(PosInvoiceMergeLogAction::SaveMergeLog);
+        let update_invoices = pos_invoice_docs
+            .iter()
+            .map(|invoice| PosInvoiceMergeLogUpdateInvoice {
+                name: invoice.name.clone(),
+                is_return: invoice.is_return,
+            })
+            .collect::<Vec<_>>();
+        actions.extend(self.update_pos_invoices_plan(
+            &update_invoices,
+            sales_invoice.as_deref(),
+            &credit_notes,
+            1,
+        ));
+
+        actions
     }
 
     pub fn merge_pos_invoice_into_plan(
