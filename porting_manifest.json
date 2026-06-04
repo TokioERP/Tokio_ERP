@@ -1583,7 +1583,7 @@
     {
       "source": "accounts/doctype/pos_invoice_merge_log/pos_invoice_merge_log.py",
       "target": "accounts/doctype/pos_invoice_merge_log/pos_invoice_merge_log.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/pos_invoice_merge_log/test_pos_invoice_merge_log.py",
