@@ -1483,7 +1483,7 @@
     {
       "source": "accounts/doctype/period_closing_voucher/period_closing_voucher.py",
       "target": "accounts/doctype/period_closing_voucher/period_closing_voucher.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/period_closing_voucher/test_period_closing_voucher.py",
