@@ -13,7 +13,7 @@
     {
       "source": "accounts/custom/address.py",
       "target": "accounts/custom/address.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/dashboard_chart_source/__init__.py",
@@ -28,7 +28,7 @@
     {
       "source": "accounts/dashboard_chart_source/account_balance_timeline/account_balance_timeline.py",
       "target": "accounts/dashboard_chart_source/account_balance_timeline/account_balance_timeline.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/deferred_revenue.py",
