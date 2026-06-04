@@ -254,7 +254,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `tax_withholding_rate` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_tax_withholding_category`. JSON kept external. |
 | `territory_item` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_static_tail_items`. JSON kept external. |
 | `transaction_deletion_record_details` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_static_tail_items`. JSON kept external. |
-| `unreconcile_payment` | 5 | 3 | 1 | 1 | ported | Rust covers metadata, supported-type validation, linked payment/advance grouping, selection filtering, submit action planning, and JS query constants in `accounts_unreconcile_payment`. Frappe DB side effects remain represented as actions. |
+| `unreconcile_payment` | 5 | 3 | 1 | 1 | parity_tested | Rust covers metadata, supported-type validation, linked payment/advance grouping, invoice/payment/journal/order advance scenarios from ERPNext tests, selection filtering, submit action planning, and JS query constants in `accounts_unreconcile_payment`. DB side effects are represented as deterministic actions. JSON/JS kept external. |
 | `unreconcile_payment_entries` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_unreconcile_payment`. JSON kept external. |
 
 ## Doctype Detail: `bank_account_subtype`

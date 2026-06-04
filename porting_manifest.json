@@ -2533,17 +2533,17 @@
     {
       "source": "accounts/doctype/unreconcile_payment/__init__.py",
       "target": "accounts/doctype/unreconcile_payment/mod.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/unreconcile_payment/test_unreconcile_payment.py",
       "target": "accounts/doctype/unreconcile_payment/test_unreconcile_payment.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/unreconcile_payment/unreconcile_payment.py",
       "target": "accounts/doctype/unreconcile_payment/unreconcile_payment.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/unreconcile_payment_entries/__init__.py",
