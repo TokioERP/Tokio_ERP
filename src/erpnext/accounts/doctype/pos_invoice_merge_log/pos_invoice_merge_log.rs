@@ -200,6 +200,43 @@ pub enum PosInvoiceMergeLogAction {
     DelinkCancelledStockLedgerBundles {
         bundles: Vec<String>,
     },
+    MergeIntoSalesInvoice {
+        sales_invoice: String,
+        is_return: bool,
+        source_pos_invoices: Vec<String>,
+    },
+    SetSalesInvoiceReturnAgainst {
+        sales_invoice: String,
+        return_against: Option<String>,
+    },
+    SetSalesInvoiceConsolidated {
+        sales_invoice: String,
+        is_consolidated: bool,
+    },
+    SetSalesInvoicePostingTimeFlag {
+        sales_invoice: String,
+        set_posting_time: bool,
+    },
+    SetSalesInvoicePostingDate {
+        sales_invoice: String,
+        posting_date: String,
+    },
+    SetSalesInvoicePostingTime {
+        sales_invoice: String,
+        posting_time: String,
+    },
+    SaveSalesInvoice {
+        sales_invoice: String,
+    },
+    SubmitSalesInvoice {
+        sales_invoice: String,
+    },
+    SetMergeLogConsolidatedInvoice {
+        sales_invoice: String,
+    },
+    SetMergeLogConsolidatedCreditNote {
+        sales_invoice: String,
+    },
     CreateMergeLogDocument {
         posting_date: String,
         posting_time: String,
@@ -660,6 +697,114 @@ impl PosInvoiceMergeLog {
             posting_date: None,
             posting_time: None,
         }
+    }
+
+    pub fn process_merging_into_sales_invoice_plan(
+        &self,
+        sales_invoice: impl Into<String>,
+        source_pos_invoices: &[String],
+        has_posting_date: bool,
+        has_posting_time: bool,
+    ) -> Vec<PosInvoiceMergeLogAction> {
+        let sales_invoice = sales_invoice.into();
+        let mut actions = vec![
+            PosInvoiceMergeLogAction::MergeIntoSalesInvoice {
+                sales_invoice: sales_invoice.clone(),
+                is_return: false,
+                source_pos_invoices: source_pos_invoices.to_vec(),
+            },
+            PosInvoiceMergeLogAction::SetSalesInvoiceConsolidated {
+                sales_invoice: sales_invoice.clone(),
+                is_consolidated: true,
+            },
+            PosInvoiceMergeLogAction::SetSalesInvoicePostingTimeFlag {
+                sales_invoice: sales_invoice.clone(),
+                set_posting_time: true,
+            },
+        ];
+
+        if !has_posting_date {
+            actions.push(PosInvoiceMergeLogAction::SetSalesInvoicePostingDate {
+                sales_invoice: sales_invoice.clone(),
+                posting_date: self.posting_date.clone().unwrap_or_default(),
+            });
+        }
+
+        if !has_posting_time {
+            actions.push(PosInvoiceMergeLogAction::SetSalesInvoicePostingTime {
+                sales_invoice: sales_invoice.clone(),
+                posting_time: self.posting_time.clone().unwrap_or_default(),
+            });
+        }
+
+        actions.push(PosInvoiceMergeLogAction::SaveSalesInvoice {
+            sales_invoice: sales_invoice.clone(),
+        });
+        actions.push(PosInvoiceMergeLogAction::SubmitSalesInvoice {
+            sales_invoice: sales_invoice.clone(),
+        });
+        actions.push(PosInvoiceMergeLogAction::SetMergeLogConsolidatedInvoice { sales_invoice });
+        actions
+    }
+
+    pub fn process_merging_into_credit_notes_plan(
+        &self,
+        data: &BTreeMap<Option<String>, Vec<String>>,
+        generated_credit_note_names: &[String],
+    ) -> (Vec<PosInvoiceMergeLogAction>, BTreeMap<String, Vec<String>>) {
+        let mut actions = Vec::new();
+        let mut credit_notes = BTreeMap::new();
+        let mut name_iter = generated_credit_note_names.iter();
+
+        for (return_against, pos_invoices) in data {
+            if pos_invoices.is_empty() {
+                continue;
+            }
+
+            let credit_note = name_iter
+                .next()
+                .cloned()
+                .unwrap_or_else(|| format!("CREDIT-NOTE-{}", credit_notes.len() + 1));
+            actions.push(PosInvoiceMergeLogAction::MergeIntoSalesInvoice {
+                sales_invoice: credit_note.clone(),
+                is_return: true,
+                source_pos_invoices: pos_invoices.clone(),
+            });
+            actions.push(PosInvoiceMergeLogAction::SetSalesInvoiceReturnAgainst {
+                sales_invoice: credit_note.clone(),
+                return_against: return_against.clone(),
+            });
+            actions.push(PosInvoiceMergeLogAction::SetSalesInvoiceConsolidated {
+                sales_invoice: credit_note.clone(),
+                is_consolidated: true,
+            });
+            actions.push(PosInvoiceMergeLogAction::SetSalesInvoicePostingTimeFlag {
+                sales_invoice: credit_note.clone(),
+                set_posting_time: true,
+            });
+            actions.push(PosInvoiceMergeLogAction::SetSalesInvoicePostingDate {
+                sales_invoice: credit_note.clone(),
+                posting_date: self.posting_date.clone().unwrap_or_default(),
+            });
+            actions.push(PosInvoiceMergeLogAction::SetSalesInvoicePostingTime {
+                sales_invoice: credit_note.clone(),
+                posting_time: self.posting_time.clone().unwrap_or_default(),
+            });
+            actions.push(PosInvoiceMergeLogAction::SaveSalesInvoice {
+                sales_invoice: credit_note.clone(),
+            });
+            actions.push(PosInvoiceMergeLogAction::SubmitSalesInvoice {
+                sales_invoice: credit_note.clone(),
+            });
+            actions.push(
+                PosInvoiceMergeLogAction::SetMergeLogConsolidatedCreditNote {
+                    sales_invoice: credit_note.clone(),
+                },
+            );
+            credit_notes.insert(credit_note, pos_invoices.clone());
+        }
+
+        (actions, credit_notes)
     }
 
     pub fn merge_pos_invoice_into_plan(

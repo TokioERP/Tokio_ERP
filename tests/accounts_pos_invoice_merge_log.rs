@@ -744,6 +744,108 @@ fn pos_invoice_merge_log_new_sales_invoice_plan_matches_erpnext_defaults() {
 }
 
 #[test]
+fn pos_invoice_merge_log_process_sales_invoice_plan_matches_erpnext_order() {
+    let log = PosInvoiceMergeLog::new("_Test Company", "2026-06-04", "12:00:00", "_Test Customer");
+
+    assert_eq!(
+        log.process_merging_into_sales_invoice_plan(
+            "SI-0001",
+            &["POS-SALE-1".to_string(), "POS-SALE-2".to_string()],
+            false,
+            false,
+        ),
+        vec![
+            PosInvoiceMergeLogAction::MergeIntoSalesInvoice {
+                sales_invoice: "SI-0001".to_string(),
+                is_return: false,
+                source_pos_invoices: vec!["POS-SALE-1".to_string(), "POS-SALE-2".to_string()],
+            },
+            PosInvoiceMergeLogAction::SetSalesInvoiceConsolidated {
+                sales_invoice: "SI-0001".to_string(),
+                is_consolidated: true,
+            },
+            PosInvoiceMergeLogAction::SetSalesInvoicePostingTimeFlag {
+                sales_invoice: "SI-0001".to_string(),
+                set_posting_time: true,
+            },
+            PosInvoiceMergeLogAction::SetSalesInvoicePostingDate {
+                sales_invoice: "SI-0001".to_string(),
+                posting_date: "2026-06-04".to_string(),
+            },
+            PosInvoiceMergeLogAction::SetSalesInvoicePostingTime {
+                sales_invoice: "SI-0001".to_string(),
+                posting_time: "12:00:00".to_string(),
+            },
+            PosInvoiceMergeLogAction::SaveSalesInvoice {
+                sales_invoice: "SI-0001".to_string(),
+            },
+            PosInvoiceMergeLogAction::SubmitSalesInvoice {
+                sales_invoice: "SI-0001".to_string(),
+            },
+            PosInvoiceMergeLogAction::SetMergeLogConsolidatedInvoice {
+                sales_invoice: "SI-0001".to_string(),
+            },
+        ]
+    );
+}
+
+#[test]
+fn pos_invoice_merge_log_process_credit_notes_plan_skips_empty_groups_and_returns_mapping() {
+    let log = PosInvoiceMergeLog::new("_Test Company", "2026-06-04", "12:00:00", "_Test Customer");
+    let returns = BTreeMap::from([
+        (Some("SI-0001".to_string()), vec!["POS-RET-1".to_string()]),
+        (Some("SI-OLD-1".to_string()), Vec::new()),
+    ]);
+
+    let (actions, credit_notes) =
+        log.process_merging_into_credit_notes_plan(&returns, &["SI-CR-1".to_string()]);
+
+    assert_eq!(
+        credit_notes,
+        BTreeMap::from([("SI-CR-1".to_string(), vec!["POS-RET-1".to_string()])])
+    );
+    assert_eq!(
+        actions,
+        vec![
+            PosInvoiceMergeLogAction::MergeIntoSalesInvoice {
+                sales_invoice: "SI-CR-1".to_string(),
+                is_return: true,
+                source_pos_invoices: vec!["POS-RET-1".to_string()],
+            },
+            PosInvoiceMergeLogAction::SetSalesInvoiceReturnAgainst {
+                sales_invoice: "SI-CR-1".to_string(),
+                return_against: Some("SI-0001".to_string()),
+            },
+            PosInvoiceMergeLogAction::SetSalesInvoiceConsolidated {
+                sales_invoice: "SI-CR-1".to_string(),
+                is_consolidated: true,
+            },
+            PosInvoiceMergeLogAction::SetSalesInvoicePostingTimeFlag {
+                sales_invoice: "SI-CR-1".to_string(),
+                set_posting_time: true,
+            },
+            PosInvoiceMergeLogAction::SetSalesInvoicePostingDate {
+                sales_invoice: "SI-CR-1".to_string(),
+                posting_date: "2026-06-04".to_string(),
+            },
+            PosInvoiceMergeLogAction::SetSalesInvoicePostingTime {
+                sales_invoice: "SI-CR-1".to_string(),
+                posting_time: "12:00:00".to_string(),
+            },
+            PosInvoiceMergeLogAction::SaveSalesInvoice {
+                sales_invoice: "SI-CR-1".to_string(),
+            },
+            PosInvoiceMergeLogAction::SubmitSalesInvoice {
+                sales_invoice: "SI-CR-1".to_string(),
+            },
+            PosInvoiceMergeLogAction::SetMergeLogConsolidatedCreditNote {
+                sales_invoice: "SI-CR-1".to_string(),
+            },
+        ]
+    );
+}
+
+#[test]
 fn pos_invoice_merge_log_preserves_controller_hooks() {
     let log = PosInvoiceMergeLog::new("_Test Company", "2026-06-04", "12:00:00", "_Test Customer");
 
