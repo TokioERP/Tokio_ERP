@@ -4,9 +4,11 @@ use tokio_erp::erpnext::accounts::doctype::pos_invoice_merge_log::pos_invoice_me
     check_scheduler_status, consolidate_pos_invoices_plan, enqueue_job_plan, get_error_message,
     get_invoice_customer_map, split_invoices, split_invoices_by_accounting_dimension,
     unconsolidate_pos_invoices_plan, EnqueueJobKind, ErrorMessage, MergeInvoicesBasedOn,
-    PosInvoiceMergeLog, PosInvoiceMergeLogAction, PosInvoiceMergeLogError,
-    PosInvoiceMergeLogInvoice, PosInvoiceMergeLogSourceInvoice, PosInvoiceMergeLogSplitInvoice,
-    SchedulerStatus,
+    PosInvoiceMergeLog, PosInvoiceMergeLogAction, PosInvoiceMergeLogDocument,
+    PosInvoiceMergeLogError, PosInvoiceMergeLogInvoice, PosInvoiceMergeLogItem,
+    PosInvoiceMergeLogItemWiseTaxDetail, PosInvoiceMergeLogPayment,
+    PosInvoiceMergeLogProfileDefaults, PosInvoiceMergeLogSourceInvoice,
+    PosInvoiceMergeLogSplitInvoice, PosInvoiceMergeLogTax, SchedulerStatus,
 };
 use tokio_erp::erpnext::{DocumentController, FieldSpec};
 
@@ -70,7 +72,8 @@ fn pos_invoice_merge_log_matches_erpnext_metadata() {
 
 #[test]
 fn pos_invoice_merge_log_validates_duplicates_customer_and_status() {
-    let mut log = PosInvoiceMergeLog::new("_Test Company", "2026-06-04", "12:00:00", "_Test Customer");
+    let mut log =
+        PosInvoiceMergeLog::new("_Test Company", "2026-06-04", "12:00:00", "_Test Customer");
     log.pos_invoices = vec![
         PosInvoiceMergeLogInvoice::submitted(1, "POS-001", "_Test Customer"),
         PosInvoiceMergeLogInvoice::submitted(2, "POS-001", "_Test Customer"),
@@ -83,7 +86,11 @@ fn pos_invoice_merge_log_validates_duplicates_customer_and_status() {
         })
     );
 
-    log.pos_invoices = vec![PosInvoiceMergeLogInvoice::submitted(3, "POS-002", "Other Customer")];
+    log.pos_invoices = vec![PosInvoiceMergeLogInvoice::submitted(
+        3,
+        "POS-002",
+        "Other Customer",
+    )];
     assert_eq!(
         log.validate_customer(),
         Err(PosInvoiceMergeLogError::CustomerMismatch {
@@ -168,9 +175,10 @@ fn pos_invoice_merge_log_plans_queue_or_inline_consolidation_like_erpnext_thresh
     let grouped: BTreeMap<String, BTreeMap<Vec<(String, String)>, Vec<String>>> =
         BTreeMap::from([(
             "_Test Customer".to_string(),
-            BTreeMap::from([(vec![("cost_center".to_string(), "Main - TC".to_string())], vec![
-                "POS-001".to_string(),
-            ])]),
+            BTreeMap::from([(
+                vec![("cost_center".to_string(), "Main - TC".to_string())],
+                vec!["POS-001".to_string()],
+            )]),
         )]);
 
     assert_eq!(
@@ -256,10 +264,201 @@ fn pos_invoice_merge_log_enqueue_and_error_helpers_match_erpnext_branches() {
 }
 
 #[test]
+fn pos_invoice_merge_log_merge_plan_aggregates_child_tables_like_erpnext() {
+    let log = PosInvoiceMergeLog::new("_Test Company", "2026-06-04", "12:00:00", "_Test Customer");
+
+    let docs = vec![
+        PosInvoiceMergeLogDocument {
+            name: "POS-001".to_string(),
+            posting_date: Some("2026-06-03".to_string()),
+            posting_time: Some("09:30:00".to_string()),
+            redeem_loyalty_points: true,
+            loyalty_redemption_account: Some("Loyalty - TC".to_string()),
+            loyalty_redemption_cost_center: Some("Main - TC".to_string()),
+            loyalty_points: 10,
+            loyalty_amount: 25.0,
+            rounding_adjustment: 0.25,
+            rounded_total: 110.0,
+            base_rounding_adjustment: 0.25,
+            base_rounded_total: 110.0,
+            items: vec![PosInvoiceMergeLogItem {
+                name: "ITEM-ROW-1".to_string(),
+                net_rate: 100.0,
+                net_amount: 100.0,
+                base_net_amount: 100.0,
+                pos_invoice_item: Some("OLD-ITEM-1".to_string()),
+                serial_and_batch_bundle: Some("SBB-1".to_string()),
+            }],
+            taxes: vec![PosInvoiceMergeLogTax {
+                name: "TAX-1".to_string(),
+                account_head: "VAT - TC".to_string(),
+                cost_center: "Main - TC".to_string(),
+                tax_amount_after_discount_amount: 9.0,
+                base_tax_amount_after_discount_amount: 9.0,
+            }],
+            payments: vec![PosInvoiceMergeLogPayment {
+                account: "Cash - TC".to_string(),
+                mode_of_payment: "Cash".to_string(),
+                amount: 109.0,
+                base_amount: 109.0,
+            }],
+            item_wise_tax_details: vec![PosInvoiceMergeLogItemWiseTaxDetail {
+                item_row: "ITEM-ROW-1".to_string(),
+                tax_row: "TAX-1".to_string(),
+                amount: 9.0,
+                rate: 9.0,
+                taxable_amount: 100.0,
+            }],
+            ..PosInvoiceMergeLogDocument::new("POS-001")
+        },
+        PosInvoiceMergeLogDocument {
+            name: "POS-002".to_string(),
+            posting_date: Some("2026-06-04".to_string()),
+            posting_time: Some("10:45:00".to_string()),
+            rounding_adjustment: 0.5,
+            rounded_total: 55.0,
+            base_rounding_adjustment: 0.5,
+            base_rounded_total: 55.0,
+            items: vec![PosInvoiceMergeLogItem {
+                name: "ITEM-ROW-2".to_string(),
+                net_rate: 50.0,
+                net_amount: 50.0,
+                base_net_amount: 50.0,
+                pos_invoice_item: None,
+                serial_and_batch_bundle: None,
+            }],
+            taxes: vec![PosInvoiceMergeLogTax {
+                name: "TAX-2".to_string(),
+                account_head: "VAT - TC".to_string(),
+                cost_center: "Main - TC".to_string(),
+                tax_amount_after_discount_amount: 4.5,
+                base_tax_amount_after_discount_amount: 4.5,
+            }],
+            payments: vec![PosInvoiceMergeLogPayment {
+                account: "Cash - TC".to_string(),
+                mode_of_payment: "Cash".to_string(),
+                amount: 54.5,
+                base_amount: 54.5,
+            }],
+            item_wise_tax_details: vec![PosInvoiceMergeLogItemWiseTaxDetail {
+                item_row: "ITEM-ROW-2".to_string(),
+                tax_row: "TAX-2".to_string(),
+                amount: 4.5,
+                rate: 9.0,
+                taxable_amount: 50.0,
+            }],
+            ..PosInvoiceMergeLogDocument::new("POS-002")
+        },
+    ];
+
+    let plan = log.merge_pos_invoice_into_plan(
+        &docs,
+        &PosInvoiceMergeLogProfileDefaults::default(),
+        true,
+        &[],
+    );
+
+    assert_eq!(plan.posting_date.as_deref(), Some("2026-06-04"));
+    assert_eq!(plan.posting_time.as_deref(), Some("10:45:00"));
+    assert_eq!(plan.items.len(), 2);
+    assert_eq!(plan.items[0].row_id, "POS-001:ITEM-ROW-1");
+    assert_eq!(plan.items[0].rate, 100.0);
+    assert_eq!(plan.items[0].amount, 100.0);
+    assert_eq!(plan.items[0].base_amount, 100.0);
+    assert_eq!(plan.items[0].price_list_rate, 0.0);
+    assert_eq!(plan.items[0].pos_invoice, "POS-001");
+    assert_eq!(plan.items[0].pos_invoice_item, "ITEM-ROW-1");
+    assert_eq!(
+        plan.items[0].serial_and_batch_bundle.as_deref(),
+        Some("SBB-1")
+    );
+
+    assert_eq!(plan.taxes.len(), 1);
+    assert_eq!(plan.taxes[0].row_id, "VAT - TC|Main - TC");
+    assert_eq!(plan.taxes[0].charge_type, "Actual");
+    assert_eq!(plan.taxes[0].idx, 1);
+    assert!(!plan.taxes[0].included_in_print_rate);
+    assert!(plan.taxes[0].dont_recompute_tax);
+    assert_eq!(plan.taxes[0].tax_amount, 13.5);
+    assert_eq!(plan.taxes[0].base_tax_amount, 13.5);
+
+    assert_eq!(plan.payments.len(), 1);
+    assert_eq!(plan.payments[0].amount, 163.5);
+    assert_eq!(plan.payments[0].base_amount, 163.5);
+    assert_eq!(plan.rounding_adjustment, 0.75);
+    assert_eq!(plan.rounded_total, 165.0);
+    assert_eq!(plan.base_rounding_adjustment, 0.75);
+    assert_eq!(plan.base_rounded_total, 165.0);
+    assert!(plan.redeem_loyalty_points);
+    assert_eq!(plan.loyalty_points, 10);
+    assert_eq!(plan.loyalty_amount, 25.0);
+    assert_eq!(plan.customer.as_deref(), Some("_Test Customer"));
+    assert_eq!(plan.additional_discount_percentage, 0.0);
+    assert_eq!(plan.discount_amount, 0.0);
+    assert!(plan.taxes_and_charges.is_none());
+    assert!(plan.ignore_pricing_rule);
+    assert!(plan.disable_rounded_total);
+    assert_eq!(plan.item_wise_tax_details.len(), 2);
+    assert_eq!(plan.item_wise_tax_details[0].item_row, "POS-001:ITEM-ROW-1");
+    assert_eq!(plan.item_wise_tax_details[0].tax_row, "VAT - TC|Main - TC");
+}
+
+#[test]
+fn pos_invoice_merge_log_merge_plan_uses_profile_dimensions_and_customer_group_flag() {
+    let mut log =
+        PosInvoiceMergeLog::new("_Test Company", "2026-06-04", "12:00:00", "_Test Customer");
+    log.merge_invoices_based_on = MergeInvoicesBasedOn::CustomerGroup;
+
+    let mut first_doc = PosInvoiceMergeLogDocument::new("POS-001");
+    first_doc
+        .accounting_dimensions
+        .insert("department".to_string(), "Retail - TC".to_string());
+    first_doc.cost_center = Some("Store - TC".to_string());
+
+    let mut defaults = PosInvoiceMergeLogProfileDefaults {
+        pos_profile: "POS Profile - TC".to_string(),
+        cost_center: Some("Main - TC".to_string()),
+        project: Some("PROJ-1".to_string()),
+        ..PosInvoiceMergeLogProfileDefaults::default()
+    };
+    defaults
+        .accounting_dimensions
+        .insert("department".to_string(), "Default Dept - TC".to_string());
+    defaults
+        .accounting_dimensions
+        .insert("business_unit".to_string(), "Default Unit - TC".to_string());
+
+    let plan = log.merge_pos_invoice_into_plan(
+        &[first_doc],
+        &defaults,
+        false,
+        &["department".to_string(), "business_unit".to_string()],
+    );
+
+    assert!(plan.ignore_pos_profile);
+    assert_eq!(plan.pos_profile, "");
+    assert_eq!(
+        plan.accounting_dimensions,
+        BTreeMap::from([
+            ("business_unit".to_string(), "Default Unit - TC".to_string()),
+            ("department".to_string(), "Retail - TC".to_string()),
+        ])
+    );
+    assert_eq!(plan.cost_center.as_deref(), Some("Store - TC"));
+    assert_eq!(plan.project.as_deref(), Some("PROJ-1"));
+    assert!(plan.sales_partner.is_none());
+    assert_eq!(plan.commission_rate, 0.0);
+    assert_eq!(plan.total_commission, 0.0);
+}
+
+#[test]
 fn pos_invoice_merge_log_preserves_controller_hooks() {
     let log = PosInvoiceMergeLog::new("_Test Company", "2026-06-04", "12:00:00", "_Test Customer");
 
     assert_eq!(log.doctype(), "POS Invoice Merge Log");
     assert_eq!(log.module(), "Accounts");
-    assert_eq!(log.custom_hooks(), vec!["validate", "on_submit", "on_cancel"]);
+    assert_eq!(
+        log.custom_hooks(),
+        vec!["validate", "on_submit", "on_cancel"]
+    );
 }

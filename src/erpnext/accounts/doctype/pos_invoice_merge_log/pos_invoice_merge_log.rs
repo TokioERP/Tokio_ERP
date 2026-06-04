@@ -27,7 +27,11 @@ pub struct PosInvoiceMergeLogInvoice {
 }
 
 impl PosInvoiceMergeLogInvoice {
-    pub fn submitted(idx: usize, pos_invoice: impl Into<String>, customer: impl Into<String>) -> Self {
+    pub fn submitted(
+        idx: usize,
+        pos_invoice: impl Into<String>,
+        customer: impl Into<String>,
+    ) -> Self {
         Self {
             idx,
             pos_invoice: pos_invoice.into(),
@@ -163,9 +167,183 @@ impl PosInvoiceMergeLogSourceInvoice {
     }
 
     pub fn dimension(mut self, fieldname: impl Into<String>, value: impl Into<String>) -> Self {
-        self.accounting_dimensions.insert(fieldname.into(), value.into());
+        self.accounting_dimensions
+            .insert(fieldname.into(), value.into());
         self
     }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct PosInvoiceMergeLogItem {
+    pub name: String,
+    pub net_rate: f64,
+    pub net_amount: f64,
+    pub base_net_amount: f64,
+    pub pos_invoice_item: Option<String>,
+    pub serial_and_batch_bundle: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct PosInvoiceMergeLogTax {
+    pub name: String,
+    pub account_head: String,
+    pub cost_center: String,
+    pub tax_amount_after_discount_amount: f64,
+    pub base_tax_amount_after_discount_amount: f64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct PosInvoiceMergeLogPayment {
+    pub account: String,
+    pub mode_of_payment: String,
+    pub amount: f64,
+    pub base_amount: f64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct PosInvoiceMergeLogItemWiseTaxDetail {
+    pub item_row: String,
+    pub tax_row: String,
+    pub amount: f64,
+    pub rate: f64,
+    pub taxable_amount: f64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct PosInvoiceMergeLogDocument {
+    pub name: String,
+    pub posting_date: Option<String>,
+    pub posting_time: Option<String>,
+    pub is_return: bool,
+    pub return_against: Option<String>,
+    pub redeem_loyalty_points: bool,
+    pub loyalty_redemption_account: Option<String>,
+    pub loyalty_redemption_cost_center: Option<String>,
+    pub loyalty_points: i64,
+    pub loyalty_amount: f64,
+    pub items: Vec<PosInvoiceMergeLogItem>,
+    pub taxes: Vec<PosInvoiceMergeLogTax>,
+    pub payments: Vec<PosInvoiceMergeLogPayment>,
+    pub rounding_adjustment: f64,
+    pub rounded_total: f64,
+    pub base_rounding_adjustment: f64,
+    pub base_rounded_total: f64,
+    pub item_wise_tax_details: Vec<PosInvoiceMergeLogItemWiseTaxDetail>,
+    pub accounting_dimensions: BTreeMap<String, String>,
+    pub cost_center: Option<String>,
+    pub project: Option<String>,
+}
+
+impl PosInvoiceMergeLogDocument {
+    pub fn new(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            posting_date: None,
+            posting_time: None,
+            is_return: false,
+            return_against: None,
+            redeem_loyalty_points: false,
+            loyalty_redemption_account: None,
+            loyalty_redemption_cost_center: None,
+            loyalty_points: 0,
+            loyalty_amount: 0.0,
+            items: Vec::new(),
+            taxes: Vec::new(),
+            payments: Vec::new(),
+            rounding_adjustment: 0.0,
+            rounded_total: 0.0,
+            base_rounding_adjustment: 0.0,
+            base_rounded_total: 0.0,
+            item_wise_tax_details: Vec::new(),
+            accounting_dimensions: BTreeMap::new(),
+            cost_center: None,
+            project: None,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct PosInvoiceMergeLogProfileDefaults {
+    pub pos_profile: String,
+    pub accounting_dimensions: BTreeMap<String, String>,
+    pub cost_center: Option<String>,
+    pub project: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct MergedPosInvoiceItem {
+    pub row_id: String,
+    pub pos_invoice: String,
+    pub pos_invoice_item: String,
+    pub sales_invoice_item: Option<String>,
+    pub rate: f64,
+    pub amount: f64,
+    pub base_amount: f64,
+    pub price_list_rate: f64,
+    pub serial_and_batch_bundle: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct MergedPosInvoiceTax {
+    pub row_id: String,
+    pub account_head: String,
+    pub cost_center: String,
+    pub charge_type: String,
+    pub idx: usize,
+    pub included_in_print_rate: bool,
+    pub tax_amount: f64,
+    pub base_tax_amount: f64,
+    pub dont_recompute_tax: bool,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct MergedPosInvoicePayment {
+    pub account: String,
+    pub mode_of_payment: String,
+    pub amount: f64,
+    pub base_amount: f64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct MergedItemWiseTaxDetail {
+    pub item_row: String,
+    pub tax_row: String,
+    pub amount: f64,
+    pub rate: f64,
+    pub taxable_amount: f64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct MergedPosInvoicePlan {
+    pub posting_date: Option<String>,
+    pub posting_time: Option<String>,
+    pub items: Vec<MergedPosInvoiceItem>,
+    pub payments: Vec<MergedPosInvoicePayment>,
+    pub taxes: Vec<MergedPosInvoiceTax>,
+    pub item_wise_tax_details: Vec<MergedItemWiseTaxDetail>,
+    pub redeem_loyalty_points: bool,
+    pub loyalty_redemption_account: Option<String>,
+    pub loyalty_redemption_cost_center: Option<String>,
+    pub loyalty_points: i64,
+    pub loyalty_amount: f64,
+    pub rounding_adjustment: f64,
+    pub rounded_total: f64,
+    pub base_rounding_adjustment: f64,
+    pub base_rounded_total: f64,
+    pub additional_discount_percentage: f64,
+    pub discount_amount: f64,
+    pub taxes_and_charges: Option<String>,
+    pub ignore_pricing_rule: bool,
+    pub customer: Option<String>,
+    pub disable_rounded_total: bool,
+    pub accounting_dimensions: BTreeMap<String, String>,
+    pub cost_center: Option<String>,
+    pub project: Option<String>,
+    pub ignore_pos_profile: bool,
+    pub pos_profile: String,
+    pub sales_partner: Option<String>,
+    pub commission_rate: f64,
+    pub total_commission: f64,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -261,8 +439,7 @@ impl PosInvoiceMergeLog {
                 .options("Customer\nCustomer Group")
                 .required(),
             FieldSpec::column_break("column_break_3"),
-            FieldSpec::link("pos_closing_entry", "POS Closing Entry")
-                .options("POS Closing Entry"),
+            FieldSpec::link("pos_closing_entry", "POS Closing Entry").options("POS Closing Entry"),
             FieldSpec::link("customer", "Customer")
                 .options("Customer")
                 .required()
@@ -380,6 +557,194 @@ impl PosInvoiceMergeLog {
         }
 
         Ok(())
+    }
+
+    pub fn merge_pos_invoice_into_plan(
+        &self,
+        data: &[PosInvoiceMergeLogDocument],
+        profile_defaults: &PosInvoiceMergeLogProfileDefaults,
+        disable_rounded_total: bool,
+        accounting_dimension_fields: &[String],
+    ) -> MergedPosInvoicePlan {
+        let mut items = Vec::new();
+        let mut payments: Vec<MergedPosInvoicePayment> = Vec::new();
+        let mut taxes: Vec<MergedPosInvoiceTax> = Vec::new();
+        let mut item_tax_details = Vec::new();
+        let mut loyalty_amount_sum = 0.0;
+        let mut loyalty_points_sum = 0;
+        let mut loyalty_redemption_account = None;
+        let mut loyalty_redemption_cost_center = None;
+        let mut rounding_adjustment = 0.0;
+        let mut rounded_total = 0.0;
+        let mut base_rounding_adjustment = 0.0;
+        let mut base_rounded_total = 0.0;
+        let mut posting_date = None;
+        let mut posting_time = None;
+
+        for doc in data {
+            let mut old_new_item_map = BTreeMap::new();
+            let mut old_new_tax_map = BTreeMap::new();
+
+            if doc.posting_date.is_some() {
+                posting_date = doc.posting_date.clone();
+                posting_time = doc.posting_time.clone();
+            }
+
+            if doc.redeem_loyalty_points {
+                loyalty_redemption_account = doc.loyalty_redemption_account.clone();
+                loyalty_redemption_cost_center = doc.loyalty_redemption_cost_center.clone();
+                loyalty_points_sum += doc.loyalty_points;
+                loyalty_amount_sum += doc.loyalty_amount;
+            }
+
+            for item in &doc.items {
+                let row_id = format!("{}:{}", doc.name, item.name);
+                let sales_invoice_item = doc.is_return.then(|| {
+                    format!(
+                        "{}:{}",
+                        doc.return_against.as_deref().unwrap_or_default(),
+                        item.pos_invoice_item
+                            .as_deref()
+                            .unwrap_or(item.name.as_str())
+                    )
+                });
+                items.push(MergedPosInvoiceItem {
+                    row_id: row_id.clone(),
+                    pos_invoice: doc.name.clone(),
+                    pos_invoice_item: item.name.clone(),
+                    sales_invoice_item,
+                    rate: item.net_rate,
+                    amount: item.net_amount,
+                    base_amount: item.base_net_amount,
+                    price_list_rate: 0.0,
+                    serial_and_batch_bundle: item.serial_and_batch_bundle.clone(),
+                });
+                old_new_item_map.insert(item.name.clone(), row_id);
+            }
+
+            for tax in &doc.taxes {
+                let tax_key = (tax.account_head.clone(), tax.cost_center.clone());
+                if let Some(existing_tax) = taxes
+                    .iter_mut()
+                    .find(|row| row.account_head == tax_key.0 && row.cost_center == tax_key.1)
+                {
+                    existing_tax.tax_amount += tax.tax_amount_after_discount_amount;
+                    existing_tax.base_tax_amount += tax.base_tax_amount_after_discount_amount;
+                    old_new_tax_map.insert(tax.name.clone(), existing_tax.row_id.clone());
+                } else {
+                    let row_id = format!("{}|{}", tax.account_head, tax.cost_center);
+                    taxes.push(MergedPosInvoiceTax {
+                        row_id: row_id.clone(),
+                        account_head: tax.account_head.clone(),
+                        cost_center: tax.cost_center.clone(),
+                        charge_type: "Actual".to_string(),
+                        idx: taxes.len() + 1,
+                        included_in_print_rate: false,
+                        tax_amount: tax.tax_amount_after_discount_amount,
+                        base_tax_amount: tax.base_tax_amount_after_discount_amount,
+                        dont_recompute_tax: true,
+                    });
+                    old_new_tax_map.insert(tax.name.clone(), row_id);
+                }
+            }
+
+            for payment in &doc.payments {
+                if let Some(existing_payment) = payments.iter_mut().find(|row| {
+                    row.account == payment.account && row.mode_of_payment == payment.mode_of_payment
+                }) {
+                    existing_payment.amount += payment.amount;
+                    existing_payment.base_amount += payment.base_amount;
+                } else {
+                    payments.push(MergedPosInvoicePayment {
+                        account: payment.account.clone(),
+                        mode_of_payment: payment.mode_of_payment.clone(),
+                        amount: payment.amount,
+                        base_amount: payment.base_amount,
+                    });
+                }
+            }
+
+            rounding_adjustment += doc.rounding_adjustment;
+            rounded_total += doc.rounded_total;
+            base_rounding_adjustment += doc.base_rounding_adjustment;
+            base_rounded_total += doc.base_rounded_total;
+
+            for detail in &doc.item_wise_tax_details {
+                let item_row = old_new_item_map
+                    .get(detail.item_row.as_str())
+                    .unwrap_or_else(|| panic!("missing mapped item row {}", detail.item_row));
+                let tax_row = old_new_tax_map
+                    .get(detail.tax_row.as_str())
+                    .unwrap_or_else(|| panic!("missing mapped tax row {}", detail.tax_row));
+                item_tax_details.push(MergedItemWiseTaxDetail {
+                    item_row: item_row.clone(),
+                    tax_row: tax_row.clone(),
+                    amount: detail.amount,
+                    rate: detail.rate,
+                    taxable_amount: detail.taxable_amount,
+                });
+            }
+        }
+
+        let first_doc = data.first();
+        let mut accounting_dimensions = BTreeMap::new();
+        for fieldname in accounting_dimension_fields {
+            let value = first_doc
+                .and_then(|doc| non_empty_map_value(&doc.accounting_dimensions, fieldname))
+                .or_else(|| {
+                    non_empty_map_value(&profile_defaults.accounting_dimensions, fieldname)
+                });
+            if let Some(value) = value {
+                accounting_dimensions.insert(fieldname.clone(), value.to_string());
+            }
+        }
+
+        let cost_center = first_doc
+            .and_then(|doc| non_empty_option_value(&doc.cost_center))
+            .or_else(|| non_empty_option_value(&profile_defaults.cost_center))
+            .map(str::to_string);
+        let project = first_doc
+            .and_then(|doc| non_empty_option_value(&doc.project))
+            .or_else(|| non_empty_option_value(&profile_defaults.project))
+            .map(str::to_string);
+        let ignore_pos_profile =
+            self.merge_invoices_based_on == MergeInvoicesBasedOn::CustomerGroup;
+
+        MergedPosInvoicePlan {
+            posting_date,
+            posting_time,
+            items,
+            payments,
+            taxes,
+            item_wise_tax_details: item_tax_details,
+            redeem_loyalty_points: loyalty_points_sum != 0,
+            loyalty_redemption_account,
+            loyalty_redemption_cost_center,
+            loyalty_points: loyalty_points_sum,
+            loyalty_amount: loyalty_amount_sum,
+            rounding_adjustment,
+            rounded_total,
+            base_rounding_adjustment,
+            base_rounded_total,
+            additional_discount_percentage: 0.0,
+            discount_amount: 0.0,
+            taxes_and_charges: None,
+            ignore_pricing_rule: true,
+            customer: self.customer.clone(),
+            disable_rounded_total,
+            accounting_dimensions,
+            cost_center,
+            project,
+            ignore_pos_profile,
+            pos_profile: if ignore_pos_profile {
+                String::new()
+            } else {
+                profile_defaults.pos_profile.clone()
+            },
+            sales_partner: None,
+            commission_rate: 0.0,
+            total_commission: 0.0,
+        }
     }
 }
 
@@ -526,7 +891,10 @@ pub fn enqueue_job_plan(
         return Ok(None);
     }
 
-    Ok(Some(enqueue_action(kind, closing_entry.unwrap_or_default())))
+    Ok(Some(enqueue_action(
+        kind,
+        closing_entry.unwrap_or_default(),
+    )))
 }
 
 pub fn check_scheduler_status(
@@ -556,4 +924,15 @@ fn enqueue_action(kind: EnqueueJobKind, closing_entry: &str) -> PosInvoiceMergeL
         job_id: format!("pos_invoice_merge::{closing_entry}"),
         message: kind.message().to_string(),
     }
+}
+
+fn non_empty_map_value<'a>(values: &'a BTreeMap<String, String>, key: &str) -> Option<&'a str> {
+    values
+        .get(key)
+        .map(String::as_str)
+        .filter(|value| !value.is_empty())
+}
+
+fn non_empty_option_value(value: &Option<String>) -> Option<&str> {
+    value.as_deref().filter(|value| !value.is_empty())
 }
