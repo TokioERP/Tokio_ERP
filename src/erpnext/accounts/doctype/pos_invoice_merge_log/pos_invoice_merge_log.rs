@@ -81,6 +81,28 @@ impl PosInvoiceMergeLogSplitInvoice {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PosInvoiceMergeLogUpdateInvoice {
+    pub name: String,
+    pub is_return: bool,
+}
+
+impl PosInvoiceMergeLogUpdateInvoice {
+    pub fn sale(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            is_return: false,
+        }
+    }
+
+    pub fn return_invoice(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            is_return: true,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PosInvoiceMergeLogError {
     DuplicatePosInvoices {
         invoice: String,
@@ -127,6 +149,27 @@ impl EnqueueJobKind {
 pub enum PosInvoiceMergeLogAction {
     SetClosingEntryStatus {
         status: String,
+    },
+    UpdatePosInvoiceConsolidatedInvoice {
+        pos_invoice: String,
+        consolidated_invoice: Option<String>,
+    },
+    RefreshPosInvoiceStatus {
+        pos_invoice: String,
+    },
+    SavePosInvoice {
+        pos_invoice: String,
+    },
+    SetSerialAndBatchBundle {
+        pos_invoice: String,
+        table_name: String,
+    },
+    CancelLinkedInvoice {
+        sales_invoice: String,
+        ignore_validate: bool,
+    },
+    DelinkCancelledStockLedgerBundles {
+        bundles: Vec<String>,
     },
     CreateMergeLogs,
     CancelMergeLogs,
@@ -745,6 +788,87 @@ impl PosInvoiceMergeLog {
             commission_rate: 0.0,
             total_commission: 0.0,
         }
+    }
+
+    pub fn update_pos_invoices_plan(
+        &self,
+        invoice_docs: &[PosInvoiceMergeLogUpdateInvoice],
+        sales_invoice: Option<&str>,
+        credit_notes: &BTreeMap<String, Vec<String>>,
+        docstatus: i32,
+    ) -> Vec<PosInvoiceMergeLogAction> {
+        let mut actions = Vec::new();
+        for doc in invoice_docs {
+            let mut consolidated_invoice = sales_invoice.map(str::to_string);
+            if doc.is_return {
+                for (credit_note, pos_invoices) in credit_notes {
+                    if pos_invoices.contains(&doc.name) {
+                        consolidated_invoice = Some(credit_note.clone());
+                        break;
+                    }
+                }
+            }
+            if docstatus == 2 {
+                consolidated_invoice = None;
+            }
+
+            actions.push(
+                PosInvoiceMergeLogAction::UpdatePosInvoiceConsolidatedInvoice {
+                    pos_invoice: doc.name.clone(),
+                    consolidated_invoice,
+                },
+            );
+            actions.push(PosInvoiceMergeLogAction::RefreshPosInvoiceStatus {
+                pos_invoice: doc.name.clone(),
+            });
+            actions.push(PosInvoiceMergeLogAction::SavePosInvoice {
+                pos_invoice: doc.name.clone(),
+            });
+        }
+        actions
+    }
+
+    pub fn on_cancel_side_effect_plan(&self, bundles: &[String]) -> Vec<PosInvoiceMergeLogAction> {
+        let invoice_docs = self
+            .pos_invoices
+            .iter()
+            .map(|invoice| PosInvoiceMergeLogUpdateInvoice {
+                name: invoice.pos_invoice.clone(),
+                is_return: invoice.is_return,
+            })
+            .collect::<Vec<_>>();
+        let mut actions = self.update_pos_invoices_plan(&invoice_docs, None, &BTreeMap::new(), 2);
+
+        for invoice in &self.pos_invoices {
+            for table_name in ["items", "packed_items"] {
+                actions.push(PosInvoiceMergeLogAction::SetSerialAndBatchBundle {
+                    pos_invoice: invoice.pos_invoice.clone(),
+                    table_name: table_name.to_string(),
+                });
+            }
+        }
+
+        let mut linked_invoices = vec![
+            self.consolidated_invoice.clone(),
+            self.consolidated_credit_note.clone(),
+        ];
+        linked_invoices.reverse();
+        for sales_invoice in linked_invoices.into_iter().flatten() {
+            actions.push(PosInvoiceMergeLogAction::CancelLinkedInvoice {
+                sales_invoice,
+                ignore_validate: true,
+            });
+        }
+
+        if !bundles.is_empty() {
+            actions.push(
+                PosInvoiceMergeLogAction::DelinkCancelledStockLedgerBundles {
+                    bundles: bundles.to_vec(),
+                },
+            );
+        }
+
+        actions
     }
 }
 

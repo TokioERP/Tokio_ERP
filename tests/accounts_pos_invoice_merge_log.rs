@@ -8,7 +8,8 @@ use tokio_erp::erpnext::accounts::doctype::pos_invoice_merge_log::pos_invoice_me
     PosInvoiceMergeLogError, PosInvoiceMergeLogInvoice, PosInvoiceMergeLogItem,
     PosInvoiceMergeLogItemWiseTaxDetail, PosInvoiceMergeLogPayment,
     PosInvoiceMergeLogProfileDefaults, PosInvoiceMergeLogSourceInvoice,
-    PosInvoiceMergeLogSplitInvoice, PosInvoiceMergeLogTax, SchedulerStatus,
+    PosInvoiceMergeLogSplitInvoice, PosInvoiceMergeLogTax, PosInvoiceMergeLogUpdateInvoice,
+    SchedulerStatus,
 };
 use tokio_erp::erpnext::{DocumentController, FieldSpec};
 
@@ -449,6 +450,156 @@ fn pos_invoice_merge_log_merge_plan_uses_profile_dimensions_and_customer_group_f
     assert!(plan.sales_partner.is_none());
     assert_eq!(plan.commission_rate, 0.0);
     assert_eq!(plan.total_commission, 0.0);
+}
+
+#[test]
+fn pos_invoice_merge_log_update_pos_invoices_plan_matches_submit_and_cancel_branches() {
+    let log = PosInvoiceMergeLog::new("_Test Company", "2026-06-04", "12:00:00", "_Test Customer");
+    let invoices = vec![
+        PosInvoiceMergeLogUpdateInvoice::sale("POS-SALE-1"),
+        PosInvoiceMergeLogUpdateInvoice::return_invoice("POS-RET-1"),
+        PosInvoiceMergeLogUpdateInvoice::return_invoice("POS-RET-2"),
+    ];
+    let credit_notes = BTreeMap::from([("SI-CR-1".to_string(), vec!["POS-RET-1".to_string()])]);
+
+    assert_eq!(
+        log.update_pos_invoices_plan(&invoices, Some("SI-0001"), &credit_notes, 1),
+        vec![
+            PosInvoiceMergeLogAction::UpdatePosInvoiceConsolidatedInvoice {
+                pos_invoice: "POS-SALE-1".to_string(),
+                consolidated_invoice: Some("SI-0001".to_string()),
+            },
+            PosInvoiceMergeLogAction::RefreshPosInvoiceStatus {
+                pos_invoice: "POS-SALE-1".to_string(),
+            },
+            PosInvoiceMergeLogAction::SavePosInvoice {
+                pos_invoice: "POS-SALE-1".to_string(),
+            },
+            PosInvoiceMergeLogAction::UpdatePosInvoiceConsolidatedInvoice {
+                pos_invoice: "POS-RET-1".to_string(),
+                consolidated_invoice: Some("SI-CR-1".to_string()),
+            },
+            PosInvoiceMergeLogAction::RefreshPosInvoiceStatus {
+                pos_invoice: "POS-RET-1".to_string(),
+            },
+            PosInvoiceMergeLogAction::SavePosInvoice {
+                pos_invoice: "POS-RET-1".to_string(),
+            },
+            PosInvoiceMergeLogAction::UpdatePosInvoiceConsolidatedInvoice {
+                pos_invoice: "POS-RET-2".to_string(),
+                consolidated_invoice: Some("SI-0001".to_string()),
+            },
+            PosInvoiceMergeLogAction::RefreshPosInvoiceStatus {
+                pos_invoice: "POS-RET-2".to_string(),
+            },
+            PosInvoiceMergeLogAction::SavePosInvoice {
+                pos_invoice: "POS-RET-2".to_string(),
+            },
+        ]
+    );
+
+    assert_eq!(
+        log.update_pos_invoices_plan(&invoices, Some("SI-0001"), &credit_notes, 2),
+        vec![
+            PosInvoiceMergeLogAction::UpdatePosInvoiceConsolidatedInvoice {
+                pos_invoice: "POS-SALE-1".to_string(),
+                consolidated_invoice: None,
+            },
+            PosInvoiceMergeLogAction::RefreshPosInvoiceStatus {
+                pos_invoice: "POS-SALE-1".to_string(),
+            },
+            PosInvoiceMergeLogAction::SavePosInvoice {
+                pos_invoice: "POS-SALE-1".to_string(),
+            },
+            PosInvoiceMergeLogAction::UpdatePosInvoiceConsolidatedInvoice {
+                pos_invoice: "POS-RET-1".to_string(),
+                consolidated_invoice: None,
+            },
+            PosInvoiceMergeLogAction::RefreshPosInvoiceStatus {
+                pos_invoice: "POS-RET-1".to_string(),
+            },
+            PosInvoiceMergeLogAction::SavePosInvoice {
+                pos_invoice: "POS-RET-1".to_string(),
+            },
+            PosInvoiceMergeLogAction::UpdatePosInvoiceConsolidatedInvoice {
+                pos_invoice: "POS-RET-2".to_string(),
+                consolidated_invoice: None,
+            },
+            PosInvoiceMergeLogAction::RefreshPosInvoiceStatus {
+                pos_invoice: "POS-RET-2".to_string(),
+            },
+            PosInvoiceMergeLogAction::SavePosInvoice {
+                pos_invoice: "POS-RET-2".to_string(),
+            },
+        ]
+    );
+}
+
+#[test]
+fn pos_invoice_merge_log_on_cancel_plan_matches_erpnext_side_effect_order() {
+    let mut log =
+        PosInvoiceMergeLog::new("_Test Company", "2026-06-04", "12:00:00", "_Test Customer");
+    log.pos_invoices = vec![
+        PosInvoiceMergeLogInvoice::submitted(1, "POS-SALE-1", "_Test Customer"),
+        PosInvoiceMergeLogInvoice::submitted(2, "POS-RET-1", "_Test Customer"),
+    ];
+    log.consolidated_invoice = Some("SI-0001".to_string());
+    log.consolidated_credit_note = Some("SI-CR-1".to_string());
+
+    let actions = log.on_cancel_side_effect_plan(&["SBB-1".to_string(), "SBB-2".to_string()]);
+
+    assert_eq!(
+        actions,
+        vec![
+            PosInvoiceMergeLogAction::UpdatePosInvoiceConsolidatedInvoice {
+                pos_invoice: "POS-SALE-1".to_string(),
+                consolidated_invoice: None,
+            },
+            PosInvoiceMergeLogAction::RefreshPosInvoiceStatus {
+                pos_invoice: "POS-SALE-1".to_string(),
+            },
+            PosInvoiceMergeLogAction::SavePosInvoice {
+                pos_invoice: "POS-SALE-1".to_string(),
+            },
+            PosInvoiceMergeLogAction::UpdatePosInvoiceConsolidatedInvoice {
+                pos_invoice: "POS-RET-1".to_string(),
+                consolidated_invoice: None,
+            },
+            PosInvoiceMergeLogAction::RefreshPosInvoiceStatus {
+                pos_invoice: "POS-RET-1".to_string(),
+            },
+            PosInvoiceMergeLogAction::SavePosInvoice {
+                pos_invoice: "POS-RET-1".to_string(),
+            },
+            PosInvoiceMergeLogAction::SetSerialAndBatchBundle {
+                pos_invoice: "POS-SALE-1".to_string(),
+                table_name: "items".to_string(),
+            },
+            PosInvoiceMergeLogAction::SetSerialAndBatchBundle {
+                pos_invoice: "POS-SALE-1".to_string(),
+                table_name: "packed_items".to_string(),
+            },
+            PosInvoiceMergeLogAction::SetSerialAndBatchBundle {
+                pos_invoice: "POS-RET-1".to_string(),
+                table_name: "items".to_string(),
+            },
+            PosInvoiceMergeLogAction::SetSerialAndBatchBundle {
+                pos_invoice: "POS-RET-1".to_string(),
+                table_name: "packed_items".to_string(),
+            },
+            PosInvoiceMergeLogAction::CancelLinkedInvoice {
+                sales_invoice: "SI-CR-1".to_string(),
+                ignore_validate: true,
+            },
+            PosInvoiceMergeLogAction::CancelLinkedInvoice {
+                sales_invoice: "SI-0001".to_string(),
+                ignore_validate: true,
+            },
+            PosInvoiceMergeLogAction::DelinkCancelledStockLedgerBundles {
+                bundles: vec!["SBB-1".to_string(), "SBB-2".to_string()],
+            },
+        ]
+    );
 }
 
 #[test]
