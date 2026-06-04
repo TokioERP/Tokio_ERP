@@ -190,6 +190,21 @@ impl PosInvoiceItem {
                 .print_hide()
                 .read_only()
                 .allow_on_submit(),
+            FieldSpec::check("allow_zero_valuation_rate", "Allow Zero Valuation Rate")
+                .default("0")
+                .no_copy()
+                .print_hide(),
+            FieldSpec::small_text("item_tax_rate", "Item Tax Rate")
+                .oldfield("item_tax_rate", "Small Text")
+                .hidden()
+                .print_hide()
+                .read_only(),
+            FieldSpec::float("actual_batch_qty", "Available Batch Qty at Warehouse")
+                .allow_on_submit()
+                .no_copy()
+                .print_hide()
+                .read_only()
+                .width("150px"),
             FieldSpec::data("pos_invoice_item", "POS Invoice Item")
                 .print_hide()
                 .read_only()

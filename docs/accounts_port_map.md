@@ -180,7 +180,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `pos_customer_group` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_customer_group`. JSON kept external. |
 | `pos_field` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_field`. JSON kept external. |
 | `pos_invoice` | 7 | 4 | 1 | 2 | not_started | |
-| `pos_invoice_item` | 3 | 2 | 1 | 0 | not_started | |
+| `pos_invoice_item` | 3 | 2 | 1 | 0 | parity_tested | Python inherits `SalesInvoiceItem` and has no extra controller logic; Rust covers POS item metadata, added stock/tax valuation field specs, inherited sales-invoice-item behaviour, fixed-asset income-account logic, and controller hooks in `accounts_pos_invoice_item`. JSON kept external. |
 | `pos_invoice_merge_log` | 5 | 3 | 1 | 1 | not_started | |
 | `pos_invoice_reference` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_invoice_reference`. JSON kept external. |
 | `pos_item_group` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_pos_item_group`. JSON kept external. |

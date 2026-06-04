@@ -97,6 +97,30 @@ fn pos_invoice_item_matches_erpnext_metadata_shape() {
             .print_hide()
             .required()
     );
+    assert_eq!(
+        field(&fields, "allow_zero_valuation_rate"),
+        &FieldSpec::check("allow_zero_valuation_rate", "Allow Zero Valuation Rate")
+            .default("0")
+            .no_copy()
+            .print_hide()
+    );
+    assert_eq!(
+        field(&fields, "item_tax_rate"),
+        &FieldSpec::small_text("item_tax_rate", "Item Tax Rate")
+            .oldfield("item_tax_rate", "Small Text")
+            .hidden()
+            .print_hide()
+            .read_only()
+    );
+    assert_eq!(
+        field(&fields, "actual_batch_qty"),
+        &FieldSpec::float("actual_batch_qty", "Available Batch Qty at Warehouse")
+            .allow_on_submit()
+            .no_copy()
+            .print_hide()
+            .read_only()
+            .width("150px")
+    );
 }
 
 fn field<'a>(fields: &'a [FieldSpec], fieldname: &str) -> &'a FieldSpec {
