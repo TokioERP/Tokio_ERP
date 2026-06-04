@@ -103,6 +103,20 @@ impl PosInvoiceMergeLogUpdateInvoice {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PosInvoiceMergeLogClosingEntry {
+    pub name: String,
+    pub posting_date: String,
+    pub posting_time: String,
+    pub company: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PosInvoiceMergeLogCancelCandidate {
+    pub name: String,
+    pub docstatus: i32,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PosInvoiceMergeLogError {
     DuplicatePosInvoices {
         invoice: String,
@@ -170,6 +184,28 @@ pub enum PosInvoiceMergeLogAction {
     },
     DelinkCancelledStockLedgerBundles {
         bundles: Vec<String>,
+    },
+    CreateMergeLogDocument {
+        posting_date: String,
+        posting_time: String,
+        company: Option<String>,
+        customer: String,
+        pos_closing_entry: Option<String>,
+        pos_invoices: Vec<String>,
+        ignore_permissions: bool,
+    },
+    SubmitCreatedMergeLog {
+        pos_invoices: Vec<String>,
+    },
+    CancelMergeLog {
+        merge_log: String,
+        ignore_permissions: bool,
+    },
+    SetClosingEntryErrorMessage {
+        error_message: String,
+    },
+    UpdateOpeningEntry {
+        for_cancel: bool,
     },
     CreateMergeLogs,
     CancelMergeLogs,
@@ -1002,6 +1038,82 @@ pub fn unconsolidate_pos_invoices_plan(
     }
 
     vec![PosInvoiceMergeLogAction::CancelMergeLogs]
+}
+
+pub fn create_merge_logs_plan(
+    invoice_by_customer: &BTreeMap<String, Vec<Vec<PosInvoiceMergeLogSplitInvoice>>>,
+    closing_entry: Option<&PosInvoiceMergeLogClosingEntry>,
+) -> Vec<PosInvoiceMergeLogAction> {
+    let mut actions = Vec::new();
+    for (customer, invoice_groups) in invoice_by_customer {
+        for invoices in invoice_groups {
+            for pos_invoices in split_invoices(invoices) {
+                let (posting_date, posting_time, company, pos_closing_entry) =
+                    if let Some(closing_entry) = closing_entry {
+                        (
+                            closing_entry.posting_date.clone(),
+                            closing_entry.posting_time.clone(),
+                            Some(closing_entry.company.clone()),
+                            Some(closing_entry.name.clone()),
+                        )
+                    } else {
+                        (String::new(), String::new(), None, None)
+                    };
+
+                actions.push(PosInvoiceMergeLogAction::CreateMergeLogDocument {
+                    posting_date,
+                    posting_time,
+                    company,
+                    customer: customer.clone(),
+                    pos_closing_entry,
+                    pos_invoices: pos_invoices.clone(),
+                    ignore_permissions: true,
+                });
+                actions.push(PosInvoiceMergeLogAction::SubmitCreatedMergeLog { pos_invoices });
+            }
+        }
+    }
+
+    if closing_entry.is_some() {
+        actions.push(PosInvoiceMergeLogAction::SetClosingEntryStatus {
+            status: "Submitted".to_string(),
+        });
+        actions.push(PosInvoiceMergeLogAction::SetClosingEntryErrorMessage {
+            error_message: String::new(),
+        });
+        actions.push(PosInvoiceMergeLogAction::UpdateOpeningEntry { for_cancel: false });
+    }
+
+    actions
+}
+
+pub fn cancel_merge_logs_plan(
+    merge_logs: &[PosInvoiceMergeLogCancelCandidate],
+    closing_entry: Option<&PosInvoiceMergeLogClosingEntry>,
+) -> Vec<PosInvoiceMergeLogAction> {
+    let mut actions = Vec::new();
+    for merge_log in merge_logs {
+        if merge_log.docstatus == 2 {
+            continue;
+        }
+
+        actions.push(PosInvoiceMergeLogAction::CancelMergeLog {
+            merge_log: merge_log.name.clone(),
+            ignore_permissions: true,
+        });
+    }
+
+    if closing_entry.is_some() {
+        actions.push(PosInvoiceMergeLogAction::SetClosingEntryStatus {
+            status: "Cancelled".to_string(),
+        });
+        actions.push(PosInvoiceMergeLogAction::SetClosingEntryErrorMessage {
+            error_message: String::new(),
+        });
+        actions.push(PosInvoiceMergeLogAction::UpdateOpeningEntry { for_cancel: true });
+    }
+
+    actions
 }
 
 pub fn enqueue_job_plan(

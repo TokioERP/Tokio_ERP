@@ -1,12 +1,13 @@
 use std::collections::BTreeMap;
 
 use tokio_erp::erpnext::accounts::doctype::pos_invoice_merge_log::pos_invoice_merge_log::{
-    check_scheduler_status, consolidate_pos_invoices_plan, enqueue_job_plan, get_error_message,
-    get_invoice_customer_map, split_invoices, split_invoices_by_accounting_dimension,
-    unconsolidate_pos_invoices_plan, EnqueueJobKind, ErrorMessage, MergeInvoicesBasedOn,
-    PosInvoiceMergeLog, PosInvoiceMergeLogAction, PosInvoiceMergeLogDocument,
-    PosInvoiceMergeLogError, PosInvoiceMergeLogInvoice, PosInvoiceMergeLogItem,
-    PosInvoiceMergeLogItemWiseTaxDetail, PosInvoiceMergeLogPayment,
+    cancel_merge_logs_plan, check_scheduler_status, consolidate_pos_invoices_plan,
+    create_merge_logs_plan, enqueue_job_plan, get_error_message, get_invoice_customer_map,
+    split_invoices, split_invoices_by_accounting_dimension, unconsolidate_pos_invoices_plan,
+    EnqueueJobKind, ErrorMessage, MergeInvoicesBasedOn, PosInvoiceMergeLog,
+    PosInvoiceMergeLogAction, PosInvoiceMergeLogCancelCandidate, PosInvoiceMergeLogClosingEntry,
+    PosInvoiceMergeLogDocument, PosInvoiceMergeLogError, PosInvoiceMergeLogInvoice,
+    PosInvoiceMergeLogItem, PosInvoiceMergeLogItemWiseTaxDetail, PosInvoiceMergeLogPayment,
     PosInvoiceMergeLogProfileDefaults, PosInvoiceMergeLogSourceInvoice,
     PosInvoiceMergeLogSplitInvoice, PosInvoiceMergeLogTax, PosInvoiceMergeLogUpdateInvoice,
     SchedulerStatus,
@@ -598,6 +599,98 @@ fn pos_invoice_merge_log_on_cancel_plan_matches_erpnext_side_effect_order() {
             PosInvoiceMergeLogAction::DelinkCancelledStockLedgerBundles {
                 bundles: vec!["SBB-1".to_string(), "SBB-2".to_string()],
             },
+        ]
+    );
+}
+
+#[test]
+fn pos_invoice_merge_log_create_merge_logs_plan_matches_erpnext_success_path() {
+    let closing_entry = PosInvoiceMergeLogClosingEntry {
+        name: "POS-CLOSE-0001".to_string(),
+        posting_date: "2026-06-04".to_string(),
+        posting_time: "21:15:00".to_string(),
+        company: "_Test Company".to_string(),
+    };
+    let invoice_by_customer = BTreeMap::from([(
+        "_Test Customer".to_string(),
+        vec![vec![
+            PosInvoiceMergeLogSplitInvoice::sale("POS-SALE-1"),
+            PosInvoiceMergeLogSplitInvoice::serial_return("POS-RET-1", "POS-SALE-1", false),
+            PosInvoiceMergeLogSplitInvoice::sale("POS-SALE-2"),
+        ]],
+    )]);
+
+    assert_eq!(
+        create_merge_logs_plan(&invoice_by_customer, Some(&closing_entry)),
+        vec![
+            PosInvoiceMergeLogAction::CreateMergeLogDocument {
+                posting_date: "2026-06-04".to_string(),
+                posting_time: "21:15:00".to_string(),
+                company: Some("_Test Company".to_string()),
+                customer: "_Test Customer".to_string(),
+                pos_closing_entry: Some("POS-CLOSE-0001".to_string()),
+                pos_invoices: vec!["POS-SALE-1".to_string()],
+                ignore_permissions: true,
+            },
+            PosInvoiceMergeLogAction::SubmitCreatedMergeLog {
+                pos_invoices: vec!["POS-SALE-1".to_string()],
+            },
+            PosInvoiceMergeLogAction::CreateMergeLogDocument {
+                posting_date: "2026-06-04".to_string(),
+                posting_time: "21:15:00".to_string(),
+                company: Some("_Test Company".to_string()),
+                customer: "_Test Customer".to_string(),
+                pos_closing_entry: Some("POS-CLOSE-0001".to_string()),
+                pos_invoices: vec!["POS-RET-1".to_string(), "POS-SALE-2".to_string()],
+                ignore_permissions: true,
+            },
+            PosInvoiceMergeLogAction::SubmitCreatedMergeLog {
+                pos_invoices: vec!["POS-RET-1".to_string(), "POS-SALE-2".to_string()],
+            },
+            PosInvoiceMergeLogAction::SetClosingEntryStatus {
+                status: "Submitted".to_string(),
+            },
+            PosInvoiceMergeLogAction::SetClosingEntryErrorMessage {
+                error_message: "".to_string(),
+            },
+            PosInvoiceMergeLogAction::UpdateOpeningEntry { for_cancel: false },
+        ]
+    );
+}
+
+#[test]
+fn pos_invoice_merge_log_cancel_merge_logs_plan_skips_already_cancelled_logs() {
+    let closing_entry = PosInvoiceMergeLogClosingEntry {
+        name: "POS-CLOSE-0001".to_string(),
+        posting_date: "2026-06-04".to_string(),
+        posting_time: "21:15:00".to_string(),
+        company: "_Test Company".to_string(),
+    };
+    let merge_logs = vec![
+        PosInvoiceMergeLogCancelCandidate {
+            name: "PIML-0001".to_string(),
+            docstatus: 1,
+        },
+        PosInvoiceMergeLogCancelCandidate {
+            name: "PIML-0002".to_string(),
+            docstatus: 2,
+        },
+    ];
+
+    assert_eq!(
+        cancel_merge_logs_plan(&merge_logs, Some(&closing_entry)),
+        vec![
+            PosInvoiceMergeLogAction::CancelMergeLog {
+                merge_log: "PIML-0001".to_string(),
+                ignore_permissions: true,
+            },
+            PosInvoiceMergeLogAction::SetClosingEntryStatus {
+                status: "Cancelled".to_string(),
+            },
+            PosInvoiceMergeLogAction::SetClosingEntryErrorMessage {
+                error_message: "".to_string(),
+            },
+            PosInvoiceMergeLogAction::UpdateOpeningEntry { for_cancel: true },
         ]
     );
 }
