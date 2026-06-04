@@ -1,6 +1,12 @@
+use std::collections::BTreeMap;
+
 use tokio_erp::erpnext::accounts::doctype::pos_invoice_merge_log::pos_invoice_merge_log::{
-    split_invoices, MergeInvoicesBasedOn, PosInvoiceMergeLog, PosInvoiceMergeLogError,
-    PosInvoiceMergeLogInvoice, PosInvoiceMergeLogSplitInvoice,
+    check_scheduler_status, consolidate_pos_invoices_plan, enqueue_job_plan, get_error_message,
+    get_invoice_customer_map, split_invoices, split_invoices_by_accounting_dimension,
+    unconsolidate_pos_invoices_plan, EnqueueJobKind, ErrorMessage, MergeInvoicesBasedOn,
+    PosInvoiceMergeLog, PosInvoiceMergeLogAction, PosInvoiceMergeLogError,
+    PosInvoiceMergeLogInvoice, PosInvoiceMergeLogSourceInvoice, PosInvoiceMergeLogSplitInvoice,
+    SchedulerStatus,
 };
 use tokio_erp::erpnext::{DocumentController, FieldSpec};
 
@@ -123,6 +129,129 @@ fn pos_invoice_merge_log_splits_serial_returns_before_following_sales() {
             vec!["POS-SALE-1".to_string()],
             vec!["POS-RETURN-1".to_string(), "POS-SALE-2".to_string()],
         ]
+    );
+}
+
+#[test]
+fn pos_invoice_merge_log_groups_customer_map_by_accounting_dimensions() {
+    let invoices = vec![
+        PosInvoiceMergeLogSourceInvoice::new("POS-001", "_Test Customer")
+            .dimension("cost_center", "Main - TC")
+            .dimension("project", "PROJ-1"),
+        PosInvoiceMergeLogSourceInvoice::new("POS-002", "_Test Customer")
+            .dimension("cost_center", "Main - TC")
+            .dimension("project", "PROJ-1"),
+        PosInvoiceMergeLogSourceInvoice::new("POS-003", "_Test Customer")
+            .dimension("cost_center", "Other - TC")
+            .dimension("project", "PROJ-2"),
+        PosInvoiceMergeLogSourceInvoice::new("POS-004", "Second Customer")
+            .dimension("cost_center", "Main - TC"),
+    ];
+
+    let customer_map = get_invoice_customer_map(&invoices);
+    assert_eq!(customer_map.len(), 2);
+    assert_eq!(customer_map["_Test Customer"].len(), 2);
+    assert_eq!(customer_map["Second Customer"].len(), 1);
+
+    let grouped = split_invoices_by_accounting_dimension(&invoices[..3]);
+    assert_eq!(
+        grouped
+            .values()
+            .map(|invoices| invoices.len())
+            .collect::<Vec<_>>(),
+        vec![2, 1]
+    );
+}
+
+#[test]
+fn pos_invoice_merge_log_plans_queue_or_inline_consolidation_like_erpnext_thresholds() {
+    let grouped: BTreeMap<String, BTreeMap<Vec<(String, String)>, Vec<String>>> =
+        BTreeMap::from([(
+            "_Test Customer".to_string(),
+            BTreeMap::from([(vec![("cost_center".to_string(), "Main - TC".to_string())], vec![
+                "POS-001".to_string(),
+            ])]),
+        )]);
+
+    assert_eq!(
+        consolidate_pos_invoices_plan(10, Some("POS-CLOSE-0001"), grouped.clone()),
+        vec![
+            PosInvoiceMergeLogAction::SetClosingEntryStatus {
+                status: "Queued".to_string(),
+            },
+            PosInvoiceMergeLogAction::EnqueueJob {
+                kind: EnqueueJobKind::CreateMergeLogs,
+                job_id: "pos_invoice_merge::POS-CLOSE-0001".to_string(),
+                message: "POS Invoices will be consolidated in a background process".to_string(),
+            },
+        ]
+    );
+    assert_eq!(
+        consolidate_pos_invoices_plan(9, Some("POS-CLOSE-0001"), grouped),
+        vec![PosInvoiceMergeLogAction::CreateMergeLogs]
+    );
+    assert_eq!(
+        unconsolidate_pos_invoices_plan(10, Some("POS-CLOSE-0001")),
+        vec![
+            PosInvoiceMergeLogAction::SetClosingEntryStatus {
+                status: "Queued".to_string(),
+            },
+            PosInvoiceMergeLogAction::EnqueueJob {
+                kind: EnqueueJobKind::CancelMergeLogs,
+                job_id: "pos_invoice_merge::POS-CLOSE-0001".to_string(),
+                message: "POS Invoices will be unconsolidated in a background process".to_string(),
+            },
+        ]
+    );
+}
+
+#[test]
+fn pos_invoice_merge_log_enqueue_and_error_helpers_match_erpnext_branches() {
+    assert_eq!(
+        check_scheduler_status(false, true),
+        Err(PosInvoiceMergeLogError::SchedulerInactive)
+    );
+    assert_eq!(check_scheduler_status(true, true), Ok(()));
+    assert_eq!(
+        enqueue_job_plan(
+            EnqueueJobKind::CreateMergeLogs,
+            Some("POS-CLOSE-0001"),
+            false,
+            SchedulerStatus {
+                developer_mode: false,
+                in_test: true,
+                scheduler_inactive: false,
+            },
+        ),
+        Ok(Some(PosInvoiceMergeLogAction::EnqueueJob {
+            kind: EnqueueJobKind::CreateMergeLogs,
+            job_id: "pos_invoice_merge::POS-CLOSE-0001".to_string(),
+            message: "POS Invoices will be consolidated in a background process".to_string(),
+        }))
+    );
+    assert_eq!(
+        enqueue_job_plan(
+            EnqueueJobKind::CancelMergeLogs,
+            Some("POS-CLOSE-0001"),
+            true,
+            SchedulerStatus {
+                developer_mode: false,
+                in_test: false,
+                scheduler_inactive: false,
+            },
+        ),
+        Ok(None)
+    );
+    assert_eq!(
+        get_error_message(ErrorMessage::Dict(BTreeMap::from([(
+            "message".to_string(),
+            "Detailed failure".to_string(),
+        )]))),
+        "Detailed failure"
+    );
+    assert_eq!(
+        get_error_message(ErrorMessage::Text("fallback failure".to_string())),
+        "fallback failure"
     );
 }
 

@@ -101,6 +101,71 @@ pub enum PosInvoiceMergeLogError {
         return_against: String,
         pos_invoice: String,
     },
+    SchedulerInactive,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum EnqueueJobKind {
+    CreateMergeLogs,
+    CancelMergeLogs,
+}
+
+impl EnqueueJobKind {
+    fn message(self) -> &'static str {
+        match self {
+            Self::CreateMergeLogs => "POS Invoices will be consolidated in a background process",
+            Self::CancelMergeLogs => "POS Invoices will be unconsolidated in a background process",
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum PosInvoiceMergeLogAction {
+    SetClosingEntryStatus {
+        status: String,
+    },
+    CreateMergeLogs,
+    CancelMergeLogs,
+    EnqueueJob {
+        kind: EnqueueJobKind,
+        job_id: String,
+        message: String,
+    },
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct SchedulerStatus {
+    pub developer_mode: bool,
+    pub in_test: bool,
+    pub scheduler_inactive: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ErrorMessage {
+    Dict(BTreeMap<String, String>),
+    Text(String),
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PosInvoiceMergeLogSourceInvoice {
+    pub pos_invoice: String,
+    pub customer: String,
+    pub accounting_dimensions: BTreeMap<String, String>,
+}
+
+impl PosInvoiceMergeLogSourceInvoice {
+    pub fn new(pos_invoice: impl Into<String>, customer: impl Into<String>) -> Self {
+        Self {
+            pos_invoice: pos_invoice.into(),
+            customer: customer.into(),
+            accounting_dimensions: BTreeMap::new(),
+        }
+    }
+
+    pub fn dimension(mut self, fieldname: impl Into<String>, value: impl Into<String>) -> Self {
+        self.accounting_dimensions.insert(fieldname.into(), value.into());
+        self
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -371,4 +436,124 @@ pub fn split_invoices(invoices: &[PosInvoiceMergeLogSplitInvoice]) -> Vec<Vec<St
     );
 
     split
+}
+
+pub fn split_invoices_by_accounting_dimension(
+    pos_invoices: &[PosInvoiceMergeLogSourceInvoice],
+) -> BTreeMap<Vec<(String, String)>, Vec<String>> {
+    let mut grouped = BTreeMap::new();
+    for invoice in pos_invoices {
+        let key = invoice
+            .accounting_dimensions
+            .iter()
+            .map(|(fieldname, value)| (fieldname.clone(), value.clone()))
+            .collect::<Vec<_>>();
+        grouped
+            .entry(key)
+            .or_insert_with(Vec::new)
+            .push(invoice.pos_invoice.clone());
+    }
+    grouped
+}
+
+pub fn get_invoice_customer_map(
+    pos_invoices: &[PosInvoiceMergeLogSourceInvoice],
+) -> BTreeMap<String, BTreeMap<Vec<(String, String)>, Vec<String>>> {
+    let mut customer_map: BTreeMap<String, Vec<PosInvoiceMergeLogSourceInvoice>> = BTreeMap::new();
+    for invoice in pos_invoices {
+        customer_map
+            .entry(invoice.customer.clone())
+            .or_default()
+            .push(invoice.clone());
+    }
+
+    customer_map
+        .into_iter()
+        .map(|(customer, invoices)| {
+            (
+                customer,
+                split_invoices_by_accounting_dimension(invoices.as_slice()),
+            )
+        })
+        .collect()
+}
+
+pub fn consolidate_pos_invoices_plan(
+    invoice_count: usize,
+    closing_entry: Option<&str>,
+    _invoice_by_customer: BTreeMap<String, BTreeMap<Vec<(String, String)>, Vec<String>>>,
+) -> Vec<PosInvoiceMergeLogAction> {
+    if invoice_count >= 10 {
+        if let Some(closing_entry) = closing_entry {
+            return vec![
+                PosInvoiceMergeLogAction::SetClosingEntryStatus {
+                    status: "Queued".to_string(),
+                },
+                enqueue_action(EnqueueJobKind::CreateMergeLogs, closing_entry),
+            ];
+        }
+    }
+
+    vec![PosInvoiceMergeLogAction::CreateMergeLogs]
+}
+
+pub fn unconsolidate_pos_invoices_plan(
+    closing_entry_pos_invoice_count: usize,
+    closing_entry: Option<&str>,
+) -> Vec<PosInvoiceMergeLogAction> {
+    if closing_entry_pos_invoice_count >= 10 {
+        if let Some(closing_entry) = closing_entry {
+            return vec![
+                PosInvoiceMergeLogAction::SetClosingEntryStatus {
+                    status: "Queued".to_string(),
+                },
+                enqueue_action(EnqueueJobKind::CancelMergeLogs, closing_entry),
+            ];
+        }
+    }
+
+    vec![PosInvoiceMergeLogAction::CancelMergeLogs]
+}
+
+pub fn enqueue_job_plan(
+    kind: EnqueueJobKind,
+    closing_entry: Option<&str>,
+    is_job_enqueued: bool,
+    status: SchedulerStatus,
+) -> Result<Option<PosInvoiceMergeLogAction>, PosInvoiceMergeLogError> {
+    check_scheduler_status(status.in_test, status.scheduler_inactive)?;
+    if is_job_enqueued {
+        return Ok(None);
+    }
+
+    Ok(Some(enqueue_action(kind, closing_entry.unwrap_or_default())))
+}
+
+pub fn check_scheduler_status(
+    in_test: bool,
+    scheduler_inactive: bool,
+) -> Result<(), PosInvoiceMergeLogError> {
+    if scheduler_inactive && !in_test {
+        Err(PosInvoiceMergeLogError::SchedulerInactive)
+    } else {
+        Ok(())
+    }
+}
+
+pub fn get_error_message(message: ErrorMessage) -> String {
+    match message {
+        ErrorMessage::Dict(values) => values
+            .get("message")
+            .cloned()
+            .unwrap_or_else(|| format!("{values:?}")),
+        ErrorMessage::Text(message) => message,
+    }
+}
+
+fn enqueue_action(kind: EnqueueJobKind, closing_entry: &str) -> PosInvoiceMergeLogAction {
+    PosInvoiceMergeLogAction::EnqueueJob {
+        kind,
+        job_id: format!("pos_invoice_merge::{closing_entry}"),
+        message: kind.message().to_string(),
+    }
 }
