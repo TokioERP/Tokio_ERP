@@ -42,7 +42,7 @@ This is not an MVP list. Every source folder and file is tracked. A row is close
 | `notification` | 2 | 5 | 3 | 1 | 0 | parity_tested | `notification_for_new_fiscal_year.py` is no-op context; Rust preserves notification metadata/template constants and context behavior in `accounts_notification_for_new_fiscal_year`. JSON/HTML kept external. |
 | `number_card` | 5 | 4 | 0 | 4 | 0 | external_kept | Incoming/outgoing bill and payment number-card JSON files contain UI metric metadata only; no Python controller logic exists to port. Number card definitions remain owned by ERPNext/Frappe. |
 | `onboarding_step` | 7 | 6 | 0 | 6 | 0 | external_kept | Accounting onboarding step JSON files contain onboarding route/action metadata only; no Python controller logic exists to port. Onboarding steps remain owned by ERPNext/Frappe. |
-| `page` | 1 | 1 | 1 | 0 | 0 | not_started | |
+| `page` | 1 | 1 | 1 | 0 | 0 | parity_tested | Source only contains an empty Python package marker; Rust keeps the matching empty `accounts::page` module. No runtime logic exists to port. |
 | `print_format` | 26 | 57 | 26 | 25 | 0 | parity_tested | Python init files are empty/no-op; Rust preserves 25 static print format names, folders, report/doc type targets, format type, and standard flags in `accounts_print_static_formats`. JSON/HTML kept external. |
 | `print_format_field_template` | 3 | 5 | 3 | 2 | 0 | parity_tested | Python init files are empty/no-op; Rust preserves field template names, document types, field names, template file paths, and standard flags in `accounts_print_static_formats`. JSON kept external. |
 | `report` | 53 | 244 | 128 | 52 | 50 | not_started | |
