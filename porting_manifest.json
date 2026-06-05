@@ -1553,12 +1553,12 @@
     {
       "source": "accounts/doctype/pos_invoice/pos_invoice.py",
       "target": "accounts/doctype/pos_invoice/pos_invoice.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/pos_invoice/test_pos_invoice.py",
       "target": "accounts/doctype/pos_invoice/test_pos_invoice.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/pos_invoice/test_pos_invoice_merge.py",
