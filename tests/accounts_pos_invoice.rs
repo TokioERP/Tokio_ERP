@@ -1,9 +1,11 @@
 use tokio_erp::erpnext::accounts::doctype::pos_invoice::pos_invoice::{
     create_payments_on_invoice, get_bundle_availability, get_pos_reserved_qty,
     get_stock_availability, item_query_plan, make_merge_log_plan, make_sales_return_plan,
-    BundleAvailabilityRow, ItemQueryPlan, MergeLogInvoiceInput, MergeLogPlan, MissingValuesPlan,
-    PaymentRequestPlan, PosInvoice, PosInvoiceError, PosInvoiceItem, PosInvoicePayment, PosProfile,
-    ProductBundleItem, SalesInvoicePaymentPlan, StockAvailability, UpdatePaymentsPlan,
+    BundleAvailabilityRow, ClearUnallocatedPaymentsPlan, ConsolidatedSalesInvoicePlan,
+    ItemQueryPlan, MergeLogInvoiceInput, MergeLogPlan, MissingValuesPlan, PaymentRequestPlan,
+    PosInvoice, PosInvoiceError, PosInvoiceItem, PosInvoicePayment, PosProfile, ProductBundleItem,
+    ReturnSalesInvoiceItemPlan, ReturnSalesInvoicePlan, SalesInvoicePaymentPlan,
+    SerialBatchBundlePlan, SerialBatchBundleSubmitPlan, StockAvailability, UpdatePaymentsPlan,
 };
 use tokio_erp::erpnext::{DocumentController, FieldSpec};
 
@@ -482,5 +484,103 @@ fn pos_invoice_profile_payment_request_update_and_query_plans_match_erpnext() {
             parent: Some("POS-0001".to_string()),
             parentfield: "payments".to_string(),
         }
+    );
+}
+
+#[test]
+fn pos_invoice_return_invoice_cleanup_and_serial_bundle_plans_match_erpnext() {
+    let mut doc = base_invoice();
+    doc.name = Some("POS-RET-0001".to_string());
+    doc.is_return = true;
+    doc.return_against = Some("POS-ORIG-0001".to_string());
+    doc.items[0].name = Some("POS-RET-ITEM-0001".to_string());
+    doc.items[0].pos_invoice_item = Some("POS-ORIG-ITEM-0001".to_string());
+    doc.items[0].serial_and_batch_bundle = Some("SBB-0001".to_string());
+    doc.payments.push(PosInvoicePayment {
+        idx: 2,
+        mode_of_payment: Some("Card".to_string()),
+        payment_type: "Card".to_string(),
+        account: Some("Card - TC".to_string()),
+        amount: 0.0,
+    });
+
+    assert_eq!(
+        doc.clear_unallocated_mode_of_payments_plan(),
+        ClearUnallocatedPaymentsPlan {
+            kept_payments: vec![doc.payments[0].clone()],
+            delete_zero_payments_for_parent: Some("POS-RET-0001".to_string()),
+        }
+    );
+    assert_eq!(
+        doc.create_return_sales_invoice_plan(
+            Some("SINV-ORIG-0001"),
+            &[(
+                "POS-ORIG-ITEM-0001".to_string(),
+                "SINV-ITEM-0001".to_string()
+            )],
+        ),
+        ReturnSalesInvoicePlan {
+            source_pos_invoice: Some("POS-RET-0001".to_string()),
+            is_pos: true,
+            is_return: true,
+            is_created_using_pos: true,
+            is_consolidated: true,
+            return_against: Some("SINV-ORIG-0001".to_string()),
+            items: vec![ReturnSalesInvoiceItemPlan {
+                source_name: Some("POS-RET-ITEM-0001".to_string()),
+                pos_invoice: Some("POS-RET-0001".to_string()),
+                pos_invoice_item: Some("POS-RET-ITEM-0001".to_string()),
+                sales_invoice_item: Some("SINV-ITEM-0001".to_string()),
+            }],
+            payment_count: 2,
+        }
+    );
+    assert_eq!(
+        doc.create_and_add_consolidated_sales_invoice_plan(
+            "SINV-RET-0001",
+            Some("SINV-ORIG-0001"),
+            &[(
+                "POS-ORIG-ITEM-0001".to_string(),
+                "SINV-ITEM-0001".to_string()
+            )],
+        ),
+        ConsolidatedSalesInvoicePlan {
+            sales_invoice_name: "SINV-RET-0001".to_string(),
+            db_set_consolidated_invoice: Some("SINV-RET-0001".to_string()),
+            set_status_update: true,
+            return_sales_invoice: ReturnSalesInvoicePlan {
+                source_pos_invoice: Some("POS-RET-0001".to_string()),
+                is_pos: true,
+                is_return: true,
+                is_created_using_pos: true,
+                is_consolidated: true,
+                return_against: Some("SINV-ORIG-0001".to_string()),
+                items: vec![ReturnSalesInvoiceItemPlan {
+                    source_name: Some("POS-RET-ITEM-0001".to_string()),
+                    pos_invoice: Some("POS-RET-0001".to_string()),
+                    pos_invoice_item: Some("POS-RET-ITEM-0001".to_string()),
+                    sales_invoice_item: Some("SINV-ITEM-0001".to_string()),
+                }],
+                payment_count: 2,
+            },
+        }
+    );
+    assert_eq!(
+        doc.delink_serial_and_batch_bundle_plan(),
+        vec![SerialBatchBundlePlan {
+            bundle: "SBB-0001".to_string(),
+            clear_voucher_no: true,
+            cancel_bundle: true,
+            clear_row_link: true,
+        }]
+    );
+    assert_eq!(
+        doc.submit_serial_batch_bundle_plan("items", &["SBB-0001".to_string()]),
+        vec![SerialBatchBundleSubmitPlan {
+            table_name: "items".to_string(),
+            bundle: "SBB-0001".to_string(),
+            ignore_voucher_validation: true,
+            submit: true,
+        }]
     );
 }

@@ -38,6 +38,7 @@ pub struct PosInvoice {
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct PosInvoiceItem {
+    pub name: Option<String>,
     pub idx: i32,
     pub item_code: String,
     pub warehouse: Option<String>,
@@ -49,6 +50,7 @@ pub struct PosInvoiceItem {
     pub serial_and_batch_bundle: Option<String>,
     pub serial_no: Option<String>,
     pub batch_no: Option<String>,
+    pub pos_invoice_item: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -151,6 +153,56 @@ pub struct SalesInvoicePaymentPlan {
     pub base_amount: f64,
     pub parent: Option<String>,
     pub parentfield: String,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ClearUnallocatedPaymentsPlan {
+    pub kept_payments: Vec<PosInvoicePayment>,
+    pub delete_zero_payments_for_parent: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ReturnSalesInvoiceItemPlan {
+    pub source_name: Option<String>,
+    pub pos_invoice: Option<String>,
+    pub pos_invoice_item: Option<String>,
+    pub sales_invoice_item: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ReturnSalesInvoicePlan {
+    pub source_pos_invoice: Option<String>,
+    pub is_pos: bool,
+    pub is_return: bool,
+    pub is_created_using_pos: bool,
+    pub is_consolidated: bool,
+    pub return_against: Option<String>,
+    pub items: Vec<ReturnSalesInvoiceItemPlan>,
+    pub payment_count: usize,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ConsolidatedSalesInvoicePlan {
+    pub sales_invoice_name: String,
+    pub db_set_consolidated_invoice: Option<String>,
+    pub set_status_update: bool,
+    pub return_sales_invoice: ReturnSalesInvoicePlan,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct SerialBatchBundlePlan {
+    pub bundle: String,
+    pub clear_voucher_no: bool,
+    pub cancel_bundle: bool,
+    pub clear_row_link: bool,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct SerialBatchBundleSubmitPlan {
+    pub table_name: String,
+    pub bundle: String,
+    pub ignore_voucher_validation: bool,
+    pub submit: bool,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -695,6 +747,100 @@ impl PosInvoice {
             added_payment_count: payments.len(),
             set_status_update: true,
         })
+    }
+
+    pub fn clear_unallocated_mode_of_payments_plan(&self) -> ClearUnallocatedPaymentsPlan {
+        ClearUnallocatedPaymentsPlan {
+            kept_payments: self
+                .payments
+                .iter()
+                .filter(|payment| payment.amount != 0.0)
+                .cloned()
+                .collect(),
+            delete_zero_payments_for_parent: self.name.clone(),
+        }
+    }
+
+    pub fn create_return_sales_invoice_plan(
+        &self,
+        consolidated_return_against: Option<&str>,
+        consolidated_item_lookup: &[(String, String)],
+    ) -> ReturnSalesInvoicePlan {
+        ReturnSalesInvoicePlan {
+            source_pos_invoice: self.name.clone(),
+            is_pos: true,
+            is_return: true,
+            is_created_using_pos: true,
+            is_consolidated: true,
+            return_against: consolidated_return_against.map(str::to_string),
+            items: self
+                .items
+                .iter()
+                .map(|item| ReturnSalesInvoiceItemPlan {
+                    source_name: item.name.clone(),
+                    pos_invoice: self.name.clone(),
+                    pos_invoice_item: item.name.clone(),
+                    sales_invoice_item: item.pos_invoice_item.as_ref().and_then(|source_item| {
+                        consolidated_item_lookup
+                            .iter()
+                            .find(|(pos_invoice_item, _)| pos_invoice_item == source_item)
+                            .map(|(_, sales_invoice_item)| sales_invoice_item.clone())
+                    }),
+                })
+                .collect(),
+            payment_count: self.payments.len(),
+        }
+    }
+
+    pub fn create_and_add_consolidated_sales_invoice_plan(
+        &self,
+        sales_invoice_name: &str,
+        consolidated_return_against: Option<&str>,
+        consolidated_item_lookup: &[(String, String)],
+    ) -> ConsolidatedSalesInvoicePlan {
+        ConsolidatedSalesInvoicePlan {
+            sales_invoice_name: sales_invoice_name.to_string(),
+            db_set_consolidated_invoice: Some(sales_invoice_name.to_string()),
+            set_status_update: true,
+            return_sales_invoice: self.create_return_sales_invoice_plan(
+                consolidated_return_against,
+                consolidated_item_lookup,
+            ),
+        }
+    }
+
+    pub fn delink_serial_and_batch_bundle_plan(&self) -> Vec<SerialBatchBundlePlan> {
+        self.items
+            .iter()
+            .filter_map(|item| {
+                item.serial_and_batch_bundle
+                    .as_ref()
+                    .map(|bundle| SerialBatchBundlePlan {
+                        bundle: bundle.clone(),
+                        clear_voucher_no: self.consolidated_invoice.is_none(),
+                        cancel_bundle: true,
+                        clear_row_link: true,
+                    })
+            })
+            .collect()
+    }
+
+    pub fn submit_serial_batch_bundle_plan(
+        &self,
+        table_name: &str,
+        draft_bundles: &[String],
+    ) -> Vec<SerialBatchBundleSubmitPlan> {
+        self.items
+            .iter()
+            .filter_map(|item| item.serial_and_batch_bundle.as_ref())
+            .filter(|bundle| draft_bundles.iter().any(|draft| draft == *bundle))
+            .map(|bundle| SerialBatchBundleSubmitPlan {
+                table_name: table_name.to_string(),
+                bundle: bundle.clone(),
+                ignore_voucher_validation: true,
+                submit: true,
+            })
+            .collect()
     }
 }
 
