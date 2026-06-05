@@ -86,6 +86,48 @@ pub struct PaymentRequestUpdate {
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
+pub struct PaymentEntrySourceDoc {
+    pub doctype: String,
+    pub name: String,
+    pub debit_to: Option<String>,
+    pub credit_to: Option<String>,
+    pub party_account: Option<String>,
+    pub party_account_currency: Option<String>,
+    pub company_currency: String,
+    pub conversion_rate: f64,
+    pub paid_from_account_currency: Option<String>,
+    pub paid_to_account_currency: Option<String>,
+    pub target_exchange_rate: f64,
+    pub received_amount: f64,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct PaymentEntryRequestPlan {
+    pub reference_doctype: String,
+    pub reference_name: String,
+    pub party_account: String,
+    pub party_account_currency: String,
+    pub party_amount: f64,
+    pub bank_account: Option<String>,
+    pub bank_amount: f64,
+    pub mode_of_payment: Option<String>,
+    pub reference_no: String,
+    pub remarks: String,
+    pub cost_center: Option<String>,
+    pub project: Option<String>,
+    pub submit: bool,
+    pub created_from_payment_request: bool,
+    pub paid_amount_override: Option<f64>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct PaymentEntryReferenceRow {
+    pub idx: i32,
+    pub allocated_amount: f64,
+    pub payment_request: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct PaymentOrderFromRequestPlan {
     pub payment_order_type: String,
     pub reference_doctype: String,
@@ -300,6 +342,113 @@ impl PaymentRequest {
             send_email,
             make_communication_entry: send_email,
         }
+    }
+
+    pub fn create_payment_entry_plan(
+        &self,
+        ref_doc: &PaymentEntrySourceDoc,
+        submit: bool,
+        precision: u32,
+    ) -> PaymentEntryRequestPlan {
+        let party_account = match ref_doc.doctype.as_str() {
+            "Sales Invoice" | "POS Invoice" => ref_doc.debit_to.clone(),
+            "Purchase Invoice" => ref_doc.credit_to.clone(),
+            _ => ref_doc.party_account.clone(),
+        }
+        .unwrap_or_default();
+
+        let party_account_currency = self
+            .party_account_currency
+            .clone()
+            .or_else(|| ref_doc.party_account_currency.clone())
+            .unwrap_or_default();
+        let party_amount = self.outstanding_amount;
+        let mut bank_amount = self.outstanding_amount;
+        if party_account_currency == ref_doc.company_currency
+            && self.currency.as_deref() != Some(party_account_currency.as_str())
+        {
+            bank_amount = round_to_precision(
+                safe_div(self.outstanding_amount, ref_doc.conversion_rate),
+                precision,
+            );
+        }
+
+        let paid_amount_override = if self.currency.as_deref()
+            != Some(ref_doc.company_currency.as_str())
+            && self.payment_request_type == "Outward"
+            && ref_doc.paid_from_account_currency.as_deref()
+                == Some(ref_doc.company_currency.as_str())
+            && ref_doc.paid_from_account_currency != ref_doc.paid_to_account_currency
+        {
+            Some(ref_doc.target_exchange_rate * ref_doc.received_amount)
+        } else {
+            None
+        };
+
+        let reference_doctype = self.reference_doctype.clone().unwrap_or_default();
+        let reference_name = self.reference_name.clone().unwrap_or_default();
+        let reference_no = self.name.clone().unwrap_or_default();
+        PaymentEntryRequestPlan {
+            reference_doctype: reference_doctype.clone(),
+            reference_name: reference_name.clone(),
+            party_account,
+            party_account_currency,
+            party_amount,
+            bank_account: self.payment_account.clone(),
+            bank_amount,
+            mode_of_payment: self.mode_of_payment.clone(),
+            reference_no: reference_no.clone(),
+            remarks: format!(
+                "Payment Entry against {reference_doctype} {reference_name} via Payment Request {reference_no}"
+            ),
+            cost_center: self.cost_center.clone(),
+            project: self.project.clone(),
+            submit,
+            created_from_payment_request: true,
+            paid_amount_override,
+        }
+    }
+
+    pub fn allocate_payment_request_to_pe_references(
+        payment_request: &str,
+        mut outstanding_amount: f64,
+        references: Vec<PaymentEntryReferenceRow>,
+        precision: u32,
+    ) -> Vec<PaymentEntryReferenceRow> {
+        if references.len() == 1 {
+            let mut only = references[0].clone();
+            only.payment_request = Some(payment_request.to_string());
+            return vec![only];
+        }
+
+        let mut output = Vec::new();
+        for mut row in references {
+            row.idx = output.len() as i32 + 1;
+            if outstanding_amount == 0.0 {
+                output.push(row);
+                continue;
+            }
+
+            row.payment_request = Some(payment_request.to_string());
+            if row.allocated_amount <= outstanding_amount {
+                outstanding_amount =
+                    round_to_precision(outstanding_amount - row.allocated_amount, precision);
+                output.push(row);
+            } else {
+                let remaining_allocated_amount =
+                    round_to_precision(row.allocated_amount - outstanding_amount, precision);
+                row.allocated_amount = outstanding_amount;
+                outstanding_amount = 0.0;
+                output.push(row);
+
+                let mut new_row = output.last().cloned().unwrap_or_default();
+                new_row.idx = output.len() as i32 + 1;
+                new_row.payment_request = None;
+                new_row.allocated_amount = remaining_allocated_amount;
+                output.push(new_row);
+            }
+        }
+        output
     }
 }
 

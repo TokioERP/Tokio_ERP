@@ -2,6 +2,7 @@ use tokio_erp::erpnext::accounts::doctype::payment_request::payment_request::{
     apply_payment_references, get_amount, get_dummy_message, get_open_payment_requests_query_plan,
     get_print_format_list, make_payment_order_plan, set_payment_references,
     update_payment_requests_as_per_pe_references, validate_payment, OpenPaymentRequestsQueryPlan,
+    PaymentEntryReferenceRow, PaymentEntryRequestPlan, PaymentEntrySourceDoc,
     PaymentOrderFromRequestPlan, PaymentReferenceRow, PaymentRequest, PaymentRequestAmountSource,
     PaymentRequestError, PaymentRequestUpdate, PaymentSubmitPlan,
 };
@@ -355,5 +356,90 @@ fn payment_request_misc_plans_match_erpnext() {
     assert_eq!(
         get_open_payment_requests_query_plan("Payment Request", "", "name", 0, 20, None, None),
         None
+    );
+}
+
+#[test]
+fn payment_request_create_payment_entry_and_reference_allocation_match_erpnext() {
+    let doc = PaymentRequest {
+        name: Some("PREQ-0001".to_string()),
+        reference_doctype: Some("Sales Invoice".to_string()),
+        reference_name: Some("SINV-0001".to_string()),
+        payment_request_type: "Inward".to_string(),
+        payment_account: Some("Bank - TC".to_string()),
+        mode_of_payment: Some("Credit Card".to_string()),
+        outstanding_amount: 125.0,
+        currency: Some("USD".to_string()),
+        party_account_currency: Some("UZS".to_string()),
+        cost_center: Some("Main - TC".to_string()),
+        project: Some("PROJ-001".to_string()),
+        ..PaymentRequest::default()
+    };
+    let source = PaymentEntrySourceDoc {
+        doctype: "Sales Invoice".to_string(),
+        name: "SINV-0001".to_string(),
+        debit_to: Some("Debtors - TC".to_string()),
+        company_currency: "UZS".to_string(),
+        conversion_rate: 12_500.0,
+        ..PaymentEntrySourceDoc::default()
+    };
+
+    assert_eq!(
+        doc.create_payment_entry_plan(&source, true, 2),
+        PaymentEntryRequestPlan {
+            reference_doctype: "Sales Invoice".to_string(),
+            reference_name: "SINV-0001".to_string(),
+            party_account: "Debtors - TC".to_string(),
+            party_account_currency: "UZS".to_string(),
+            party_amount: 125.0,
+            bank_account: Some("Bank - TC".to_string()),
+            bank_amount: 0.01,
+            mode_of_payment: Some("Credit Card".to_string()),
+            reference_no: "PREQ-0001".to_string(),
+            remarks: "Payment Entry against Sales Invoice SINV-0001 via Payment Request PREQ-0001"
+                .to_string(),
+            cost_center: Some("Main - TC".to_string()),
+            project: Some("PROJ-001".to_string()),
+            submit: true,
+            created_from_payment_request: true,
+            paid_amount_override: None,
+        }
+    );
+
+    assert_eq!(
+        PaymentRequest::allocate_payment_request_to_pe_references(
+            "PREQ-0001",
+            80.0,
+            vec![
+                PaymentEntryReferenceRow {
+                    idx: 1,
+                    allocated_amount: 50.0,
+                    ..PaymentEntryReferenceRow::default()
+                },
+                PaymentEntryReferenceRow {
+                    idx: 2,
+                    allocated_amount: 50.0,
+                    ..PaymentEntryReferenceRow::default()
+                },
+            ],
+            2,
+        ),
+        vec![
+            PaymentEntryReferenceRow {
+                idx: 1,
+                allocated_amount: 50.0,
+                payment_request: Some("PREQ-0001".to_string()),
+            },
+            PaymentEntryReferenceRow {
+                idx: 2,
+                allocated_amount: 30.0,
+                payment_request: Some("PREQ-0001".to_string()),
+            },
+            PaymentEntryReferenceRow {
+                idx: 3,
+                allocated_amount: 20.0,
+                payment_request: None,
+            },
+        ]
     );
 }
