@@ -4,7 +4,8 @@ use tokio_erp::erpnext::accounts::doctype::payment_request::payment_request::{
     update_payment_requests_as_per_pe_references, validate_payment, OpenPaymentRequestsQueryPlan,
     PaymentEntryReferenceRow, PaymentEntryRequestPlan, PaymentEntrySourceDoc,
     PaymentOrderFromRequestPlan, PaymentReferenceRow, PaymentRequest, PaymentRequestAmountSource,
-    PaymentRequestError, PaymentRequestUpdate, PaymentSubmitPlan,
+    PaymentRequestError, PaymentRequestUpdate, PaymentSubmitPlan, PaymentUrlPlan,
+    PhonePaymentRequestPlan, SendEmailPlan, SubscriptionPlanInput, SubscriptionValidationPlan,
 };
 use tokio_erp::erpnext::{DocumentController, FieldSpec};
 
@@ -441,5 +442,126 @@ fn payment_request_create_payment_entry_and_reference_allocation_match_erpnext()
                 payment_request: None,
             },
         ]
+    );
+}
+
+#[test]
+fn payment_request_validation_gateway_and_email_plans_match_erpnext() {
+    let doc = PaymentRequest {
+        name: Some("PREQ-0001".to_string()),
+        reference_doctype: Some("Sales Invoice".to_string()),
+        reference_name: Some("SINV-0001".to_string()),
+        grand_total: 100.0,
+        payment_account: Some("Gateway - TC".to_string()),
+        payment_gateway: Some("Stripe".to_string()),
+        currency: Some("USD".to_string()),
+        email_to: Some("customer@example.com".to_string()),
+        phone_number: Some("+998901234567".to_string()),
+        subject: Some("Payment Request for SINV-0001".to_string()),
+        print_format: Some("Standard".to_string()),
+        ..PaymentRequest::default()
+    };
+
+    assert_eq!(
+        PaymentRequest::validate_payment_request_amount_plan(0.0, false, 100.0, 0.0, 2, 2)
+            .unwrap_err(),
+        PaymentRequestError::Validation("Grand Total cannot be zero".to_string())
+    );
+    assert_eq!(
+        PaymentRequest::validate_payment_request_amount_plan(75.0, false, 100.0, 30.0, 2, 2)
+            .unwrap_err(),
+        PaymentRequestError::Validation(
+            "Total Payment Request amount cannot be greater than Sales Invoice amount".to_string()
+        )
+    );
+    assert!(
+        PaymentRequest::validate_payment_request_amount_plan(70.0, false, 100.0, 30.0, 2, 2)
+            .is_ok()
+    );
+
+    assert_eq!(
+        PaymentRequest::validate_currency(Some("Gateway - TC"), Some("USD"), Some("UZS"))
+            .unwrap_err(),
+        PaymentRequestError::Validation(
+            "Transaction currency must be same as Payment Gateway currency".to_string()
+        )
+    );
+
+    assert_eq!(
+        doc.validate_subscription_details_plan(
+            true,
+            &[
+                SubscriptionPlanInput {
+                    name: "ROW-1".to_string(),
+                    plan: "PLAN-1".to_string(),
+                    qty: 2.0,
+                    payment_gateway: Some("Stripe".to_string()),
+                    rate: 40.0,
+                },
+                SubscriptionPlanInput {
+                    name: "ROW-2".to_string(),
+                    plan: "PLAN-2".to_string(),
+                    qty: 1.0,
+                    payment_gateway: Some("Stripe".to_string()),
+                    rate: 20.0,
+                },
+            ],
+        )
+        .unwrap(),
+        SubscriptionValidationPlan {
+            calculated_amount: 100.0,
+            grand_total: 100.0,
+            warning: None,
+        }
+    );
+
+    assert_eq!(
+        doc.request_phone_payment_plan().unwrap(),
+        PhonePaymentRequestPlan {
+            reference_doctype: "Payment Request".to_string(),
+            reference_docname: "PREQ-0001".to_string(),
+            payment_reference: "SINV-0001".to_string(),
+            request_amount: 100.0,
+            sender: Some("customer@example.com".to_string()),
+            currency: Some("USD".to_string()),
+            payment_gateway: Some("Stripe".to_string()),
+            phone_number: Some("+998901234567".to_string()),
+        }
+    );
+
+    assert_eq!(
+        doc.get_payment_url_plan(
+            Some(("TC", Some("Alice Customer"))),
+            Some("fallback@example.com"),
+            2
+        ),
+        PaymentUrlPlan {
+            amount: 100.0,
+            title: "TC".to_string(),
+            description: Some("Payment Request for SINV-0001".to_string()),
+            reference_doctype: "Payment Request".to_string(),
+            reference_docname: "PREQ-0001".to_string(),
+            payer_email: "customer@example.com".to_string(),
+            payer_name: Some("Alice Customer".to_string()),
+            order_id: "PREQ-0001".to_string(),
+            currency: Some("USD".to_string()),
+            payment_gateway: Some("Stripe".to_string()),
+        }
+    );
+
+    assert_eq!(
+        doc.send_email_plan(),
+        SendEmailPlan {
+            recipients: Some("customer@example.com".to_string()),
+            sender: None,
+            subject: Some("Payment Request for SINV-0001".to_string()),
+            message: None,
+            reference_doctype: Some("Sales Invoice".to_string()),
+            reference_name: Some("SINV-0001".to_string()),
+            print_format: Some("Standard".to_string()),
+            queue: "short".to_string(),
+            timeout: 300,
+            enqueue_after_commit: true,
+        }
     );
 }

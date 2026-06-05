@@ -30,6 +30,7 @@ pub struct PaymentRequest {
     pub subject: Option<String>,
     pub message: Option<String>,
     pub email_to: Option<String>,
+    pub phone_number: Option<String>,
     pub print_format: Option<String>,
     pub mode_of_payment: Option<String>,
     pub cost_center: Option<String>,
@@ -128,6 +129,62 @@ pub struct PaymentEntryReferenceRow {
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
+pub struct SubscriptionPlanInput {
+    pub name: String,
+    pub plan: String,
+    pub qty: f64,
+    pub payment_gateway: Option<String>,
+    pub rate: f64,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct SubscriptionValidationPlan {
+    pub calculated_amount: f64,
+    pub grand_total: f64,
+    pub warning: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct PhonePaymentRequestPlan {
+    pub reference_doctype: String,
+    pub reference_docname: String,
+    pub payment_reference: String,
+    pub request_amount: f64,
+    pub sender: Option<String>,
+    pub currency: Option<String>,
+    pub payment_gateway: Option<String>,
+    pub phone_number: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct PaymentUrlPlan {
+    pub amount: f64,
+    pub title: String,
+    pub description: Option<String>,
+    pub reference_doctype: String,
+    pub reference_docname: String,
+    pub payer_email: String,
+    pub payer_name: Option<String>,
+    pub order_id: String,
+    pub currency: Option<String>,
+    pub payment_gateway: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct SendEmailPlan {
+    pub recipients: Option<String>,
+    pub sender: Option<String>,
+    pub subject: Option<String>,
+    pub message: Option<String>,
+    pub reference_doctype: Option<String>,
+    pub reference_name: Option<String>,
+    pub print_format: Option<String>,
+    pub queue: String,
+    pub timeout: i32,
+    pub enqueue_after_commit: bool,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct PaymentOrderFromRequestPlan {
     pub payment_order_type: String,
     pub reference_doctype: String,
@@ -185,6 +242,7 @@ impl Default for PaymentRequest {
             subject: None,
             message: None,
             email_to: None,
+            phone_number: None,
             print_format: None,
             mode_of_payment: None,
             cost_center: None,
@@ -273,6 +331,90 @@ impl PaymentRequest {
         Ok(())
     }
 
+    pub fn validate_payment_request_amount_plan(
+        grand_total: f64,
+        has_payment_reference: bool,
+        ref_amount: f64,
+        existing_payment_request_amount: f64,
+        grand_total_precision: u32,
+        currency_precision: u32,
+    ) -> Result<(), PaymentRequestError> {
+        if has_payment_reference {
+            return Ok(());
+        }
+        if grand_total == 0.0 {
+            return Err(PaymentRequestError::Validation(
+                "Grand Total cannot be zero".to_string(),
+            ));
+        }
+        if ref_amount == 0.0 {
+            return Err(PaymentRequestError::Validation(
+                "Payment Entry is already created".to_string(),
+            ));
+        }
+        let total = round_to_precision(
+            existing_payment_request_amount
+                + round_to_precision(grand_total, grand_total_precision),
+            currency_precision,
+        );
+        if total > ref_amount {
+            return Err(PaymentRequestError::Validation(
+                "Total Payment Request amount cannot be greater than Sales Invoice amount"
+                    .to_string(),
+            ));
+        }
+        Ok(())
+    }
+
+    pub fn validate_currency(
+        payment_account: Option<&str>,
+        transaction_currency: Option<&str>,
+        payment_account_currency: Option<&str>,
+    ) -> Result<(), PaymentRequestError> {
+        if payment_account.is_some() && transaction_currency != payment_account_currency {
+            return Err(PaymentRequestError::Validation(
+                "Transaction currency must be same as Payment Gateway currency".to_string(),
+            ));
+        }
+        Ok(())
+    }
+
+    pub fn validate_subscription_details_plan(
+        &self,
+        is_a_subscription: bool,
+        subscription_plans: &[SubscriptionPlanInput],
+    ) -> Result<SubscriptionValidationPlan, PaymentRequestError> {
+        if !is_a_subscription {
+            return Ok(SubscriptionValidationPlan {
+                calculated_amount: 0.0,
+                grand_total: self.grand_total,
+                warning: None,
+            });
+        }
+
+        let mut amount = 0.0;
+        for subscription_plan in subscription_plans {
+            if subscription_plan.payment_gateway != self.payment_gateway {
+                return Err(PaymentRequestError::Validation(format!(
+                    "The payment gateway account in plan {} is different from the payment gateway account in this payment request",
+                    subscription_plan.name
+                )));
+            }
+            amount += subscription_plan.rate * subscription_plan.qty;
+        }
+        let warning = (amount != self.grand_total).then(|| {
+            format!(
+                "The amount of {} set in this payment request is different from the calculated amount of all payment plans: {}. Make sure this is correct before submitting the document.",
+                self.grand_total, amount
+            )
+        });
+        Ok(SubscriptionValidationPlan {
+            calculated_amount: amount,
+            grand_total: self.grand_total,
+            warning,
+        })
+    }
+
     pub fn get_request_amount(
         &self,
         completed_request_data: &[&str],
@@ -341,6 +483,62 @@ impl PaymentRequest {
             set_payment_request_url,
             send_email,
             make_communication_entry: send_email,
+        }
+    }
+
+    pub fn request_phone_payment_plan(
+        &self,
+    ) -> Result<PhonePaymentRequestPlan, PaymentRequestError> {
+        Ok(PhonePaymentRequestPlan {
+            reference_doctype: "Payment Request".to_string(),
+            reference_docname: self.name.clone().unwrap_or_default(),
+            payment_reference: self.reference_name.clone().unwrap_or_default(),
+            request_amount: self.get_request_amount(&[])?,
+            sender: self.email_to.clone(),
+            currency: self.currency.clone(),
+            payment_gateway: self.payment_gateway.clone(),
+            phone_number: self.phone_number.clone(),
+        })
+    }
+
+    pub fn get_payment_url_plan(
+        &self,
+        reference_party_data: Option<(&str, Option<&str>)>,
+        fallback_user: Option<&str>,
+        precision: u32,
+    ) -> PaymentUrlPlan {
+        let (title, payer_name) = reference_party_data.unwrap_or(("", None));
+        let reference_docname = self.name.clone().unwrap_or_default();
+        PaymentUrlPlan {
+            amount: round_to_precision(self.grand_total, precision),
+            title: title.to_string(),
+            description: self.subject.clone(),
+            reference_doctype: "Payment Request".to_string(),
+            reference_docname: reference_docname.clone(),
+            payer_email: self
+                .email_to
+                .clone()
+                .or_else(|| fallback_user.map(ToOwned::to_owned))
+                .unwrap_or_default(),
+            payer_name: payer_name.map(ToOwned::to_owned),
+            order_id: reference_docname,
+            currency: self.currency.clone(),
+            payment_gateway: self.payment_gateway.clone(),
+        }
+    }
+
+    pub fn send_email_plan(&self) -> SendEmailPlan {
+        SendEmailPlan {
+            recipients: self.email_to.clone(),
+            sender: None,
+            subject: self.subject.clone(),
+            message: self.message.clone(),
+            reference_doctype: self.reference_doctype.clone(),
+            reference_name: self.reference_name.clone(),
+            print_format: self.print_format.clone(),
+            queue: "short".to_string(),
+            timeout: 300,
+            enqueue_after_commit: true,
         }
     }
 
