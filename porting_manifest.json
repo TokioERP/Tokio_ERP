@@ -468,7 +468,7 @@
     {
       "source": "accounts/doctype/budget/budget.py",
       "target": "accounts/doctype/budget/budget.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/budget/test_budget.py",
