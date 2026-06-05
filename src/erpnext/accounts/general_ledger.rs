@@ -38,6 +38,7 @@ pub struct GlEntry {
 pub struct GeneralLedgerContext {
     pub precision: u32,
     pub round_off_account: Option<String>,
+    pub round_off_settings: RoundOffSettings,
     pub cost_center_allocations: BTreeMap<String, Vec<(String, f64)>>,
     pub accounting_dimensions: Vec<String>,
     pub exchange_gain_loss_journal_entries: BTreeSet<String>,
@@ -64,7 +65,7 @@ pub struct DimensionFilterRule {
     pub allowed_dimensions: BTreeSet<String>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct RoundOffSettings {
     pub round_off_account: Option<String>,
     pub round_off_cost_center: Option<String>,
@@ -79,11 +80,113 @@ pub struct ReverseGlPlan {
     pub reversed_entries: Vec<GlEntry>,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct SaveEntriesPlan {
+    pub validate_budget: bool,
+    pub create_payment_ledger_entry: bool,
+    pub payment_ledger_cancel: i32,
+    pub adv_adj: bool,
+    pub update_outstanding: String,
+    pub from_repost: bool,
+    pub entries: Vec<GlEntry>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct EntrySubmitPlan {
+    pub ignore_permissions: bool,
+    pub from_repost: bool,
+    pub adv_adj: bool,
+    pub update_outstanding: String,
+    pub notify_update: bool,
+    pub validate_expense_against_budget: bool,
+    pub entry: GlEntry,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum MakeGlEntriesPlan {
+    Noop,
+    Save(SaveEntriesPlan),
+    Reverse(ReverseGlPlan),
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum GeneralLedgerError {
     InvalidAccountDimension(String),
     MandatoryAccountDimension(String),
     Validation(String),
+}
+
+pub fn make_gl_entries_plan(
+    gl_map: Vec<GlEntry>,
+    cancel: bool,
+    adv_adj: bool,
+    merge_entries: bool,
+    update_outstanding: &str,
+    from_repost: bool,
+    use_legacy_budget_controller: bool,
+    context: &GeneralLedgerContext,
+) -> Result<MakeGlEntriesPlan, GeneralLedgerError> {
+    if gl_map.is_empty() {
+        return Ok(MakeGlEntriesPlan::Noop);
+    }
+
+    if cancel {
+        return Ok(MakeGlEntriesPlan::Reverse(make_reverse_gl_entries_plan(
+            &gl_map, false, None,
+        )));
+    }
+
+    let validate_budget =
+        !use_legacy_budget_controller && gl_map[0].voucher_type != "Period Closing Voucher";
+    let processed_gl_map = process_gl_map(gl_map, merge_entries, context);
+
+    if processed_gl_map.len() > 1 {
+        return Ok(MakeGlEntriesPlan::Save(SaveEntriesPlan {
+            validate_budget,
+            create_payment_ledger_entry: processed_gl_map[0].voucher_type
+                != "Period Closing Voucher",
+            payment_ledger_cancel: 0,
+            adv_adj,
+            update_outstanding: if update_outstanding.is_empty() {
+                "Yes".to_string()
+            } else {
+                update_outstanding.to_string()
+            },
+            from_repost,
+            entries: processed_gl_map,
+        }));
+    }
+
+    if !processed_gl_map.is_empty() {
+        return Err(GeneralLedgerError::Validation(
+            "Incorrect number of General Ledger Entries found. You might have selected a wrong Account in the transaction.".to_string(),
+        ));
+    }
+
+    Ok(MakeGlEntriesPlan::Noop)
+}
+
+pub fn make_entry_plan(
+    entry: &GlEntry,
+    adv_adj: bool,
+    update_outstanding: &str,
+    from_repost: bool,
+) -> EntrySubmitPlan {
+    EntrySubmitPlan {
+        ignore_permissions: true,
+        from_repost,
+        adv_adj,
+        update_outstanding: if update_outstanding.is_empty() {
+            "Yes".to_string()
+        } else {
+            update_outstanding.to_string()
+        },
+        notify_update: false,
+        validate_expense_against_budget: !from_repost
+            && entry.voucher_type != "Period Closing Voucher"
+            && (entry.is_cancelled == 0 || entry.voucher_type == "Journal Entry"),
+        entry: entry.clone(),
+    }
 }
 
 pub fn process_gl_map(

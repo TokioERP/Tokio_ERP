@@ -2,11 +2,12 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use tokio_erp::erpnext::accounts::general_ledger::{
     check_freezing_date, get_debit_credit_allowance, get_debit_credit_difference,
-    get_merge_properties, make_acc_dimensions_offsetting_entry, make_reverse_gl_entries_plan,
-    process_debit_credit_difference, process_gl_map, validate_against_pcv,
-    validate_allowed_dimensions, validate_disabled_accounts, AccountingDimensionOffset,
-    DimensionFilterRule, DimensionPolicy, GeneralLedgerContext, GeneralLedgerError, GlEntry,
-    ReverseGlPlan, RoundOffSettings,
+    get_merge_properties, make_acc_dimensions_offsetting_entry, make_entry_plan,
+    make_gl_entries_plan, make_reverse_gl_entries_plan, process_debit_credit_difference,
+    process_gl_map, validate_against_pcv, validate_allowed_dimensions, validate_disabled_accounts,
+    AccountingDimensionOffset, DimensionFilterRule, DimensionPolicy, EntrySubmitPlan,
+    GeneralLedgerContext, GeneralLedgerError, GlEntry, MakeGlEntriesPlan, ReverseGlPlan,
+    RoundOffSettings, SaveEntriesPlan,
 };
 
 fn gle(account: &str, debit: f64, credit: f64, cost_center: &str) -> GlEntry {
@@ -254,5 +255,137 @@ fn general_ledger_offset_roundoff_reverse_and_validation_helpers_match_erpnext()
         GeneralLedgerError::Validation(
             "Opening Entry can not be created after Period Closing Voucher is created.".to_string()
         )
+    );
+}
+
+#[test]
+fn general_ledger_make_entries_orchestration_plan_matches_erpnext() {
+    let context = GeneralLedgerContext {
+        precision: 2,
+        round_off_settings: RoundOffSettings {
+            round_off_account: Some("Round Off - TC".to_string()),
+            round_off_cost_center: Some("Main - TC".to_string()),
+            round_off_for_opening: None,
+            default_expense_account: None,
+        },
+        ..GeneralLedgerContext::default()
+    };
+
+    let plan = make_gl_entries_plan(
+        vec![
+            gle("Receivable - TC", 100.0, 0.0, "Main - TC"),
+            gle("Income - TC", 0.0, 100.0, "Main - TC"),
+        ],
+        false,
+        false,
+        true,
+        "No",
+        false,
+        false,
+        &context,
+    )
+    .unwrap();
+    let MakeGlEntriesPlan::Save(save_plan) = plan else {
+        panic!("expected save plan");
+    };
+    assert_eq!(save_plan.validate_budget, true);
+    assert_eq!(save_plan.create_payment_ledger_entry, true);
+    assert_eq!(save_plan.payment_ledger_cancel, 0);
+    assert_eq!(save_plan.adv_adj, false);
+    assert_eq!(save_plan.update_outstanding, "No");
+    assert_eq!(save_plan.from_repost, false);
+    assert_eq!(save_plan.entries.len(), 2);
+    assert_eq!(save_plan.entries[0].account, "Receivable - TC");
+    assert_eq!(save_plan.entries[0].merge_key[0], "Receivable - TC");
+    assert_eq!(save_plan.entries[1].account, "Income - TC");
+
+    let one_sided = make_gl_entries_plan(
+        vec![gle("Receivable - TC", 100.0, 0.0, "Main - TC")],
+        false,
+        false,
+        true,
+        "Yes",
+        false,
+        false,
+        &context,
+    );
+    assert_eq!(
+        one_sided.unwrap_err(),
+        GeneralLedgerError::Validation(
+            "Incorrect number of General Ledger Entries found. You might have selected a wrong Account in the transaction."
+                .to_string()
+        )
+    );
+
+    let cancel_plan = make_gl_entries_plan(
+        vec![gle("Receivable - TC", 100.0, 0.0, "Main - TC")],
+        true,
+        true,
+        true,
+        "Yes",
+        false,
+        false,
+        &context,
+    )
+    .unwrap();
+    assert!(matches!(
+        cancel_plan,
+        MakeGlEntriesPlan::Reverse(ReverseGlPlan { .. })
+    ));
+
+    let pcv = GlEntry {
+        voucher_type: "Period Closing Voucher".to_string(),
+        voucher_no: "PCV-0001".to_string(),
+        ..gle("Retained Earnings - TC", 100.0, 0.0, "Main - TC")
+    };
+    let pcv_plan = make_gl_entries_plan(
+        vec![
+            pcv.clone(),
+            GlEntry {
+                debit: 0.0,
+                credit: 100.0,
+                debit_in_account_currency: 0.0,
+                credit_in_account_currency: 100.0,
+                debit_in_transaction_currency: 0.0,
+                credit_in_transaction_currency: 100.0,
+                account: "Closing Account - TC".to_string(),
+                ..pcv.clone()
+            },
+        ],
+        false,
+        false,
+        true,
+        "",
+        true,
+        false,
+        &context,
+    )
+    .unwrap();
+    assert!(matches!(
+        pcv_plan,
+        MakeGlEntriesPlan::Save(SaveEntriesPlan {
+            validate_budget: false,
+            create_payment_ledger_entry: false,
+            from_repost: true,
+            ..
+        })
+    ));
+
+    assert_eq!(
+        make_entry_plan(
+            &gle("Income - TC", 0.0, 100.0, "Main - TC"),
+            true,
+            "",
+            false
+        ),
+        EntrySubmitPlan {
+            ignore_permissions: true,
+            from_repost: false,
+            adv_adj: true,
+            update_outstanding: "Yes".to_string(),
+            notify_update: false,
+            validate_expense_against_budget: true,
+            entry: gle("Income - TC", 0.0, 100.0, "Main - TC"),
+        }
     );
 }
