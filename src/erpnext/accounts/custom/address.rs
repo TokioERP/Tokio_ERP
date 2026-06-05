@@ -1,3 +1,5 @@
+use crate::erpnext::FieldSpec;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct AddressLink {
     pub link_doctype: String,
@@ -36,6 +38,13 @@ impl AddressLink {
 }
 
 impl ErpnextAddress {
+    pub fn custom_fields() -> Vec<FieldSpec> {
+        vec![
+            FieldSpec::link("tax_category", "Tax Category").options("Tax Category"),
+            FieldSpec::check("is_your_company_address", "Is Your Company Address").default("0"),
+        ]
+    }
+
     pub fn validate(&mut self) -> Result<(), String> {
         self.validate_reference()?;
         self.update_company_address();

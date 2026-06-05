@@ -32,7 +32,7 @@ This is not an MVP list. Every source folder and file is tracked. A row is close
 | Submodule | Dirs | Files | Python | JSON | JS | Status | Notes |
 |---|---:|---:|---:|---:|---:|---|---|
 | `accounts_dashboard` | 3 | 2 | 0 | 2 | 0 | not_started | |
-| `custom` | 1 | 2 | 1 | 1 | 0 | not_started | |
+| `custom` | 1 | 2 | 1 | 1 | 0 | parity_tested | Rust covers ERPNext Address validate/link/update behavior, company-address reference guard, customer primary-address update planning, shipping address filter and selection branches, and Address custom fields `tax_category`/`is_your_company_address` in `accounts_custom_address`. JSON remains external metadata. |
 | `dashboard_chart` | 8 | 7 | 0 | 7 | 0 | not_started | |
 | `dashboard_chart_source` | 2 | 5 | 3 | 1 | 1 | not_started | |
 | `doctype` | 191 | 923 | 504 | 282 | 111 | mapped | Multiple controllers are parity-tested, including `account`, `bank_account_subtype`, `pos_profile`, `opening_invoice_creation_tool`, and `pos_closing_entry`; remaining doctypes pending. |

@@ -2,6 +2,18 @@ use tokio_erp::erpnext::accounts::custom::address::{
     get_shipping_address, AddressLink, CustomerPrimaryAddressUpdate, ErpnextAddress,
     ShippingAddress,
 };
+use tokio_erp::erpnext::FieldSpec;
+
+#[test]
+fn custom_address_fields_match_erpnext_json_customization() {
+    assert_eq!(
+        ErpnextAddress::custom_fields(),
+        vec![
+            FieldSpec::link("tax_category", "Tax Category").options("Tax Category"),
+            FieldSpec::check("is_your_company_address", "Is Your Company Address").default("0"),
+        ]
+    );
+}
 
 #[test]
 fn validate_reference_requires_company_link_for_company_address() {
