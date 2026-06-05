@@ -1,5 +1,6 @@
 use tokio_erp::erpnext::accounts::doctype::tax_withholding_entry::tax_withholding_entry::{
-    compute_withheld_amount, TaxWithholdingEntry, TaxWithholdingEntryError,
+    compute_withheld_amount, TaxWithholdingClearReferencesPlan, TaxWithholdingEntry,
+    TaxWithholdingEntryError, TaxWithholdingReferenceFilters, TaxWithholdingReturnCancellationPlan,
     TaxWithholdingUpdateValues,
 };
 use tokio_erp::erpnext::{DocumentController, FieldSpec};
@@ -173,6 +174,98 @@ fn tax_withholding_entry_adjustment_value_helpers_match_erpnext() {
         TaxWithholdingUpdateValues {
             withholding_amount: Some(30.0),
             ..TaxWithholdingUpdateValues::default()
+        }
+    );
+}
+
+#[test]
+fn tax_withholding_entry_cancel_reference_cleanup_plans_match_erpnext() {
+    let taxable_different = TaxWithholdingEntry {
+        name: Some("TWE-0001".to_string()),
+        status: Some("Settled".to_string()),
+        parenttype: "Purchase Invoice".to_string(),
+        parent: "PINV-0001".to_string(),
+        tax_withholding_category: Some("TDS-A".to_string()),
+        taxable_doctype: Some("Purchase Invoice".to_string()),
+        taxable_name: Some("PINV-OLD".to_string()),
+        withholding_doctype: Some("Payment Entry".to_string()),
+        withholding_name: Some("PE-0001".to_string()),
+        ..TaxWithholdingEntry::default()
+    };
+    assert_eq!(
+        taxable_different.clear_old_references_plan(),
+        Some(TaxWithholdingClearReferencesPlan {
+            filters: TaxWithholdingReferenceFilters {
+                tax_withholding_category: Some("TDS-A".to_string()),
+                taxable_doctype: Some("Purchase Invoice".to_string()),
+                taxable_name: Some("PINV-OLD".to_string()),
+                withholding_doctype: Some("Payment Entry".to_string()),
+                withholding_name: Some("PE-0001".to_string()),
+                exclude_name: Some("TWE-0001".to_string()),
+                docstatus: 1,
+            },
+            action: "clear_withholding".to_string(),
+        })
+    );
+
+    let withholding_different = TaxWithholdingEntry {
+        name: Some("TWE-0002".to_string()),
+        status: Some("Duplicate".to_string()),
+        parenttype: "Purchase Invoice".to_string(),
+        parent: "PINV-0001".to_string(),
+        tax_withholding_category: Some("TDS-A".to_string()),
+        taxable_doctype: Some("Purchase Invoice".to_string()),
+        taxable_name: Some("PINV-0001".to_string()),
+        withholding_doctype: Some("Payment Entry".to_string()),
+        withholding_name: Some("PE-0001".to_string()),
+        taxable_amount: 500.0,
+        ..TaxWithholdingEntry::default()
+    };
+    assert_eq!(
+        withholding_different
+            .clear_old_references_plan()
+            .unwrap()
+            .action,
+        "clear_taxable"
+    );
+
+    let return_invoice = TaxWithholdingEntry {
+        taxable_amount: -500.0,
+        ..withholding_different
+    };
+    assert_eq!(
+        return_invoice.clear_old_references_plan().unwrap().action,
+        "return_invoice_cancellation"
+    );
+
+    let old_entry = TaxWithholdingEntry {
+        name: Some("TWE-OLD".to_string()),
+        parenttype: "Purchase Invoice".to_string(),
+        parent: "PINV-0001".to_string(),
+        taxable_amount: -500.0,
+        withholding_amount: 50.0,
+        withholding_doctype: Some("Payment Entry".to_string()),
+        withholding_name: Some("PE-0001".to_string()),
+        withholding_date: Some("2026-06-05".to_string()),
+        ..TaxWithholdingEntry::default()
+    };
+    assert_eq!(
+        TaxWithholdingEntry::return_invoice_cancellation_plan(&[old_entry]),
+        TaxWithholdingReturnCancellationPlan {
+            updated_entry_names: vec!["TWE-OLD".to_string()],
+            inserted_entries: vec![TaxWithholdingUpdateValues {
+                taxable_amount: Some(500.0),
+                withholding_amount: Some(0.0),
+                status: Some("Under Withheld".to_string()),
+                under_withheld_reason: Some("".to_string()),
+                taxable_doctype: Some("Payment Entry".to_string()),
+                taxable_name: Some("PE-0001".to_string()),
+                taxable_date: Some("2026-06-05".to_string()),
+                withholding_doctype: Some("".to_string()),
+                withholding_name: Some("".to_string()),
+                ..TaxWithholdingUpdateValues::default()
+            }],
+            docs_needing_reindex: vec![("Purchase Invoice".to_string(), "PINV-0001".to_string())],
         }
     );
 }

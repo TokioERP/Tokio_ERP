@@ -2,6 +2,7 @@ use crate::erpnext::{DocumentController, FieldSpec};
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct TaxWithholdingEntry {
+    pub name: Option<String>,
     pub idx: usize,
     pub docstatus: i32,
     pub parent: String,
@@ -45,6 +46,30 @@ pub struct TaxWithholdingUpdateValues {
     pub conversion_rate: Option<f64>,
     pub under_withheld_reason: Option<String>,
     pub lower_deduction_certificate: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct TaxWithholdingReferenceFilters {
+    pub tax_withholding_category: Option<String>,
+    pub taxable_doctype: Option<String>,
+    pub taxable_name: Option<String>,
+    pub withholding_doctype: Option<String>,
+    pub withholding_name: Option<String>,
+    pub exclude_name: Option<String>,
+    pub docstatus: i32,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct TaxWithholdingClearReferencesPlan {
+    pub filters: TaxWithholdingReferenceFilters,
+    pub action: String,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct TaxWithholdingReturnCancellationPlan {
+    pub updated_entry_names: Vec<String>,
+    pub inserted_entries: Vec<TaxWithholdingUpdateValues>,
+    pub docs_needing_reindex: Vec<(String, String)>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -308,6 +333,75 @@ impl TaxWithholdingEntry {
                 )),
                 ..TaxWithholdingUpdateValues::default()
             }
+        }
+    }
+
+    pub fn clear_old_references_plan(&self) -> Option<TaxWithholdingClearReferencesPlan> {
+        if !matches!(self.status.as_deref(), Some("Settled") | Some("Duplicate")) {
+            return None;
+        }
+
+        let action = if self.is_taxable_different() {
+            "clear_withholding"
+        } else if self.is_withholding_different() && self.taxable_amount < 0.0 {
+            "return_invoice_cancellation"
+        } else if self.is_withholding_different() {
+            "clear_taxable"
+        } else {
+            return None;
+        };
+
+        Some(TaxWithholdingClearReferencesPlan {
+            filters: TaxWithholdingReferenceFilters {
+                tax_withholding_category: self.tax_withholding_category.clone(),
+                taxable_doctype: self.taxable_doctype.clone(),
+                taxable_name: self.taxable_name.clone(),
+                withholding_doctype: self.withholding_doctype.clone(),
+                withholding_name: self.withholding_name.clone(),
+                exclude_name: self.name.clone(),
+                docstatus: 1,
+            },
+            action: action.to_string(),
+        })
+    }
+
+    pub fn return_invoice_cancellation_plan(
+        old_entries: &[TaxWithholdingEntry],
+    ) -> TaxWithholdingReturnCancellationPlan {
+        let mut updated_entry_names = Vec::new();
+        let mut inserted_entries = Vec::new();
+        let mut docs_needing_reindex = Vec::new();
+
+        for entry in old_entries {
+            if let Some(name) = entry.name.clone() {
+                updated_entry_names.push(name);
+            }
+            if entry.withholding_amount == 0.0 {
+                continue;
+            }
+
+            inserted_entries.push(TaxWithholdingUpdateValues {
+                taxable_amount: Some(entry.taxable_amount.abs()),
+                withholding_amount: Some(0.0),
+                status: Some("Under Withheld".to_string()),
+                under_withheld_reason: Some("".to_string()),
+                taxable_doctype: entry.withholding_doctype.clone(),
+                taxable_name: entry.withholding_name.clone(),
+                taxable_date: entry.withholding_date.clone(),
+                withholding_doctype: Some("".to_string()),
+                withholding_name: Some("".to_string()),
+                ..TaxWithholdingUpdateValues::default()
+            });
+            let doc_key = (entry.parenttype.clone(), entry.parent.clone());
+            if !docs_needing_reindex.contains(&doc_key) {
+                docs_needing_reindex.push(doc_key);
+            }
+        }
+
+        TaxWithholdingReturnCancellationPlan {
+            updated_entry_names,
+            inserted_entries,
+            docs_needing_reindex,
         }
     }
 }
