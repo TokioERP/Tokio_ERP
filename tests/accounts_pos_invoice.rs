@@ -2,10 +2,11 @@ use tokio_erp::erpnext::accounts::doctype::pos_invoice::pos_invoice::{
     create_payments_on_invoice, get_bundle_availability, get_pos_reserved_qty,
     get_stock_availability, item_query_plan, make_merge_log_plan, make_sales_return_plan,
     BundleAvailabilityRow, ClearUnallocatedPaymentsPlan, ConsolidatedSalesInvoicePlan,
-    ItemQueryPlan, MergeLogInvoiceInput, MergeLogPlan, MissingValuesPlan, PaymentRequestPlan,
-    PosInvoice, PosInvoiceError, PosInvoiceItem, PosInvoicePayment, PosProfile, ProductBundleItem,
-    ReturnSalesInvoiceItemPlan, ReturnSalesInvoicePlan, SalesInvoicePaymentPlan,
-    SerialBatchBundlePlan, SerialBatchBundleSubmitPlan, StockAvailability, UpdatePaymentsPlan,
+    ItemQueryPlan, LoyaltyTransactionPlan, MergeLogInvoiceInput, MergeLogPlan, MissingValuesPlan,
+    OnSubmitPlan, PaymentRequestPlan, PosInvoice, PosInvoiceError, PosInvoiceItem,
+    PosInvoicePayment, PosProfile, ProductBundleItem, ReturnSalesInvoiceItemPlan,
+    ReturnSalesInvoicePlan, SalesInvoicePaymentPlan, SerialBatchBundlePlan,
+    SerialBatchBundleSubmitPlan, SetPosFieldsPlan, StockAvailability, UpdatePaymentsPlan,
 };
 use tokio_erp::erpnext::{DocumentController, FieldSpec};
 
@@ -163,6 +164,34 @@ fn pos_invoice_status_lifecycle_and_phone_payment_rules_match_erpnext() {
     assert_eq!(doc.set_status(false, None, "2026-06-05"), "Consolidated");
     doc.docstatus = 2;
     assert_eq!(doc.set_status(false, None, "2026-06-05"), "Cancelled");
+
+    let mut discounted = base_invoice();
+    discounted.outstanding_amount = 25.0;
+    discounted.is_discounted = true;
+    discounted.discounting_status = Some("Disbursed".to_string());
+    discounted.due_date = Some("2026-06-01".to_string());
+    assert_eq!(
+        discounted.set_status(false, None, "2026-06-05"),
+        "Overdue and Discounted"
+    );
+    discounted.due_date = Some("2026-06-05".to_string());
+    assert_eq!(
+        discounted.set_status(false, None, "2026-06-05"),
+        "Partly Paid and Discounted"
+    );
+    discounted.outstanding_amount = 125.0;
+    assert_eq!(
+        discounted.set_status(false, None, "2026-06-05"),
+        "Unpaid and Discounted"
+    );
+
+    let mut credited = base_invoice();
+    credited.outstanding_amount = 0.0;
+    credited.has_submitted_return = true;
+    assert_eq!(
+        credited.set_status(false, None, "2026-06-05"),
+        "Credit Note Issued"
+    );
 
     assert_eq!(doc.before_submit_plan(), "set_outstanding_amount");
     assert_eq!(
@@ -582,5 +611,129 @@ fn pos_invoice_return_invoice_cleanup_and_serial_bundle_plans_match_erpnext() {
             ignore_voucher_validation: true,
             submit: true,
         }]
+    );
+}
+
+#[test]
+fn pos_invoice_pos_field_defaults_and_submit_orchestration_match_erpnext() {
+    let profile = PosProfile {
+        name: "POS-PROFILE-001".to_string(),
+        company: "TC".to_string(),
+        customer: Some("CUST-POS".to_string()),
+        currency: Some("USD".to_string()),
+        warehouse: Some("Stores - TC".to_string()),
+        account_for_change_amount: Some("Cash - TC".to_string()),
+        print_format: None,
+        allow_print_before_pay: false,
+        set_grand_total_to_default_mop: false,
+        utm_source: None,
+        utm_campaign: None,
+        utm_medium: None,
+        selling_price_list: Some("Retail USD".to_string()),
+    };
+    let draft = PosInvoice {
+        company: Some("OLD".to_string()),
+        is_pos: true,
+        is_return: true,
+        items: vec![PosInvoiceItem {
+            idx: 1,
+            item_code: "ITEM-001".to_string(),
+            ..PosInvoiceItem::default()
+        }],
+        ..PosInvoice::default()
+    };
+    assert_eq!(
+        draft
+            .set_pos_fields_plan(
+                Some(&profile),
+                false,
+                Some("Default Cash - TC"),
+                Some("Customer Retail USD"),
+                None,
+                Some("EUR"),
+            )
+            .unwrap(),
+        SetPosFieldsPlan {
+            pos_profile: Some("POS-PROFILE-001".to_string()),
+            company: Some("TC".to_string()),
+            customer: Some("CUST-POS".to_string()),
+            account_for_change_amount: Some("Cash - TC".to_string()),
+            set_warehouse: Some("Stores - TC".to_string()),
+            update_multi_mode_option: true,
+            add_return_modes: true,
+            selling_price_list: Some("Customer Retail USD".to_string()),
+            currency: Some("EUR".to_string()),
+            item_defaults_count: 1,
+        }
+    );
+    assert_eq!(
+        PosInvoice::default()
+            .set_pos_fields_plan(None, false, None, None, None, None)
+            .unwrap_err(),
+        PosInvoiceError::Validation(
+            "No POS Profile found. Please create a New POS Profile first".to_string()
+        )
+    );
+
+    let mut submit = base_invoice();
+    submit.loyalty_program = Some("LP-001".to_string());
+    submit.redeem_loyalty_points = true;
+    submit.loyalty_points = 25;
+    submit.coupon_code = Some("COUPON-001".to_string());
+    assert_eq!(
+        submit.on_submit_plan("POS Invoice"),
+        OnSubmitPlan {
+            actions: vec![
+                "make_loyalty_point_entry".to_string(),
+                "apply_loyalty_points".to_string(),
+                "check_phone_payments".to_string(),
+                "set_status:update".to_string(),
+                "make_bundle_for_sales_purchase_return".to_string(),
+                "make_bundle_using_old_serial_batch_fields:items".to_string(),
+                "submit_serial_batch_bundle:items".to_string(),
+                "make_bundle_using_old_serial_batch_fields:packed_items".to_string(),
+                "submit_serial_batch_bundle:packed_items".to_string(),
+                "update_coupon_code_count:used".to_string(),
+                "clear_unallocated_mode_of_payments".to_string(),
+            ],
+        }
+    );
+
+    let mut return_submit = base_invoice();
+    return_submit.is_return = true;
+    return_submit.return_against = Some("POS-ORIG-0001".to_string());
+    return_submit.loyalty_program = Some("LP-001".to_string());
+    assert!(return_submit
+        .on_submit_plan("Sales Invoice")
+        .actions
+        .contains(&"create_and_add_consolidated_sales_invoice".to_string()));
+
+    let mut loyalty = base_invoice();
+    loyalty.redeem_loyalty_points = true;
+    loyalty.loyalty_program = Some("LP-001".to_string());
+    loyalty.loyalty_points = 25;
+    assert_eq!(
+        loyalty.validate_loyalty_transaction_plan(Some("Loyalty Expense - TC"), Some("Main - TC")),
+        LoyaltyTransactionPlan {
+            loyalty_redemption_account: Some("Loyalty Expense - TC".to_string()),
+            loyalty_redemption_cost_center: Some("Main - TC".to_string()),
+            validate_loyalty_points: true,
+        }
+    );
+
+    let mut cancel_return = base_invoice();
+    cancel_return.is_return = true;
+    cancel_return.return_against = Some("POS-ORIG-0001".to_string());
+    cancel_return.loyalty_program = Some("LP-001".to_string());
+    assert_eq!(
+        cancel_return.on_cancel_plan(),
+        vec![
+            "ignore_linked:Payment Ledger Entry,Serial and Batch Bundle".to_string(),
+            "sales_invoice_on_cancel".to_string(),
+            "return_against_delete_loyalty_point_entry".to_string(),
+            "return_against_make_loyalty_point_entry".to_string(),
+            "set_status:Cancelled".to_string(),
+            "delink_serial_and_batch_bundle".to_string(),
+        ]
     );
 }

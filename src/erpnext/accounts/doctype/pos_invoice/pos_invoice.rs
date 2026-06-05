@@ -15,6 +15,9 @@ pub struct PosInvoice {
     pub status: String,
     pub due_date: Option<String>,
     pub posting_date: Option<String>,
+    pub is_discounted: bool,
+    pub discounting_status: Option<String>,
+    pub has_submitted_return: bool,
     pub grand_total: f64,
     pub rounded_total: Option<f64>,
     pub base_grand_total: f64,
@@ -30,6 +33,10 @@ pub struct PosInvoice {
     pub account_for_change_amount: Option<String>,
     pub consolidated_invoice: Option<String>,
     pub loyalty_program: Option<String>,
+    pub redeem_loyalty_points: bool,
+    pub loyalty_points: i32,
+    pub loyalty_redemption_account: Option<String>,
+    pub loyalty_redemption_cost_center: Option<String>,
     pub return_against: Option<String>,
     pub coupon_code: Option<String>,
     pub items: Vec<PosInvoiceItem>,
@@ -203,6 +210,32 @@ pub struct SerialBatchBundleSubmitPlan {
     pub bundle: String,
     pub ignore_voucher_validation: bool,
     pub submit: bool,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct SetPosFieldsPlan {
+    pub pos_profile: Option<String>,
+    pub company: Option<String>,
+    pub customer: Option<String>,
+    pub account_for_change_amount: Option<String>,
+    pub set_warehouse: Option<String>,
+    pub update_multi_mode_option: bool,
+    pub add_return_modes: bool,
+    pub selling_price_list: Option<String>,
+    pub currency: Option<String>,
+    pub item_defaults_count: usize,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct OnSubmitPlan {
+    pub actions: Vec<String>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct LoyaltyTransactionPlan {
+    pub loyalty_redemption_account: Option<String>,
+    pub loyalty_redemption_cost_center: Option<String>,
+    pub validate_loyalty_points: bool,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -430,12 +463,33 @@ impl PosInvoice {
                 "Consolidated".to_string()
             } else if self.outstanding_amount > 0.0
                 && self.due_date.as_deref().unwrap_or(today) < today
+                && self.is_discounted
+                && self.discounting_status.as_deref() == Some("Disbursed")
+            {
+                "Overdue and Discounted".to_string()
+            } else if self.outstanding_amount > 0.0
+                && self.due_date.as_deref().unwrap_or(today) < today
             {
                 "Overdue".to_string()
+            } else if self.outstanding_amount > 0.0
+                && self.outstanding_amount < total
+                && self.is_discounted
+                && self.discounting_status.as_deref() == Some("Disbursed")
+            {
+                "Partly Paid and Discounted".to_string()
             } else if self.outstanding_amount > 0.0 && self.outstanding_amount < total {
                 "Partly Paid".to_string()
+            } else if self.outstanding_amount > 0.0
+                && self.due_date.as_deref().unwrap_or(today) >= today
+                && self.is_discounted
+                && self.discounting_status.as_deref() == Some("Disbursed")
+            {
+                "Unpaid and Discounted".to_string()
             } else if self.outstanding_amount > 0.0 {
                 "Unpaid".to_string()
+            } else if self.outstanding_amount <= 0.0 && !self.is_return && self.has_submitted_return
+            {
+                "Credit Note Issued".to_string()
             } else if self.is_return {
                 "Return".to_string()
             } else if self.outstanding_amount <= 0.0 {
@@ -471,8 +525,15 @@ impl PosInvoice {
         let mut plan = vec![
             "ignore_linked:Payment Ledger Entry,Serial and Batch Bundle".to_string(),
             "sales_invoice_on_cancel".to_string(),
-            "set_status:Cancelled".to_string(),
         ];
+        if !self.is_return && self.loyalty_program.is_some() {
+            plan.push("delete_loyalty_point_entry".to_string());
+        } else if self.is_return && self.return_against.is_some() && self.loyalty_program.is_some()
+        {
+            plan.push("return_against_delete_loyalty_point_entry".to_string());
+            plan.push("return_against_make_loyalty_point_entry".to_string());
+        }
+        plan.push("set_status:Cancelled".to_string());
         if self.coupon_code.is_some() {
             plan.push("update_coupon_code_count:cancelled".to_string());
         }
@@ -841,6 +902,117 @@ impl PosInvoice {
                 submit: true,
             })
             .collect()
+    }
+
+    pub fn set_pos_fields_plan(
+        &self,
+        profile: Option<&PosProfile>,
+        for_validate: bool,
+        default_cash_account: Option<&str>,
+        customer_price_list: Option<&str>,
+        customer_group_price_list: Option<&str>,
+        customer_currency: Option<&str>,
+    ) -> Result<SetPosFieldsPlan, PosInvoiceError> {
+        let Some(profile) = profile else {
+            return Err(PosInvoiceError::Validation(
+                "No POS Profile found. Please create a New POS Profile first".to_string(),
+            ));
+        };
+
+        let customer = if !for_validate && self.customer.is_none() {
+            profile.customer.clone()
+        } else {
+            self.customer.clone()
+        };
+        let selling_price_list = customer_price_list
+            .or(customer_group_price_list)
+            .map(str::to_string)
+            .or_else(|| profile.selling_price_list.clone());
+        let currency = customer_currency
+            .filter(|currency| Some(*currency) != profile.currency.as_deref())
+            .map(str::to_string)
+            .or_else(|| profile.currency.clone());
+
+        Ok(SetPosFieldsPlan {
+            pos_profile: Some(profile.name.clone()),
+            company: Some(profile.company.clone()),
+            customer,
+            account_for_change_amount: profile
+                .account_for_change_amount
+                .clone()
+                .or_else(|| self.account_for_change_amount.clone())
+                .or_else(|| default_cash_account.map(str::to_string)),
+            set_warehouse: profile.warehouse.clone(),
+            update_multi_mode_option: self.payments.is_empty() && !for_validate,
+            add_return_modes: self.is_return && !for_validate,
+            selling_price_list,
+            currency,
+            item_defaults_count: self
+                .items
+                .iter()
+                .filter(|item| !item.item_code.is_empty())
+                .count(),
+        })
+    }
+
+    pub fn on_submit_plan(&self, invoice_type_in_pos: &str) -> OnSubmitPlan {
+        let mut actions = Vec::new();
+        if !self.is_return && self.loyalty_program.is_some() {
+            actions.push("make_loyalty_point_entry".to_string());
+        } else if self.is_return && self.return_against.is_some() && self.loyalty_program.is_some()
+        {
+            actions.push("return_against_delete_loyalty_point_entry".to_string());
+            actions.push("return_against_make_loyalty_point_entry".to_string());
+        }
+        if self.redeem_loyalty_points && self.loyalty_points != 0 {
+            actions.push("apply_loyalty_points".to_string());
+        }
+        actions.push("check_phone_payments".to_string());
+        actions.push("set_status:update".to_string());
+        actions.push("make_bundle_for_sales_purchase_return".to_string());
+        for table_name in ["items", "packed_items"] {
+            actions.push(format!(
+                "make_bundle_using_old_serial_batch_fields:{table_name}"
+            ));
+            actions.push(format!("submit_serial_batch_bundle:{table_name}"));
+        }
+        if self.coupon_code.is_some() {
+            actions.push("update_coupon_code_count:used".to_string());
+        }
+        actions.push("clear_unallocated_mode_of_payments".to_string());
+        if self.is_return && invoice_type_in_pos == "Sales Invoice" {
+            actions.push("create_and_add_consolidated_sales_invoice".to_string());
+        }
+        OnSubmitPlan { actions }
+    }
+
+    pub fn validate_loyalty_transaction_plan(
+        &self,
+        loyalty_expense_account: Option<&str>,
+        loyalty_cost_center: Option<&str>,
+    ) -> LoyaltyTransactionPlan {
+        let loyalty_redemption_account = if self.redeem_loyalty_points {
+            self.loyalty_redemption_account
+                .clone()
+                .or_else(|| loyalty_expense_account.map(str::to_string))
+        } else {
+            self.loyalty_redemption_account.clone()
+        };
+        let loyalty_redemption_cost_center = if self.redeem_loyalty_points {
+            self.loyalty_redemption_cost_center
+                .clone()
+                .or_else(|| loyalty_cost_center.map(str::to_string))
+        } else {
+            self.loyalty_redemption_cost_center.clone()
+        };
+
+        LoyaltyTransactionPlan {
+            loyalty_redemption_account,
+            loyalty_redemption_cost_center,
+            validate_loyalty_points: self.redeem_loyalty_points
+                && self.loyalty_program.is_some()
+                && self.loyalty_points != 0,
+        }
     }
 }
 
