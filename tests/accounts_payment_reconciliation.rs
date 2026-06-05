@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use tokio_erp::erpnext::accounts::doctype::payment_reconciliation::payment_reconciliation::{
     get_queries_for_dimension_filters, PaymentReconciliation, PaymentReconciliationAllocation,
     PaymentReconciliationError, PaymentReconciliationInvoice, PaymentReconciliationPayment,
+    ReconcileDrCrNotePlan,
 };
 use tokio_erp::erpnext::{DocumentController, FieldSpec};
 
@@ -202,5 +203,110 @@ fn payment_reconciliation_allocation_validation_and_dimension_filters_match_erpn
                 ("is_group".to_string(), "0".to_string()),
             ]),
         )]
+    );
+}
+
+#[test]
+fn payment_reconciliation_filter_plans_and_dr_cr_note_reconcile_match_erpnext() {
+    let mut doc = base_doc();
+    doc.from_invoice_date = Some("2026-01-01".to_string());
+    doc.to_invoice_date = Some("2026-01-31".to_string());
+    doc.from_payment_date = Some("2026-02-01".to_string());
+    doc.to_payment_date = Some("2026-02-28".to_string());
+    doc.minimum_payment_amount = Some(10.0);
+    doc.maximum_payment_amount = Some(500.0);
+    doc.payment_name = Some("PAY".to_string());
+    doc.bank_cash_account = Some("Bank - TC".to_string());
+
+    let invoice_filters = doc.build_qb_filter_conditions(true, false);
+    assert_eq!(invoice_filters.common, vec!["company = 'TC'".to_string()]);
+    assert_eq!(
+        invoice_filters.posting_date,
+        vec![
+            "posting_date >= '2026-01-01'".to_string(),
+            "posting_date <= '2026-01-31'".to_string(),
+        ]
+    );
+    assert_eq!(
+        invoice_filters.accounting_dimensions,
+        vec![
+            "cost_center = 'Main - TC'".to_string(),
+            "department = 'Sales'".to_string(),
+        ]
+    );
+
+    let journal_filters = doc.get_journal_filter_conditions();
+    assert_eq!(
+        journal_filters,
+        vec![
+            "Journal Entry.company = 'TC'".to_string(),
+            "Journal Entry.posting_date >= '2026-02-01'".to_string(),
+            "Journal Entry.posting_date <= '2026-02-28'".to_string(),
+            "Journal Entry.total_debit >= 10".to_string(),
+            "Journal Entry.total_debit <= 500".to_string(),
+        ]
+    );
+
+    let mut note = PaymentReconciliationAllocation {
+        reference_type: "Sales Invoice".to_string(),
+        reference_name: "SINV-RET-0001".to_string(),
+        invoice_type: "Sales Invoice".to_string(),
+        invoice_number: "SINV-0001".to_string(),
+        allocated_amount: 80.0,
+        unreconciled_amount: -100.0,
+        amount: -100.0,
+        difference_amount: -5.0,
+        difference_account: Some("Exchange Gain/Loss - TC".to_string()),
+        gain_loss_posting_date: Some("2026-03-01".to_string()),
+        exchange_rate: Some(1.0),
+        currency: Some("USD".to_string()),
+        cost_center: Some("Main - TC".to_string()),
+        dimensions: BTreeMap::from([("department".to_string(), "Sales".to_string())]),
+        ..PaymentReconciliationAllocation::default()
+    };
+    let plans = PaymentReconciliation::reconcile_dr_cr_note_plans(
+        &mut [note.clone()],
+        "TC",
+        "USD",
+        Some("Default CC - TC"),
+        &BTreeMap::from([("SINV-RET-0001".to_string(), -100.0)]),
+    )
+    .unwrap();
+    assert_eq!(
+        plans,
+        vec![ReconcileDrCrNotePlan {
+            voucher_type: "Credit Note".to_string(),
+            posting_date: "2026-06-05".to_string(),
+            company: "TC".to_string(),
+            multi_currency: false,
+            debit_or_credit_account_field: "credit_in_account_currency".to_string(),
+            reverse_dr_or_cr: "debit".to_string(),
+            allocated_amount: 80.0,
+            reference_type: "Sales Invoice".to_string(),
+            reference_name: "SINV-0001".to_string(),
+            note_reference_type: "Sales Invoice".to_string(),
+            note_reference_name: "SINV-RET-0001".to_string(),
+            cost_center: "Main - TC".to_string(),
+            dimensions: BTreeMap::from([("department".to_string(), "Sales".to_string())]),
+            gain_loss_dr_or_cr: Some("credit".to_string()),
+            gain_loss_reverse_dr_or_cr: Some("debit".to_string()),
+            difference_amount: -5.0,
+        }]
+    );
+
+    note.allocated_amount = 120.0;
+    assert_eq!(
+        PaymentReconciliation::reconcile_dr_cr_note_plans(
+            &mut [note],
+            "TC",
+            "USD",
+            Some("Default CC - TC"),
+            &BTreeMap::from([("SINV-RET-0001".to_string(), -100.0)]),
+        )
+        .unwrap_err(),
+        PaymentReconciliationError::Validation(
+            "Sales Invoice has been modified after you pulled it. Please pull it again."
+                .to_string()
+        )
     );
 }

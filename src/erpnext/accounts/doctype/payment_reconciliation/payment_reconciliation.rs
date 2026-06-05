@@ -102,6 +102,33 @@ pub struct PaymentDetails {
     pub dimensions: BTreeMap<String, String>,
 }
 
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct PaymentReconciliationFilterPlan {
+    pub common: Vec<String>,
+    pub accounting_dimensions: Vec<String>,
+    pub posting_date: Vec<String>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ReconcileDrCrNotePlan {
+    pub voucher_type: String,
+    pub posting_date: String,
+    pub company: String,
+    pub multi_currency: bool,
+    pub debit_or_credit_account_field: String,
+    pub reverse_dr_or_cr: String,
+    pub allocated_amount: f64,
+    pub reference_type: String,
+    pub reference_name: String,
+    pub note_reference_type: String,
+    pub note_reference_name: String,
+    pub cost_center: String,
+    pub dimensions: BTreeMap<String, String>,
+    pub gain_loss_dr_or_cr: Option<String>,
+    pub gain_loss_reverse_dr_or_cr: Option<String>,
+    pub difference_amount: f64,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PaymentReconciliationError {
     Validation(String),
@@ -470,6 +497,184 @@ impl PaymentReconciliation {
             ));
         }
         Ok(())
+    }
+
+    pub fn build_qb_filter_conditions(
+        &self,
+        get_invoices: bool,
+        get_return_invoices: bool,
+    ) -> PaymentReconciliationFilterPlan {
+        let mut plan = PaymentReconciliationFilterPlan::default();
+        if let Some(company) = self.company.as_deref() {
+            plan.common.push(format!("company = '{company}'"));
+        }
+
+        if self.cost_center.is_some() && (get_invoices || get_return_invoices) {
+            plan.accounting_dimensions.push(format!(
+                "cost_center = '{}'",
+                self.cost_center.as_deref().unwrap_or_default()
+            ));
+        }
+
+        if get_invoices {
+            if let Some(from_invoice_date) = self.from_invoice_date.as_deref() {
+                plan.posting_date
+                    .push(format!("posting_date >= '{from_invoice_date}'"));
+            }
+            if let Some(to_invoice_date) = self.to_invoice_date.as_deref() {
+                plan.posting_date
+                    .push(format!("posting_date <= '{to_invoice_date}'"));
+            }
+        } else if get_return_invoices {
+            if let Some(from_payment_date) = self.from_payment_date.as_deref() {
+                plan.posting_date
+                    .push(format!("posting_date >= '{from_payment_date}'"));
+            }
+            if let Some(to_payment_date) = self.to_payment_date.as_deref() {
+                plan.posting_date
+                    .push(format!("posting_date <= '{to_payment_date}'"));
+            }
+        }
+
+        plan.accounting_dimensions
+            .extend(self.build_dimensions_filter_conditions());
+        plan
+    }
+
+    pub fn build_dimensions_filter_conditions(&self) -> Vec<String> {
+        self.dimensions
+            .iter()
+            .filter_map(|dimension| {
+                self.dimension_values
+                    .get(dimension)
+                    .map(|value| format!("{dimension} = '{value}'"))
+            })
+            .collect()
+    }
+
+    pub fn get_journal_filter_conditions(&self) -> Vec<String> {
+        let mut conditions = Vec::new();
+        if let Some(company) = self.company.as_deref() {
+            conditions.push(format!("Journal Entry.company = '{company}'"));
+        }
+        if let Some(from_payment_date) = self.from_payment_date.as_deref() {
+            conditions.push(format!(
+                "Journal Entry.posting_date >= '{from_payment_date}'"
+            ));
+        }
+        if let Some(to_payment_date) = self.to_payment_date.as_deref() {
+            conditions.push(format!("Journal Entry.posting_date <= '{to_payment_date}'"));
+        }
+        if let Some(minimum_payment_amount) = self.minimum_payment_amount {
+            conditions.push(format!(
+                "Journal Entry.total_debit >= {}",
+                format_number(minimum_payment_amount)
+            ));
+        }
+        if let Some(maximum_payment_amount) = self.maximum_payment_amount {
+            conditions.push(format!(
+                "Journal Entry.total_debit <= {}",
+                format_number(maximum_payment_amount)
+            ));
+        }
+        conditions
+    }
+
+    pub fn reconcile_dr_cr_note_plans(
+        dr_cr_notes: &mut [PaymentReconciliationAllocation],
+        company: &str,
+        company_currency: &str,
+        default_cost_center: Option<&str>,
+        outstanding_by_voucher: &BTreeMap<String, f64>,
+    ) -> Result<Vec<ReconcileDrCrNotePlan>, PaymentReconciliationError> {
+        let mut plans = Vec::new();
+        for inv in dr_cr_notes {
+            let outstanding = outstanding_by_voucher
+                .get(&inv.reference_name)
+                .copied()
+                .unwrap_or(0.0);
+            if outstanding.abs() < inv.allocated_amount {
+                return Err(PaymentReconciliationError::Validation(format!(
+                    "{} has been modified after you pulled it. Please pull it again.",
+                    inv.reference_type
+                )));
+            }
+
+            let voucher_type = if inv.reference_type == "Sales Invoice" {
+                "Credit Note"
+            } else {
+                "Debit Note"
+            };
+            let reconcile_dr_or_cr = if inv.reference_type == "Sales Invoice" {
+                "credit_in_account_currency"
+            } else {
+                "debit_in_account_currency"
+            };
+            let reverse_dr_or_cr = if reconcile_dr_or_cr == "credit_in_account_currency" {
+                "debit"
+            } else {
+                "credit"
+            };
+            let (gain_loss_dr_or_cr, gain_loss_reverse_dr_or_cr) = if inv.difference_amount != 0.0 {
+                if inv.invoice_type == "Sales Invoice" {
+                    let dr_or_cr = if inv.difference_amount < 0.0 {
+                        "credit"
+                    } else {
+                        "debit"
+                    };
+                    let reverse = if dr_or_cr == "credit" {
+                        "debit"
+                    } else {
+                        "credit"
+                    };
+                    (Some(dr_or_cr.to_string()), Some(reverse.to_string()))
+                } else {
+                    let dr_or_cr = if inv.difference_amount < 0.0 {
+                        "debit"
+                    } else {
+                        "credit"
+                    };
+                    let reverse = if dr_or_cr == "credit" {
+                        "debit"
+                    } else {
+                        "credit"
+                    };
+                    (Some(dr_or_cr.to_string()), Some(reverse.to_string()))
+                }
+            } else {
+                (None, None)
+            };
+
+            plans.push(ReconcileDrCrNotePlan {
+                voucher_type: voucher_type.to_string(),
+                posting_date: inv
+                    .debit_or_credit_note_posting_date
+                    .clone()
+                    .unwrap_or_else(|| "2026-06-05".to_string()),
+                company: company.to_string(),
+                multi_currency: inv
+                    .currency
+                    .as_deref()
+                    .is_some_and(|currency| currency != company_currency),
+                debit_or_credit_account_field: reconcile_dr_or_cr.to_string(),
+                reverse_dr_or_cr: reverse_dr_or_cr.to_string(),
+                allocated_amount: inv.allocated_amount,
+                reference_type: inv.invoice_type.clone(),
+                reference_name: inv.invoice_number.clone(),
+                note_reference_type: inv.reference_type.clone(),
+                note_reference_name: inv.reference_name.clone(),
+                cost_center: inv
+                    .cost_center
+                    .clone()
+                    .or_else(|| default_cost_center.map(ToOwned::to_owned))
+                    .unwrap_or_default(),
+                dimensions: inv.dimensions.clone(),
+                gain_loss_dr_or_cr,
+                gain_loss_reverse_dr_or_cr,
+                difference_amount: inv.difference_amount,
+            });
+        }
+        Ok(plans)
     }
 }
 
