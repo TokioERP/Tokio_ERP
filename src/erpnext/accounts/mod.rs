@@ -3,6 +3,7 @@ pub mod dashboard_chart_source;
 pub mod deferred_revenue;
 pub mod doctype;
 pub mod financial_report_template;
+pub mod general_ledger;
 pub mod notification;
 pub mod page;
 pub mod print_format;

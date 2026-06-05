@@ -2593,7 +2593,7 @@
     {
       "source": "accounts/general_ledger.py",
       "target": "accounts/general_ledger.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/notification/__init__.py",
