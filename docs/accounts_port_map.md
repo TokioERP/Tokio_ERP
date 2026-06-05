@@ -33,21 +33,21 @@ This is not an MVP list. Every source folder and file is tracked. A row is close
 |---|---:|---:|---:|---:|---:|---|---|
 | `accounts_dashboard` | 3 | 2 | 0 | 2 | 0 | external_kept | Accounts and Payments dashboard JSON files contain dashboard/card/chart metadata only; no Python controller logic exists to port. Dashboard definitions remain owned by ERPNext/Frappe. |
 | `custom` | 1 | 2 | 1 | 1 | 0 | parity_tested | Rust covers ERPNext Address validate/link/update behavior, company-address reference guard, customer primary-address update planning, shipping address filter and selection branches, and Address custom fields `tax_category`/`is_your_company_address` in `accounts_custom_address`. JSON remains external metadata. |
-| `dashboard_chart` | 8 | 7 | 0 | 7 | 0 | not_started | |
+| `dashboard_chart` | 8 | 7 | 0 | 7 | 0 | external_kept | Seven dashboard chart JSON definitions contain UI/report chart metadata only; no Python controller logic exists to port. Dashboard chart definitions remain owned by ERPNext/Frappe. |
 | `dashboard_chart_source` | 2 | 5 | 3 | 1 | 1 | not_started | |
 | `doctype` | 191 | 923 | 504 | 282 | 111 | mapped | Multiple controllers are parity-tested, including `account`, `bank_account_subtype`, `pos_profile`, `opening_invoice_creation_tool`, and `pos_closing_entry`; remaining doctypes pending. |
 | `financial_report_template` | 7 | 14 | 7 | 7 | 0 | parity_tested | Python init files are empty/no-op; Rust preserves template registry names, modules, report types, row counts, and exact source folder paths where needed in `accounts_financial_report_template`. JSON kept external. |
-| `letterhead` | 1 | 2 | 0 | 0 | 0 | not_started | |
-| `module_onboarding` | 2 | 1 | 0 | 1 | 0 | not_started | |
+| `letterhead` | 1 | 2 | 0 | 0 | 0 | external_kept | Company letterhead HTML templates are static presentation assets; no Python controller logic exists to port. Templates remain owned by ERPNext/Frappe. |
+| `module_onboarding` | 2 | 1 | 0 | 1 | 0 | external_kept | Accounting onboarding JSON contains onboarding metadata only; no Python controller logic exists to port. Onboarding definition remains owned by ERPNext/Frappe. |
 | `notification` | 2 | 5 | 3 | 1 | 0 | parity_tested | `notification_for_new_fiscal_year.py` is no-op context; Rust preserves notification metadata/template constants and context behavior in `accounts_notification_for_new_fiscal_year`. JSON/HTML kept external. |
-| `number_card` | 5 | 4 | 0 | 4 | 0 | not_started | |
-| `onboarding_step` | 7 | 6 | 0 | 6 | 0 | not_started | |
+| `number_card` | 5 | 4 | 0 | 4 | 0 | external_kept | Incoming/outgoing bill and payment number-card JSON files contain UI metric metadata only; no Python controller logic exists to port. Number card definitions remain owned by ERPNext/Frappe. |
+| `onboarding_step` | 7 | 6 | 0 | 6 | 0 | external_kept | Accounting onboarding step JSON files contain onboarding route/action metadata only; no Python controller logic exists to port. Onboarding steps remain owned by ERPNext/Frappe. |
 | `page` | 1 | 1 | 1 | 0 | 0 | not_started | |
 | `print_format` | 26 | 57 | 26 | 25 | 0 | parity_tested | Python init files are empty/no-op; Rust preserves 25 static print format names, folders, report/doc type targets, format type, and standard flags in `accounts_print_static_formats`. JSON/HTML kept external. |
 | `print_format_field_template` | 3 | 5 | 3 | 2 | 0 | parity_tested | Python init files are empty/no-op; Rust preserves field template names, document types, field names, template file paths, and standard flags in `accounts_print_static_formats`. JSON kept external. |
 | `report` | 53 | 244 | 128 | 52 | 50 | not_started | |
 | `test` | 1 | 4 | 4 | 0 | 0 | mapped | `accounts_mixin.py` parity-tested; remaining test helpers pending. |
-| `workspace` | 3 | 2 | 0 | 2 | 0 | not_started | |
+| `workspace` | 3 | 2 | 0 | 2 | 0 | external_kept | Financial Reports and Invoicing workspace JSON files contain workspace layout/shortcut metadata only; no Python controller logic exists to port. Workspace definitions remain owned by ERPNext/Frappe. |
 
 ## First Pass Order
 
