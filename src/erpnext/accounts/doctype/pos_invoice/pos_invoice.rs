@@ -28,7 +28,23 @@ pub struct PosInvoice {
     pub loyalty_program: Option<String>,
     pub return_against: Option<String>,
     pub coupon_code: Option<String>,
+    pub items: Vec<PosInvoiceItem>,
     pub payments: Vec<PosInvoicePayment>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct PosInvoiceItem {
+    pub idx: i32,
+    pub item_code: String,
+    pub warehouse: Option<String>,
+    pub stock_qty: f64,
+    pub qty: f64,
+    pub has_serial_no: bool,
+    pub has_batch_no: bool,
+    pub use_serial_batch_fields: bool,
+    pub serial_and_batch_bundle: Option<String>,
+    pub serial_no: Option<String>,
+    pub batch_no: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -43,6 +59,75 @@ pub struct PosInvoicePayment {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PosInvoiceError {
     Validation(String),
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct BundleAvailabilityRow {
+    pub item_code: String,
+    pub required: f64,
+    pub available: f64,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ProductBundleItem {
+    pub item_code: String,
+    pub qty: f64,
+    pub bin_qty: f64,
+    pub is_stock_item: bool,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct StockAvailability {
+    pub item_code: String,
+    pub warehouse: String,
+    pub available: f64,
+    pub is_stock_item: bool,
+    pub is_negative_stock_allowed: bool,
+    pub bundle_items: Vec<BundleAvailabilityRow>,
+}
+
+impl StockAvailability {
+    pub fn bundle(
+        item_code: &str,
+        warehouse: &str,
+        bundle_items: Vec<BundleAvailabilityRow>,
+        is_negative_stock_allowed: bool,
+    ) -> Self {
+        Self {
+            item_code: item_code.to_string(),
+            warehouse: warehouse.to_string(),
+            available: 0.0,
+            is_stock_item: true,
+            is_negative_stock_allowed,
+            bundle_items,
+        }
+    }
+
+    pub fn bundle_error(&self, row_idx: i32) -> Option<String> {
+        let errors = self
+            .bundle_items
+            .iter()
+            .filter(|item| item.available < item.required)
+            .map(|item| {
+                format!(
+                    "<li>Packed Item {}: Required {}, Available {}</li>",
+                    item.item_code,
+                    format_number(item.required),
+                    format_number(item.available)
+                )
+            })
+            .collect::<Vec<_>>();
+        if errors.is_empty() {
+            return None;
+        }
+        Some(format!(
+            "<b>Row #{}:</b> Bundle {} in warehouse {} has insufficient packed items:<br><div style='margin-top: 15px;'><ul style='line-height: 0.8;'>{}</ul></div>",
+            row_idx,
+            self.item_code,
+            self.warehouse,
+            errors.join("<br>")
+        ))
+    }
 }
 
 impl PosInvoice {
@@ -261,6 +346,118 @@ impl PosInvoice {
         }
         Ok(())
     }
+
+    pub fn validate_is_pos_using_sales_invoice(
+        &self,
+        invoice_type_in_pos: &str,
+    ) -> Result<(), PosInvoiceError> {
+        if invoice_type_in_pos == "Sales Invoice" && !self.is_return {
+            return Err(PosInvoiceError::Validation(
+                "Sales Invoice mode is activated in POS. Please create Sales Invoice instead."
+                    .to_string(),
+            ));
+        }
+        Ok(())
+    }
+
+    pub fn validate_serialised_or_batched_item(&self) -> Result<(), PosInvoiceError> {
+        for item in &self.items {
+            if item.has_serial_no
+                && ((!item.use_serial_batch_fields && item.serial_and_batch_bundle.is_none())
+                    || (item.use_serial_batch_fields && item.serial_no.is_none()))
+            {
+                return Err(PosInvoiceError::Validation(format!(
+                    "Row #{}: Please select Serial No. for item {}",
+                    item.idx, item.item_code
+                )));
+            }
+            if item.has_batch_no
+                && ((!item.use_serial_batch_fields && item.serial_and_batch_bundle.is_none())
+                    || (item.use_serial_batch_fields && item.batch_no.is_none()))
+            {
+                return Err(PosInvoiceError::Validation(format!(
+                    "Row #{}: Please select Batch No. for item {}",
+                    item.idx, item.item_code
+                )));
+            }
+        }
+        Ok(())
+    }
+
+    pub fn validate_return_items_qty(
+        &self,
+        original_serial_nos: &[String],
+    ) -> Result<(), PosInvoiceError> {
+        if !self.is_return {
+            return Ok(());
+        }
+        for item in &self.items {
+            if item.qty > 0.0 {
+                return Err(PosInvoiceError::Validation(format!(
+                    "Row #{}: You cannot add positive quantities in a return invoice. Please remove item {} to complete the return.",
+                    item.idx, item.item_code
+                )));
+            }
+            if let Some(serial_no) = item.serial_no.as_deref() {
+                for sr in serial_no.lines() {
+                    if !original_serial_nos.iter().any(|existing| existing == sr) {
+                        return Err(PosInvoiceError::Validation(format!(
+                            "Row #{}: Serial No {} cannot be returned since it was not transacted in original invoice {}",
+                            item.idx,
+                            sr,
+                            self.return_against.as_deref().unwrap_or_default()
+                        )));
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    pub fn validate_stock_availability(
+        &self,
+        validate_stock_on_save: bool,
+        stock: &[StockAvailability],
+    ) -> Result<(), PosInvoiceError> {
+        if self.is_return || (self.docstatus == 0 && !validate_stock_on_save) {
+            return Ok(());
+        }
+        for item in &self.items {
+            if item.serial_and_batch_bundle.is_some() {
+                continue;
+            }
+            let warehouse = item.warehouse.as_deref().unwrap_or_default();
+            let availability = stock
+                .iter()
+                .find(|row| row.item_code == item.item_code && row.warehouse == warehouse);
+            let Some(availability) = availability else {
+                continue;
+            };
+            if availability.is_negative_stock_allowed {
+                continue;
+            }
+            if let Some(message) = availability.bundle_error(item.idx) {
+                return Err(PosInvoiceError::Validation(message));
+            }
+            if availability.is_stock_item && availability.available <= 0.0 {
+                return Err(PosInvoiceError::Validation(format!(
+                    "Row #{}: Item {} has no stock in warehouse {}.",
+                    item.idx, item.item_code, warehouse
+                )));
+            }
+            if availability.is_stock_item && availability.available < item.stock_qty {
+                return Err(PosInvoiceError::Validation(format!(
+                    "Row #{}: Item {} in warehouse {}: Available {}, Needed {}.",
+                    item.idx,
+                    item.item_code,
+                    warehouse,
+                    format_number(availability.available),
+                    format_number(item.stock_qty)
+                )));
+            }
+        }
+        Ok(())
+    }
 }
 
 impl DocumentController for PosInvoice {
@@ -280,4 +477,77 @@ impl DocumentController for PosInvoice {
 fn round_to_precision(value: f64, precision: u32) -> f64 {
     let factor = 10_f64.powi(precision as i32);
     (value * factor).round() / factor
+}
+
+pub fn get_stock_availability(
+    item_code: &str,
+    warehouse: &str,
+    is_stock_item: bool,
+    is_active_bundle: bool,
+    bin_qty: f64,
+    pos_sales_qty: f64,
+    is_negative_stock_allowed: bool,
+    bundle_availability: Option<f64>,
+) -> StockAvailability {
+    if is_stock_item {
+        StockAvailability {
+            item_code: item_code.to_string(),
+            warehouse: warehouse.to_string(),
+            available: bin_qty - pos_sales_qty,
+            is_stock_item: true,
+            is_negative_stock_allowed,
+            bundle_items: Vec::new(),
+        }
+    } else if is_active_bundle {
+        StockAvailability {
+            item_code: item_code.to_string(),
+            warehouse: warehouse.to_string(),
+            available: bundle_availability.unwrap_or(0.0),
+            is_stock_item: true,
+            is_negative_stock_allowed: false,
+            bundle_items: Vec::new(),
+        }
+    } else {
+        StockAvailability {
+            item_code: item_code.to_string(),
+            warehouse: warehouse.to_string(),
+            available: 0.0,
+            is_stock_item: false,
+            is_negative_stock_allowed: false,
+            bundle_items: Vec::new(),
+        }
+    }
+}
+
+pub fn get_bundle_availability(
+    _bundle_item_code: &str,
+    _warehouse: &str,
+    items: &[ProductBundleItem],
+    pos_sales_qty: f64,
+) -> f64 {
+    let mut bundle_bin_qty = 1_000_000.0;
+    for item in items {
+        if item.is_stock_item {
+            let max_available_bundles = item.bin_qty / item.qty;
+            if bundle_bin_qty > max_available_bundles {
+                bundle_bin_qty = max_available_bundles;
+            }
+        }
+    }
+    bundle_bin_qty - pos_sales_qty
+}
+
+pub fn get_pos_reserved_qty(
+    pos_invoice_item_reserved_qty: f64,
+    packed_item_reserved_qty: f64,
+) -> f64 {
+    pos_invoice_item_reserved_qty + packed_item_reserved_qty
+}
+
+fn format_number(value: f64) -> String {
+    if value.fract() == 0.0 {
+        format!("{value:.0}")
+    } else {
+        value.to_string()
+    }
 }
