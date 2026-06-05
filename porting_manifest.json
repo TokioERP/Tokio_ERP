@@ -1378,7 +1378,7 @@
     {
       "source": "accounts/doctype/payment_request/payment_request.py",
       "target": "accounts/doctype/payment_request/payment_request.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/payment_request/payment_request_dashboard.py",
@@ -1388,7 +1388,7 @@
     {
       "source": "accounts/doctype/payment_request/test_payment_request.py",
       "target": "accounts/doctype/payment_request/test_payment_request.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/payment_schedule/__init__.py",
