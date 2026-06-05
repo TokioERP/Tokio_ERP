@@ -3,12 +3,14 @@ use tokio_erp::erpnext::accounts::doctype::payment_request::payment_request::{
     get_print_format_list, make_payment_order_plan, set_payment_references,
     update_payment_requests_as_per_pe_references, validate_payment, AvailablePaymentSchedulesPlan,
     CancelOldPaymentRequestsPlan, ExistingPaymentEntryQueryPlan,
-    ExistingPaymentRequestAmountQueryPlan, IntegrationRequestStatusQueryPlan,
+    ExistingPaymentReferencesQueryPlan, ExistingPaymentRequestAmountQueryPlan,
+    GatewayDetailsQueryPlan, IntegrationRequestStatusQueryPlan, MakePaymentRequestPlan,
     OpenPaymentRequestsQueryPlan, PaymentEntryReferenceRow, PaymentEntryRequestPlan,
     PaymentEntrySourceDoc, PaymentOrderFromRequestPlan, PaymentReferenceRow, PaymentRequest,
-    PaymentRequestAmountSource, PaymentRequestError, PaymentRequestLifecyclePlan,
-    PaymentRequestUpdate, PaymentSubmitPlan, PaymentUrlPlan, PhonePaymentRequestPlan,
-    SendEmailPlan, SubscriptionPlanInput, SubscriptionValidationPlan,
+    PaymentRequestActionPlan, PaymentRequestAmountSource, PaymentRequestError,
+    PaymentRequestLifecyclePlan, PaymentRequestUpdate, PaymentSubmitPlan, PaymentUrlPlan,
+    PhonePaymentRequestPlan, SendEmailPlan, SubscriptionDetailsQueryPlan, SubscriptionPlanInput,
+    SubscriptionValidationPlan,
 };
 use tokio_erp::erpnext::{DocumentController, FieldSpec};
 
@@ -682,6 +684,168 @@ fn payment_request_query_and_lifecycle_plans_match_erpnext() {
             update_reference_advance_payment_status: false,
             create_payment_entry: false,
             make_invoice: false,
+        }
+    );
+}
+
+#[test]
+fn payment_request_remaining_orchestration_plans_match_erpnext() {
+    let mut doc = PaymentRequest {
+        name: Some("PREQ-0001".to_string()),
+        reference_doctype: Some("Sales Invoice".to_string()),
+        reference_name: Some("SINV-0001".to_string()),
+        grand_total: 100.0,
+        payment_account: Some("Gateway - TC".to_string()),
+        payment_gateway: Some("Stripe".to_string()),
+        status: "Paid".to_string(),
+        ..PaymentRequest::default()
+    };
+
+    assert_eq!(
+        doc.validate_plan(true),
+        vec![
+            "set_status:Draft".to_string(),
+            "validate_reference_document".to_string(),
+            "validate_against_payment_reference".to_string(),
+            "validate_payment_request_amount".to_string(),
+            "validate_subscription_details".to_string(),
+        ]
+    );
+    assert_eq!(
+        doc.on_submit_plan(),
+        PaymentRequestActionPlan {
+            update_reference_advance_payment_status: true,
+            ..PaymentRequestActionPlan::default()
+        }
+    );
+    assert_eq!(
+        doc.make_invoice_plan(),
+        PaymentRequestActionPlan {
+            make_sales_invoice: true,
+            allocate_advances_automatically: true,
+            submit_invoice: true,
+            ..PaymentRequestActionPlan::default()
+        }
+    );
+    assert!(doc.payment_gateway_validation_plan(false, false));
+    assert_eq!(
+        doc.set_payment_request_url_plan(true),
+        PaymentRequestActionPlan {
+            set_payment_request_url: true,
+            ..PaymentRequestActionPlan::default()
+        }
+    );
+    doc.message = Some("Hello {{ payment_url }}".to_string());
+    assert_eq!(
+        doc.get_message_plan(),
+        Some("Hello {{ payment_url }}".to_string())
+    );
+    assert_eq!(doc.set_failed(), ());
+    assert_eq!(
+        doc.set_as_cancelled_plan().status_update,
+        Some(("status".to_string(), "Cancelled".to_string()))
+    );
+    assert_eq!(
+        doc.check_if_payment_entry_exists_plan(true).unwrap_err(),
+        PaymentRequestError::Validation("Payment Entry already exists".to_string())
+    );
+    assert_eq!(
+        doc.make_communication_entry_plan(),
+        PaymentRequestActionPlan {
+            make_communication_entry: true,
+            ..PaymentRequestActionPlan::default()
+        }
+    );
+    assert!(doc.create_subscription_plan("stripe"));
+    assert!(doc.update_reference_advance_payment_status_plan(true));
+
+    assert_eq!(
+        PaymentRequest::make_payment_request_plan(
+            "Sales Order",
+            "SO-0001",
+            false,
+            true,
+            Some(vec!["SCH-001".to_string()]),
+        )
+        .unwrap(),
+        MakePaymentRequestPlan {
+            reference_doctype: "Sales Order".to_string(),
+            reference_name: "SO-0001".to_string(),
+            payment_request_type: "Inward".to_string(),
+            selected_payment_schedules: vec!["SCH-001".to_string()],
+            submit_doc: true,
+            return_doc: false,
+        }
+    );
+    assert_eq!(
+        PaymentRequest::make_payment_request_plan("Delivery Note", "DN-0001", false, false, None)
+            .unwrap_err(),
+        PaymentRequestError::Validation(
+            "Payment Requests cannot be created against: Delivery Note".to_string()
+        )
+    );
+    assert_eq!(
+        PaymentRequest::get_gateway_details_plan(Some("PGA-0001"), "TC"),
+        GatewayDetailsQueryPlan {
+            filter_name: Some("PGA-0001".to_string()),
+            is_default: None,
+            company: "TC".to_string(),
+            fields: vec![
+                "name".to_string(),
+                "payment_gateway".to_string(),
+                "payment_account".to_string(),
+                "payment_channel".to_string(),
+                "message".to_string(),
+            ],
+        }
+    );
+    assert_eq!(
+        PaymentRequest::get_payment_gateway_account_plan("PGA-0001", "TC"),
+        GatewayDetailsQueryPlan {
+            filter_name: Some("PGA-0001".to_string()),
+            is_default: None,
+            company: "TC".to_string(),
+            fields: vec![
+                "name".to_string(),
+                "payment_gateway".to_string(),
+                "payment_account".to_string(),
+                "payment_channel".to_string(),
+                "message".to_string(),
+            ],
+        }
+    );
+    assert_eq!(
+        PaymentRequest::resend_payment_email_plan("PREQ-0001"),
+        "send_email:PREQ-0001"
+    );
+    assert_eq!(
+        PaymentRequest::make_payment_entry_action_plan("PREQ-0001"),
+        "create_payment_entry:false:PREQ-0001"
+    );
+    assert_eq!(
+        PaymentRequest::get_subscription_details_plan("Sales Invoice", "SINV-0001"),
+        Some(SubscriptionDetailsQueryPlan {
+            reference_doctype: "Sales Invoice".to_string(),
+            reference_name: "SINV-0001".to_string(),
+        })
+    );
+    assert_eq!(
+        PaymentRequest::get_irequests_of_payment_request_plan(None).reference_docname,
+        None
+    );
+    assert_eq!(
+        PaymentRequest::get_existing_payment_references_plan("SO-0001"),
+        ExistingPaymentReferencesQueryPlan {
+            reference_name: "SO-0001".to_string(),
+            docstatus_lt: 2,
+            statuses: vec![
+                "Draft".to_string(),
+                "Requested".to_string(),
+                "Initiated".to_string(),
+                "Partially Paid".to_string(),
+                "Payment Ordered".to_string(),
+                "Paid".to_string(),
+            ],
         }
     );
 }

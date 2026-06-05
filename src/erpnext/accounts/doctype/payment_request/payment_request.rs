@@ -233,6 +233,54 @@ pub struct PaymentRequestLifecyclePlan {
     pub make_invoice: bool,
 }
 
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct PaymentRequestActionPlan {
+    pub update_reference_advance_payment_status: bool,
+    pub make_sales_invoice: bool,
+    pub allocate_advances_automatically: bool,
+    pub submit_invoice: bool,
+    pub set_payment_request_url: bool,
+    pub make_communication_entry: bool,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct MakePaymentRequestPlan {
+    pub reference_doctype: String,
+    pub reference_name: String,
+    pub payment_request_type: String,
+    pub selected_payment_schedules: Vec<String>,
+    pub submit_doc: bool,
+    pub return_doc: bool,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct GatewayDetailsQueryPlan {
+    pub filter_name: Option<String>,
+    pub is_default: Option<i32>,
+    pub company: String,
+    pub fields: Vec<String>,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct SubscriptionDetailsQueryPlan {
+    pub reference_doctype: String,
+    pub reference_name: String,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct QueuedIntegrationRequestsQueryPlan {
+    pub reference_docname: Option<String>,
+    pub reference_doctype: String,
+    pub status: String,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct ExistingPaymentReferencesQueryPlan {
+    pub reference_name: String,
+    pub docstatus_lt: i32,
+    pub statuses: Vec<String>,
+}
+
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct PaymentOrderFromRequestPlan {
     pub payment_order_type: String,
@@ -346,6 +394,20 @@ impl PaymentRequest {
             ));
         }
         Ok(())
+    }
+
+    pub fn validate_plan(&self, is_local: bool) -> Vec<String> {
+        let mut plan = Vec::new();
+        if is_local {
+            plan.push("set_status:Draft".to_string());
+        }
+        plan.extend([
+            "validate_reference_document".to_string(),
+            "validate_against_payment_reference".to_string(),
+            "validate_payment_request_amount".to_string(),
+            "validate_subscription_details".to_string(),
+        ]);
+        plan
     }
 
     pub fn validate_against_payment_reference(
@@ -533,6 +595,89 @@ impl PaymentRequest {
             send_email,
             make_communication_entry: send_email,
         }
+    }
+
+    pub fn on_submit_plan(&self) -> PaymentRequestActionPlan {
+        PaymentRequestActionPlan {
+            update_reference_advance_payment_status: true,
+            ..PaymentRequestActionPlan::default()
+        }
+    }
+
+    pub fn make_invoice_plan(&self) -> PaymentRequestActionPlan {
+        PaymentRequestActionPlan {
+            make_sales_invoice: true,
+            allocate_advances_automatically: true,
+            submit_invoice: true,
+            ..PaymentRequestActionPlan::default()
+        }
+    }
+
+    pub fn payment_gateway_validation_plan(
+        &self,
+        gateway_hook_exists: bool,
+        hook_result: bool,
+    ) -> bool {
+        if gateway_hook_exists {
+            hook_result
+        } else {
+            true
+        }
+    }
+
+    pub fn set_payment_request_url_plan(
+        &self,
+        payment_gateway_validation: bool,
+    ) -> PaymentRequestActionPlan {
+        PaymentRequestActionPlan {
+            set_payment_request_url: self.payment_account.is_some()
+                && self.payment_gateway.is_some()
+                && payment_gateway_validation,
+            ..PaymentRequestActionPlan::default()
+        }
+    }
+
+    pub fn get_message_plan(&self) -> Option<String> {
+        self.message.clone()
+    }
+
+    pub fn set_failed(&self) {}
+
+    pub fn set_as_cancelled_plan(&self) -> PaymentRequestLifecyclePlan {
+        PaymentRequestLifecyclePlan {
+            status_update: Some(("status".to_string(), "Cancelled".to_string())),
+            ..PaymentRequestLifecyclePlan::default()
+        }
+    }
+
+    pub fn check_if_payment_entry_exists_plan(
+        &self,
+        existing_payment_entry: bool,
+    ) -> Result<(), PaymentRequestError> {
+        if self.status == "Paid" && existing_payment_entry {
+            return Err(PaymentRequestError::Validation(
+                "Payment Entry already exists".to_string(),
+            ));
+        }
+        Ok(())
+    }
+
+    pub fn make_communication_entry_plan(&self) -> PaymentRequestActionPlan {
+        PaymentRequestActionPlan {
+            make_communication_entry: true,
+            ..PaymentRequestActionPlan::default()
+        }
+    }
+
+    pub fn create_subscription_plan(&self, payment_provider: &str) -> bool {
+        payment_provider == "stripe"
+    }
+
+    pub fn update_reference_advance_payment_status_plan(
+        &self,
+        is_advance_payment_doctype: bool,
+    ) -> bool {
+        is_advance_payment_doctype
     }
 
     pub fn request_phone_payment_plan(
@@ -805,6 +950,105 @@ impl PaymentRequest {
             available_payment_schedules,
         }
     }
+
+    pub fn make_payment_request_plan(
+        reference_doctype: &str,
+        reference_name: &str,
+        return_doc: bool,
+        submit_doc: bool,
+        selected_payment_schedules: Option<Vec<String>>,
+    ) -> Result<MakePaymentRequestPlan, PaymentRequestError> {
+        if !Self::ALLOWED_DOCTYPES_FOR_PAYMENT_REQUEST.contains(&reference_doctype) {
+            return Err(PaymentRequestError::Validation(format!(
+                "Payment Requests cannot be created against: {reference_doctype}"
+            )));
+        }
+        Ok(MakePaymentRequestPlan {
+            reference_doctype: reference_doctype.to_string(),
+            reference_name: reference_name.to_string(),
+            payment_request_type: if matches!(
+                reference_doctype,
+                "Purchase Order" | "Purchase Invoice"
+            ) {
+                "Outward"
+            } else {
+                "Inward"
+            }
+            .to_string(),
+            selected_payment_schedules: selected_payment_schedules.unwrap_or_default(),
+            submit_doc,
+            return_doc,
+        })
+    }
+
+    pub fn get_gateway_details_plan(
+        payment_gateway_account: Option<&str>,
+        company: &str,
+    ) -> GatewayDetailsQueryPlan {
+        GatewayDetailsQueryPlan {
+            filter_name: payment_gateway_account.map(ToOwned::to_owned),
+            is_default: payment_gateway_account.is_none().then_some(1),
+            company: company.to_string(),
+            fields: gateway_account_fields(),
+        }
+    }
+
+    pub fn get_payment_gateway_account_plan(
+        payment_gateway_account: &str,
+        company: &str,
+    ) -> GatewayDetailsQueryPlan {
+        GatewayDetailsQueryPlan {
+            filter_name: Some(payment_gateway_account.to_string()),
+            is_default: None,
+            company: company.to_string(),
+            fields: gateway_account_fields(),
+        }
+    }
+
+    pub fn resend_payment_email_plan(docname: &str) -> String {
+        format!("send_email:{docname}")
+    }
+
+    pub fn make_payment_entry_action_plan(docname: &str) -> String {
+        format!("create_payment_entry:false:{docname}")
+    }
+
+    pub fn get_subscription_details_plan(
+        reference_doctype: &str,
+        reference_name: &str,
+    ) -> Option<SubscriptionDetailsQueryPlan> {
+        (reference_doctype == "Sales Invoice").then(|| SubscriptionDetailsQueryPlan {
+            reference_doctype: reference_doctype.to_string(),
+            reference_name: reference_name.to_string(),
+        })
+    }
+
+    pub fn get_irequests_of_payment_request_plan(
+        doc: Option<&str>,
+    ) -> QueuedIntegrationRequestsQueryPlan {
+        QueuedIntegrationRequestsQueryPlan {
+            reference_docname: doc.map(ToOwned::to_owned),
+            reference_doctype: "Payment Request".to_string(),
+            status: "Queued".to_string(),
+        }
+    }
+
+    pub fn get_existing_payment_references_plan(
+        reference_name: &str,
+    ) -> ExistingPaymentReferencesQueryPlan {
+        ExistingPaymentReferencesQueryPlan {
+            reference_name: reference_name.to_string(),
+            docstatus_lt: 2,
+            statuses: vec![
+                "Draft".to_string(),
+                "Requested".to_string(),
+                "Initiated".to_string(),
+                "Partially Paid".to_string(),
+                "Payment Ordered".to_string(),
+                "Paid".to_string(),
+            ],
+        }
+    }
 }
 
 impl DocumentController for PaymentRequest {
@@ -970,6 +1214,16 @@ pub fn get_print_format_list(_ref_doctype: &str, custom_formats: &[String]) -> V
     let mut print_format_list = vec!["Standard".to_string()];
     print_format_list.extend(custom_formats.iter().cloned());
     print_format_list
+}
+
+fn gateway_account_fields() -> Vec<String> {
+    vec![
+        "name".to_string(),
+        "payment_gateway".to_string(),
+        "payment_account".to_string(),
+        "payment_channel".to_string(),
+        "message".to_string(),
+    ]
 }
 
 pub fn validate_payment(
