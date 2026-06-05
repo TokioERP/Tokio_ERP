@@ -17,6 +17,9 @@ pub struct PaymentRequest {
     pub status: String,
     pub reference_doctype: Option<String>,
     pub reference_name: Option<String>,
+    pub party: Option<String>,
+    pub bank_account: Option<String>,
+    pub account: Option<String>,
     pub payment_reference: Vec<PaymentReferenceRow>,
     pub payment_account: Option<String>,
     pub payment_gateway: Option<String>,
@@ -82,6 +85,31 @@ pub struct PaymentRequestUpdate {
     pub allocated_amount: f64,
 }
 
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct PaymentOrderFromRequestPlan {
+    pub payment_order_type: String,
+    pub reference_doctype: String,
+    pub reference_name: String,
+    pub amount: f64,
+    pub supplier: Option<String>,
+    pub payment_request: String,
+    pub mode_of_payment: Option<String>,
+    pub bank_account: Option<String>,
+    pub account: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct OpenPaymentRequestsQueryPlan {
+    pub doctype: String,
+    pub text_filter: Option<String>,
+    pub searchfield: String,
+    pub start: i32,
+    pub page_len: i32,
+    pub reference_doctype: String,
+    pub reference_name: String,
+    pub order_by: String,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PaymentRequestError {
     Validation(String),
@@ -102,6 +130,9 @@ impl Default for PaymentRequest {
             status: String::new(),
             reference_doctype: None,
             reference_name: None,
+            party: None,
+            bank_account: None,
+            account: None,
             payment_reference: Vec::new(),
             payment_account: None,
             payment_gateway: None,
@@ -371,6 +402,140 @@ pub fn update_payment_requests_as_per_pe_references(
             },
         )
         .collect())
+}
+
+pub fn set_payment_references(
+    payment_schedules: &str,
+) -> Result<Vec<PaymentReferenceRow>, PaymentRequestError> {
+    if payment_schedules.trim().is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let rows: Value = serde_json::from_str(payment_schedules)
+        .map_err(|err| PaymentRequestError::InvalidRequestAmountJson(err.to_string()))?;
+    let rows = rows.as_array().ok_or_else(|| {
+        PaymentRequestError::InvalidRequestAmountJson("expected JSON array".to_string())
+    })?;
+
+    Ok(rows
+        .iter()
+        .map(|row| PaymentReferenceRow {
+            payment_term: row
+                .get("payment_term")
+                .and_then(Value::as_str)
+                .map(ToOwned::to_owned),
+            payment_schedule: row
+                .get("name")
+                .and_then(Value::as_str)
+                .map(ToOwned::to_owned),
+            description: row
+                .get("description")
+                .and_then(Value::as_str)
+                .map(ToOwned::to_owned),
+            due_date: row
+                .get("due_date")
+                .and_then(Value::as_str)
+                .map(ToOwned::to_owned),
+            amount: row
+                .get("payment_amount")
+                .and_then(Value::as_f64)
+                .unwrap_or(0.0),
+        })
+        .collect())
+}
+
+pub fn apply_payment_references(
+    existing_refs: Vec<PaymentReferenceRow>,
+    payment_reference: Vec<PaymentReferenceRow>,
+) -> (Vec<PaymentReferenceRow>, f64) {
+    let mut merged = existing_refs;
+    let existing_ids: Vec<String> = merged
+        .iter()
+        .filter_map(|row| row.payment_schedule.clone())
+        .collect();
+    merged.extend(payment_reference.into_iter().filter(|row| {
+        row.payment_schedule
+            .as_ref()
+            .is_none_or(|schedule| !existing_ids.contains(schedule))
+    }));
+    let grand_total = merged.iter().map(|row| row.amount).sum();
+    (merged, grand_total)
+}
+
+pub fn get_print_format_list(_ref_doctype: &str, custom_formats: &[String]) -> Vec<String> {
+    let mut print_format_list = vec!["Standard".to_string()];
+    print_format_list.extend(custom_formats.iter().cloned());
+    print_format_list
+}
+
+pub fn validate_payment(
+    reference_doctype: &str,
+    reference_docname: &str,
+    payment_request_status: Option<&str>,
+) -> Result<(), PaymentRequestError> {
+    if reference_doctype == "Payment Request" && payment_request_status == Some("Paid") {
+        return Err(PaymentRequestError::Validation(format!(
+            "The Payment Request {reference_docname} is already paid, cannot process payment twice"
+        )));
+    }
+    Ok(())
+}
+
+pub fn make_payment_order_plan(source: &PaymentRequest) -> PaymentOrderFromRequestPlan {
+    PaymentOrderFromRequestPlan {
+        payment_order_type: "Payment Request".to_string(),
+        reference_doctype: source.reference_doctype.clone().unwrap_or_default(),
+        reference_name: source.reference_name.clone().unwrap_or_default(),
+        amount: source.grand_total,
+        supplier: source.party.clone(),
+        payment_request: source.name.clone().unwrap_or_default(),
+        mode_of_payment: source.mode_of_payment.clone(),
+        bank_account: source.bank_account.clone(),
+        account: source.account.clone(),
+    }
+}
+
+pub fn get_open_payment_requests_query_plan(
+    doctype: &str,
+    txt: &str,
+    searchfield: &str,
+    start: i32,
+    page_len: i32,
+    reference_doctype: Option<&str>,
+    reference_name: Option<&str>,
+) -> Option<OpenPaymentRequestsQueryPlan> {
+    Some(OpenPaymentRequestsQueryPlan {
+        doctype: doctype.to_string(),
+        text_filter: (!txt.is_empty()).then(|| txt.to_string()),
+        searchfield: searchfield.to_string(),
+        start,
+        page_len,
+        reference_doctype: reference_doctype?.to_string(),
+        reference_name: reference_name?.to_string(),
+        order_by: "transaction_date ASC,creation ASC".to_string(),
+    })
+}
+
+pub fn get_dummy_message() -> &'static str {
+    r#"
+        {% if doc.contact_person -%}
+        <p>Dear {{ doc.contact_person }},</p>
+        {%- else %}<p>Hello,</p>{% endif %}
+
+        <p>
+            {{ _("Requesting payment against {0} {1} for amount {2}").format(
+                doc.doctype,
+                doc.name,
+                payment_request.get_formatted("grand_total")
+            ) }}
+        </p>
+
+        <a href="{{ payment_url }}">{{ _("Make Payment") }}</a>
+
+        <p>{{ _("If you have any questions, please get back to us.") }}</p>
+
+        <p>{{ _("Thank you for your business!") }}</p>
+    "#
 }
 
 fn phone_payment_amount(

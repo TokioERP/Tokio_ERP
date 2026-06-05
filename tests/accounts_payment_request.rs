@@ -1,6 +1,9 @@
 use tokio_erp::erpnext::accounts::doctype::payment_request::payment_request::{
-    get_amount, update_payment_requests_as_per_pe_references, PaymentReferenceRow, PaymentRequest,
-    PaymentRequestAmountSource, PaymentRequestError, PaymentRequestUpdate, PaymentSubmitPlan,
+    apply_payment_references, get_amount, get_dummy_message, get_open_payment_requests_query_plan,
+    get_print_format_list, make_payment_order_plan, set_payment_references,
+    update_payment_requests_as_per_pe_references, validate_payment, OpenPaymentRequestsQueryPlan,
+    PaymentOrderFromRequestPlan, PaymentReferenceRow, PaymentRequest, PaymentRequestAmountSource,
+    PaymentRequestError, PaymentRequestUpdate, PaymentSubmitPlan,
 };
 use tokio_erp::erpnext::{DocumentController, FieldSpec};
 
@@ -226,5 +229,131 @@ fn payment_request_get_amount_and_status_updates_match_erpnext() {
         )
         .unwrap(),
         vec![("PREQ-0002".to_string(), 70.0, "Partially Paid".to_string(),)]
+    );
+}
+
+#[test]
+fn payment_request_schedule_reference_helpers_match_erpnext() {
+    let references = set_payment_references(
+        r#"[
+            {
+                "payment_term": "50-50",
+                "name": "SCH-001",
+                "description": "Advance",
+                "due_date": "2026-06-30",
+                "payment_amount": 60
+            },
+            {
+                "payment_term": "50-50",
+                "name": "SCH-002",
+                "description": "Balance",
+                "due_date": "2026-07-31",
+                "payment_amount": 40
+            }
+        ]"#,
+    )
+    .unwrap();
+    assert_eq!(
+        references,
+        vec![
+            PaymentReferenceRow {
+                payment_term: Some("50-50".to_string()),
+                payment_schedule: Some("SCH-001".to_string()),
+                description: Some("Advance".to_string()),
+                due_date: Some("2026-06-30".to_string()),
+                amount: 60.0,
+            },
+            PaymentReferenceRow {
+                payment_term: Some("50-50".to_string()),
+                payment_schedule: Some("SCH-002".to_string()),
+                description: Some("Balance".to_string()),
+                due_date: Some("2026-07-31".to_string()),
+                amount: 40.0,
+            },
+        ]
+    );
+
+    let (merged, grand_total) = apply_payment_references(
+        vec![PaymentReferenceRow {
+            payment_schedule: Some("SCH-001".to_string()),
+            amount: 60.0,
+            ..PaymentReferenceRow::default()
+        }],
+        references,
+    );
+    assert_eq!(merged.len(), 2);
+    assert_eq!(grand_total, 100.0);
+}
+
+#[test]
+fn payment_request_misc_plans_match_erpnext() {
+    assert_eq!(
+        get_print_format_list("Sales Invoice", &["POS".to_string(), "Compact".to_string()]),
+        vec![
+            "Standard".to_string(),
+            "POS".to_string(),
+            "Compact".to_string(),
+        ]
+    );
+    assert!(get_dummy_message().contains("Make Payment"));
+
+    assert_eq!(
+        validate_payment("Payment Request", "PREQ-0001", Some("Paid")).unwrap_err(),
+        PaymentRequestError::Validation(
+            "The Payment Request PREQ-0001 is already paid, cannot process payment twice"
+                .to_string()
+        )
+    );
+    assert!(validate_payment("Sales Invoice", "SINV-0001", Some("Paid")).is_ok());
+
+    assert_eq!(
+        make_payment_order_plan(&PaymentRequest {
+            name: Some("PREQ-0001".to_string()),
+            reference_doctype: Some("Purchase Invoice".to_string()),
+            reference_name: Some("PINV-0001".to_string()),
+            grand_total: 250.0,
+            party: Some("SUP-001".to_string()),
+            mode_of_payment: Some("Wire Transfer".to_string()),
+            bank_account: Some("BA-001".to_string()),
+            account: Some("Creditors - TC".to_string()),
+            ..PaymentRequest::default()
+        }),
+        PaymentOrderFromRequestPlan {
+            payment_order_type: "Payment Request".to_string(),
+            reference_doctype: "Purchase Invoice".to_string(),
+            reference_name: "PINV-0001".to_string(),
+            amount: 250.0,
+            supplier: Some("SUP-001".to_string()),
+            payment_request: "PREQ-0001".to_string(),
+            mode_of_payment: Some("Wire Transfer".to_string()),
+            bank_account: Some("BA-001".to_string()),
+            account: Some("Creditors - TC".to_string()),
+        }
+    );
+
+    assert_eq!(
+        get_open_payment_requests_query_plan(
+            "Payment Request",
+            "REQ",
+            "name",
+            0,
+            20,
+            Some("Sales Invoice"),
+            Some("SINV-0001"),
+        ),
+        Some(OpenPaymentRequestsQueryPlan {
+            doctype: "Payment Request".to_string(),
+            text_filter: Some("REQ".to_string()),
+            searchfield: "name".to_string(),
+            start: 0,
+            page_len: 20,
+            reference_doctype: "Sales Invoice".to_string(),
+            reference_name: "SINV-0001".to_string(),
+            order_by: "transaction_date ASC,creation ASC".to_string(),
+        })
+    );
+    assert_eq!(
+        get_open_payment_requests_query_plan("Payment Request", "", "name", 0, 20, None, None),
+        None
     );
 }
