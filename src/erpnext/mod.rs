@@ -1,5 +1,196 @@
 pub mod accounts;
 
+use std::collections::BTreeMap;
+
+use serde_json::{Map, Value};
+
+pub const ERPNEXT_VERSION: &str = "16.19.1";
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct ErpnextLocalCache {
+    pub company_cost_center: BTreeMap<String, Option<String>>,
+    pub company_currency: BTreeMap<String, Option<String>>,
+    pub enable_perpetual_inventory: BTreeMap<String, i32>,
+    pub default_finance_book: BTreeMap<String, Option<String>>,
+    pub party_account_types: BTreeMap<String, String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PerpetualInventoryUpdate {
+    pub company: String,
+    pub enable_perpetual_inventory: i32,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum CtxInput {
+    Document(BTreeMap<String, Value>),
+    Dict(BTreeMap<String, Value>),
+    Json(String),
+}
+
+pub fn get_default_company(
+    _user: Option<&str>,
+    user_companies: &[String],
+    global_default_company: Option<&str>,
+) -> Option<String> {
+    user_companies
+        .first()
+        .cloned()
+        .or_else(|| global_default_company.map(ToOwned::to_owned))
+}
+
+pub fn get_default_currency(
+    default_company: Option<&str>,
+    company_currency: Option<&str>,
+) -> Option<String> {
+    default_company?;
+    company_currency.map(ToOwned::to_owned)
+}
+
+pub fn get_default_cost_center(
+    company: Option<&str>,
+    cache: &mut ErpnextLocalCache,
+    fetched_cost_center: Option<&str>,
+) -> Option<String> {
+    let company = company?;
+    cache
+        .company_cost_center
+        .entry(company.to_string())
+        .or_insert_with(|| fetched_cost_center.map(ToOwned::to_owned))
+        .clone()
+}
+
+pub fn get_company_currency(
+    company: &str,
+    cache: &mut ErpnextLocalCache,
+    fetched_currency: Option<&str>,
+) -> Option<String> {
+    cache
+        .company_currency
+        .entry(company.to_string())
+        .or_insert_with(|| fetched_currency.map(ToOwned::to_owned))
+        .clone()
+}
+
+pub fn set_perpetual_inventory(
+    enable: i32,
+    company: Option<&str>,
+    in_test: bool,
+    default_company: Option<&str>,
+) -> Option<PerpetualInventoryUpdate> {
+    let company = company
+        .map(ToOwned::to_owned)
+        .or_else(|| in_test.then(|| "_Test Company".to_string()))
+        .or_else(|| default_company.map(ToOwned::to_owned))?;
+    Some(PerpetualInventoryUpdate {
+        company,
+        enable_perpetual_inventory: enable,
+    })
+}
+
+pub fn encode_company_abbr(name: &str, abbr: Option<&str>) -> String {
+    let Some(abbr) = abbr else {
+        return name.to_string();
+    };
+    let last_part = name.rsplit(" - ").next().unwrap_or_default();
+    if last_part.eq_ignore_ascii_case(abbr) {
+        name.to_string()
+    } else {
+        format!("{name} - {abbr}")
+    }
+}
+
+pub fn is_perpetual_inventory_enabled(
+    company: Option<&str>,
+    in_test: bool,
+    default_company: Option<&str>,
+    cache: &mut ErpnextLocalCache,
+    fetched_value: Option<i32>,
+) -> i32 {
+    let Some(company) = company
+        .map(ToOwned::to_owned)
+        .or_else(|| in_test.then(|| "_Test Company".to_string()))
+        .or_else(|| default_company.map(ToOwned::to_owned))
+    else {
+        return 0;
+    };
+    *cache
+        .enable_perpetual_inventory
+        .entry(company)
+        .or_insert(fetched_value.unwrap_or(0))
+}
+
+pub fn get_default_finance_book(
+    company: Option<&str>,
+    default_company: Option<&str>,
+    cache: &mut ErpnextLocalCache,
+    fetched_finance_book: Option<&str>,
+) -> Option<String> {
+    let company = company
+        .map(ToOwned::to_owned)
+        .or_else(|| default_company.map(ToOwned::to_owned))?;
+    cache
+        .default_finance_book
+        .entry(company)
+        .or_insert_with(|| fetched_finance_book.map(ToOwned::to_owned))
+        .clone()
+}
+
+pub fn get_party_account_type(
+    party_type: &str,
+    cache: &mut ErpnextLocalCache,
+    fetched_account_type: Option<&str>,
+) -> String {
+    cache
+        .party_account_types
+        .entry(party_type.to_string())
+        .or_insert_with(|| fetched_account_type.unwrap_or_default().to_string())
+        .clone()
+}
+
+pub fn get_region(
+    company: Option<&str>,
+    flag_company: Option<&str>,
+    company_country: Option<&str>,
+    flag_country: Option<&str>,
+    system_country: Option<&str>,
+) -> Option<String> {
+    if company.or(flag_company).is_some() {
+        return company_country.map(ToOwned::to_owned);
+    }
+    flag_country
+        .map(ToOwned::to_owned)
+        .or_else(|| system_country.map(ToOwned::to_owned))
+}
+
+pub fn resolve_regional_override(
+    region: Option<&str>,
+    function_path: &str,
+    regional_overrides: &BTreeMap<String, BTreeMap<String, Vec<String>>>,
+) -> Option<String> {
+    regional_overrides
+        .get(region?)
+        .and_then(|region_hooks| region_hooks.get(function_path))
+        .and_then(|overrides| overrides.last())
+        .cloned()
+}
+
+pub fn check_app_permission(user: &str, is_website_user: bool) -> bool {
+    if user == "Administrator" {
+        return true;
+    }
+    !is_website_user
+}
+
+pub fn normalize_ctx_input(ctx: CtxInput) -> Result<Value, serde_json::Error> {
+    match ctx {
+        CtxInput::Document(values) | CtxInput::Dict(values) => {
+            Ok(Value::Object(Map::from_iter(values)))
+        }
+        CtxInput::Json(raw) => serde_json::from_str(&raw),
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FieldSpec {
     pub fieldname: &'static str,

@@ -3,7 +3,7 @@
     {
       "source": "__init__.py",
       "target": "mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/__init__.py",
