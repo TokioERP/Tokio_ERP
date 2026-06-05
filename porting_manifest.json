@@ -1323,12 +1323,12 @@
     {
       "source": "accounts/doctype/payment_reconciliation/payment_reconciliation.py",
       "target": "accounts/doctype/payment_reconciliation/payment_reconciliation.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_reconciliation/test_payment_reconciliation.py",
       "target": "accounts/doctype/payment_reconciliation/test_payment_reconciliation.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_reconciliation_allocation/__init__.py",

@@ -50,7 +50,9 @@ pub struct PaymentReconciliationInvoice {
     pub invoice_type: String,
     pub invoice_number: String,
     pub invoice_date: Option<String>,
+    pub posting_date: Option<String>,
     pub amount: f64,
+    pub invoice_amount: f64,
     pub outstanding_amount: f64,
     pub exchange_rate: Option<f64>,
     pub currency: Option<String>,
@@ -109,6 +111,80 @@ pub struct PaymentReconciliationFilterPlan {
     pub posting_date: Vec<String>,
 }
 
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct PaymentEntriesQueryPlan {
+    pub party_type: String,
+    pub party: String,
+    pub party_account: Vec<String>,
+    pub order_doctype: String,
+    pub default_advance_account: Option<String>,
+    pub against_all_orders: bool,
+    pub limit: i32,
+    pub condition: BTreeMap<String, String>,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct JournalEntriesQueryPlan {
+    pub party_type: String,
+    pub party: String,
+    pub account: String,
+    pub dr_or_cr_expression: String,
+    pub conditions: Vec<String>,
+    pub limit: i32,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct NonReconciledPaymentEntriesPlan {
+    pub payment_entries: PaymentEntriesQueryPlan,
+    pub journal_entries: JournalEntriesQueryPlan,
+    pub dr_or_cr_notes: Option<DrCrNotesQueryPlan>,
+    pub limit: i32,
+    pub sort_by_posting_date: bool,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct DrCrNotesQueryPlan {
+    pub common: Vec<String>,
+    pub posting_date: Vec<String>,
+    pub accounting_dimensions: Vec<String>,
+    pub min_outstanding: Option<f64>,
+    pub max_outstanding: Option<f64>,
+    pub get_payments: bool,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct InvoiceEntriesQueryPlan {
+    pub party_type: String,
+    pub party: String,
+    pub accounts: Vec<String>,
+    pub common: Vec<String>,
+    pub posting_date: Vec<String>,
+    pub accounting_dimensions: Vec<String>,
+    pub min_outstanding: Option<String>,
+    pub max_outstanding: Option<String>,
+    pub limit: i32,
+    pub voucher_no: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct FetchUnreconciledPlan {
+    pub fetch_payments: bool,
+    pub fetch_journal_entries: bool,
+    pub fetch_dr_or_cr_notes: bool,
+    pub fetch_invoices: bool,
+    pub payment_limit: i32,
+    pub invoice_limit: i32,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct ReconcilePlan {
+    pub auto_reconcile_checked: bool,
+    pub running_doc: Option<String>,
+    pub allocation_plan: ReconcileAllocationPlan,
+    pub refresh_unreconciled_entries: bool,
+    pub message: String,
+}
+
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct ReconcileDrCrNotePlan {
     pub voucher_type: String,
@@ -127,6 +203,14 @@ pub struct ReconcileDrCrNotePlan {
     pub gain_loss_dr_or_cr: Option<String>,
     pub gain_loss_reverse_dr_or_cr: Option<String>,
     pub difference_amount: f64,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct ReconcileAllocationPlan {
+    pub dr_or_cr: String,
+    pub entry_list_len: usize,
+    pub dr_or_cr_notes_len: usize,
+    pub skip_ref_details_update_for_pe: bool,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -202,6 +286,238 @@ impl PaymentReconciliation {
         }
     }
 
+    pub fn get_list(_args: &str) {}
+
+    pub fn get_count(_args: &str) {}
+
+    pub fn get_stats(_args: &str) {}
+
+    pub fn save(&self) {}
+
+    pub fn db_insert(&self) {}
+
+    pub fn db_update(&self) {}
+
+    pub fn delete(&self) {}
+
+    pub fn get_unreconciled_entries_plan(
+        &self,
+        _party_account_type: &str,
+    ) -> FetchUnreconciledPlan {
+        FetchUnreconciledPlan {
+            fetch_payments: true,
+            fetch_journal_entries: true,
+            fetch_dr_or_cr_notes: matches!(
+                self.party_type.as_deref(),
+                Some("Customer" | "Supplier")
+            ),
+            fetch_invoices: true,
+            payment_limit: self.payment_limit,
+            invoice_limit: self.invoice_limit,
+        }
+    }
+
+    pub fn get_nonreconciled_payment_entries_plan(
+        &self,
+        party_account_type: &str,
+    ) -> Result<NonReconciledPaymentEntriesPlan, PaymentReconciliationError> {
+        self.check_mandatory_to_fetch()?;
+        Ok(NonReconciledPaymentEntriesPlan {
+            payment_entries: self.get_payment_entries_plan(),
+            journal_entries: self.get_jv_entries_plan(party_account_type),
+            dr_or_cr_notes: if matches!(self.party_type.as_deref(), Some("Customer" | "Supplier")) {
+                Some(self.get_dr_or_cr_notes_plan(party_account_type))
+            } else {
+                None
+            },
+            limit: self.payment_limit,
+            sort_by_posting_date: true,
+        })
+    }
+
+    pub fn get_payment_entries_plan(&self) -> PaymentEntriesQueryPlan {
+        let mut condition = BTreeMap::new();
+        insert_some(&mut condition, "company", self.company.as_deref());
+        condition.insert("get_payments".to_string(), "true".to_string());
+        insert_some(&mut condition, "cost_center", self.cost_center.as_deref());
+        insert_some(
+            &mut condition,
+            "from_payment_date",
+            self.from_payment_date.as_deref(),
+        );
+        insert_some(
+            &mut condition,
+            "to_payment_date",
+            self.to_payment_date.as_deref(),
+        );
+        insert_number(
+            &mut condition,
+            "maximum_payment_amount",
+            self.maximum_payment_amount,
+        );
+        insert_number(
+            &mut condition,
+            "minimum_payment_amount",
+            self.minimum_payment_amount,
+        );
+        insert_some(&mut condition, "name", self.payment_name.as_deref());
+        for dimension in &self.dimensions {
+            insert_some(
+                &mut condition,
+                dimension,
+                self.dimension_values.get(dimension).map(String::as_str),
+            );
+        }
+
+        PaymentEntriesQueryPlan {
+            party_type: self.party_type.clone().unwrap_or_default(),
+            party: self.party.clone().unwrap_or_default(),
+            party_account: vec![self.receivable_payable_account.clone().unwrap_or_default()],
+            order_doctype: if self.party_type.as_deref() == Some("Customer") {
+                "Sales Order"
+            } else {
+                "Purchase Order"
+            }
+            .to_string(),
+            default_advance_account: self.default_advance_account.clone(),
+            against_all_orders: true,
+            limit: self.payment_limit,
+            condition,
+        }
+    }
+
+    pub fn get_jv_entries_plan(&self, party_account_type: &str) -> JournalEntriesQueryPlan {
+        let dr_or_cr_expression = if party_account_type == "Receivable" {
+            "credit_in_account_currency - debit_in_account_currency"
+        } else {
+            "debit_in_account_currency - credit_in_account_currency"
+        };
+        let mut conditions = self.get_journal_filter_conditions();
+        for dimension in &self.dimensions {
+            if let Some(value) = self.dimension_values.get(dimension) {
+                conditions.push(format!("Journal Entry Account.{dimension} = '{value}'"));
+            }
+        }
+        if let Some(payment_name) = self.payment_name.as_deref() {
+            conditions.push(format!("Journal Entry.name LIKE '%{payment_name}%'"));
+        }
+        if let Some(cost_center) = self.cost_center.as_deref() {
+            conditions.push(format!(
+                "Journal Entry Account.cost_center = '{cost_center}'"
+            ));
+        }
+        conditions.push(format!("{dr_or_cr_expression} > 0"));
+        if let Some(bank_cash_account) = self.bank_cash_account.as_deref() {
+            conditions.push(format!(
+                "Journal Entry Account.against_account LIKE '%{bank_cash_account}%'"
+            ));
+        }
+
+        JournalEntriesQueryPlan {
+            party_type: self.party_type.clone().unwrap_or_default(),
+            party: self.party.clone().unwrap_or_default(),
+            account: self.receivable_payable_account.clone().unwrap_or_default(),
+            dr_or_cr_expression: dr_or_cr_expression.to_string(),
+            conditions,
+            limit: self.payment_limit,
+        }
+    }
+
+    pub fn get_return_invoices_plan(&self) -> Vec<String> {
+        let voucher_type = if self.party_type.as_deref() == Some("Customer") {
+            "Sales Invoice"
+        } else {
+            "Purchase Invoice"
+        };
+        let mut conditions = vec![
+            format!("{voucher_type}.docstatus = 1"),
+            format!(
+                "{voucher_type}.{} = '{}'",
+                scrub(self.party_type.as_deref().unwrap_or_default()),
+                self.party.as_deref().unwrap_or_default()
+            ),
+            format!("{voucher_type}.is_return = 1"),
+            format!("{voucher_type}.outstanding_amount != 0"),
+        ];
+        if let Some(payment_name) = self.payment_name.as_deref() {
+            conditions.push(format!("{voucher_type}.name LIKE '%{payment_name}%'"));
+        }
+        if self.payment_limit != 0 {
+            conditions.push(format!("LIMIT {}", self.payment_limit));
+        }
+        conditions
+    }
+
+    pub fn get_dr_or_cr_notes_plan(&self, party_account_type: &str) -> DrCrNotesQueryPlan {
+        let filter_plan = self.build_qb_filter_conditions(false, true);
+        let mut common = filter_plan.common;
+        common.push(format!("account_type = '{party_account_type}'"));
+        common.push(format!(
+            "account = '{}'",
+            self.receivable_payable_account
+                .as_deref()
+                .unwrap_or_default()
+        ));
+
+        DrCrNotesQueryPlan {
+            common,
+            posting_date: filter_plan.posting_date,
+            accounting_dimensions: filter_plan.accounting_dimensions,
+            min_outstanding: self.minimum_payment_amount.map(|amount| -amount),
+            max_outstanding: self.maximum_payment_amount.map(|amount| -amount),
+            get_payments: true,
+        }
+    }
+
+    pub fn get_invoice_entries_plan(&self) -> InvoiceEntriesQueryPlan {
+        let filter_plan = self.build_qb_filter_conditions(true, false);
+        let mut accounts = vec![self.receivable_payable_account.clone().unwrap_or_default()];
+        if let Some(default_advance_account) = self.default_advance_account.clone() {
+            accounts.push(default_advance_account);
+        }
+
+        InvoiceEntriesQueryPlan {
+            party_type: self.party_type.clone().unwrap_or_default(),
+            party: self.party.clone().unwrap_or_default(),
+            accounts,
+            common: filter_plan.common,
+            posting_date: filter_plan.posting_date,
+            accounting_dimensions: filter_plan.accounting_dimensions,
+            min_outstanding: self.minimum_invoice_amount.map(format_number),
+            max_outstanding: self.maximum_invoice_amount.map(format_number),
+            limit: self.invoice_limit,
+            voucher_no: self.invoice_name.clone(),
+        }
+    }
+
+    pub fn is_auto_process_enabled(&self, setting: bool) -> bool {
+        setting
+    }
+
+    pub fn reconcile_plan(
+        &self,
+        auto_reconcile_payments: bool,
+        running_doc: Option<&str>,
+        party_account_type: &str,
+    ) -> Result<ReconcilePlan, PaymentReconciliationError> {
+        if auto_reconcile_payments {
+            if let Some(running_doc) = running_doc {
+                return Err(PaymentReconciliationError::Validation(format!(
+                    "A Reconciliation Job {running_doc} is running for the same filters. Cannot reconcile now"
+                )));
+            }
+        }
+
+        self.validate_allocation()?;
+        Ok(ReconcilePlan {
+            auto_reconcile_checked: auto_reconcile_payments,
+            running_doc: running_doc.map(ToOwned::to_owned),
+            allocation_plan: self.reconcile_allocations_plan(party_account_type, false),
+            refresh_unreconciled_entries: true,
+            message: "Successfully Reconciled".to_string(),
+        })
+    }
+
     pub fn check_mandatory_to_fetch(&self) -> Result<(), PaymentReconciliationError> {
         for (fieldname, label) in [
             (&self.company, "Company"),
@@ -271,6 +587,107 @@ impl PaymentReconciliation {
             }
         }
         difference_amount
+    }
+
+    pub fn add_payment_entries(
+        &mut self,
+        non_reconciled_payments: Vec<PaymentReconciliationPayment>,
+    ) {
+        self.payments.clear();
+        self.payments.extend(non_reconciled_payments);
+    }
+
+    pub fn add_invoice_entries(
+        &mut self,
+        non_reconciled_invoices: Vec<PaymentReconciliationInvoice>,
+    ) {
+        self.invoices.clear();
+        self.invoices
+            .extend(non_reconciled_invoices.into_iter().map(|mut entry| {
+                entry.invoice_date = entry.invoice_date.or(entry.posting_date.clone());
+                if entry.amount == 0.0 {
+                    entry.amount = entry.invoice_amount;
+                }
+                entry
+            }));
+    }
+
+    pub fn get_invoice_exchange_map(
+        &self,
+        invoices: &[PaymentReconciliationInvoice],
+        payments: &[PaymentReconciliationPayment],
+        sales_invoice_rates: &BTreeMap<String, f64>,
+        purchase_invoice_rates: &BTreeMap<String, f64>,
+        journal_entry_rates: &BTreeMap<String, f64>,
+        payment_entry_rates: &BTreeMap<String, f64>,
+    ) -> BTreeMap<String, f64> {
+        let mut exchange_map = BTreeMap::new();
+
+        for name in invoices
+            .iter()
+            .filter(|invoice| invoice.invoice_type == "Sales Invoice")
+            .map(|invoice| invoice.invoice_number.as_str())
+            .chain(
+                payments
+                    .iter()
+                    .filter(|payment| payment.reference_type == "Sales Invoice")
+                    .map(|payment| payment.reference_name.as_str()),
+            )
+        {
+            if let Some(rate) = sales_invoice_rates.get(name) {
+                exchange_map.insert(name.to_string(), *rate);
+            }
+        }
+
+        for name in invoices
+            .iter()
+            .filter(|invoice| invoice.invoice_type == "Purchase Invoice")
+            .map(|invoice| invoice.invoice_number.as_str())
+            .chain(
+                payments
+                    .iter()
+                    .filter(|payment| payment.reference_type == "Purchase Invoice")
+                    .map(|payment| payment.reference_name.as_str()),
+            )
+        {
+            if let Some(rate) = purchase_invoice_rates.get(name) {
+                exchange_map.insert(name.to_string(), *rate);
+            }
+        }
+
+        for name in invoices
+            .iter()
+            .filter(|invoice| invoice.invoice_type == "Journal Entry")
+            .map(|invoice| invoice.invoice_number.as_str())
+            .chain(
+                payments
+                    .iter()
+                    .filter(|payment| payment.reference_type == "Journal Entry")
+                    .map(|payment| payment.reference_name.as_str()),
+            )
+        {
+            if let Some(rate) = journal_entry_rates.get(name) {
+                exchange_map.insert(name.to_string(), *rate);
+            }
+        }
+
+        for name in invoices
+            .iter()
+            .filter(|invoice| invoice.invoice_type == "Payment Entry")
+            .map(|invoice| invoice.invoice_number.as_str())
+            .chain(
+                payments
+                    .iter()
+                    .filter(|payment| payment.reference_type == "Payment Entry")
+                    .map(|payment| payment.reference_name.as_str()),
+            )
+        {
+            if let Some(rate) = payment_entry_rates.get(name) {
+                exchange_map.insert(name.to_string(), *rate);
+            }
+        }
+
+        exchange_map
     }
 
     pub fn calculate_difference_on_allocation_change(
@@ -450,6 +867,38 @@ impl PaymentReconciliation {
             debit_or_credit_note_posting_date: row.debit_or_credit_note_posting_date.clone(),
             cost_center: row.cost_center.clone(),
             dimensions: row.dimensions.clone(),
+        }
+    }
+
+    pub fn reconcile_allocations_plan(
+        &self,
+        party_account_type: &str,
+        skip_ref_details_update_for_pe: bool,
+    ) -> ReconcileAllocationPlan {
+        let dr_or_cr = if party_account_type == "Receivable" {
+            "credit_in_account_currency"
+        } else {
+            "debit_in_account_currency"
+        };
+        let mut entry_list_len = 0;
+        let mut dr_or_cr_notes_len = 0;
+        for row in &self.allocation {
+            if !row.invoice_number.is_empty() && row.allocated_amount != 0.0 {
+                if matches!(
+                    row.reference_type.as_str(),
+                    "Sales Invoice" | "Purchase Invoice"
+                ) {
+                    dr_or_cr_notes_len += 1;
+                } else {
+                    entry_list_len += 1;
+                }
+            }
+        }
+        ReconcileAllocationPlan {
+            dr_or_cr: dr_or_cr.to_string(),
+            entry_list_len,
+            dr_or_cr_notes_len,
+            skip_ref_details_update_for_pe,
         }
     }
 
@@ -709,6 +1158,24 @@ pub fn get_queries_for_dimension_filters(
             (fieldname.clone(), filters)
         })
         .collect()
+}
+
+pub fn adjust_allocations_for_taxes(_doc: &PaymentReconciliation) {}
+
+fn insert_some(map: &mut BTreeMap<String, String>, key: &str, value: Option<&str>) {
+    if let Some(value) = value {
+        map.insert(key.to_string(), value.to_string());
+    }
+}
+
+fn insert_number(map: &mut BTreeMap<String, String>, key: &str, value: Option<f64>) {
+    if let Some(value) = value {
+        map.insert(key.to_string(), format_number(value));
+    }
+}
+
+fn scrub(value: &str) -> String {
+    value.trim().to_lowercase().replace(' ', "_")
 }
 
 fn round_to_precision(value: f64, precision: u32) -> f64 {
