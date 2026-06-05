@@ -5,6 +5,10 @@ pub struct PosInvoice {
     pub name: Option<String>,
     pub company: Option<String>,
     pub customer: Option<String>,
+    pub pos_profile: Option<String>,
+    pub contact_mobile: Option<String>,
+    pub debit_to: Option<String>,
+    pub party_account_currency: Option<String>,
     pub is_pos: bool,
     pub is_return: bool,
     pub docstatus: i32,
@@ -54,6 +58,99 @@ pub struct PosInvoicePayment {
     pub payment_type: String,
     pub account: Option<String>,
     pub amount: f64,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct PosProfile {
+    pub name: String,
+    pub company: String,
+    pub customer: Option<String>,
+    pub currency: Option<String>,
+    pub warehouse: Option<String>,
+    pub account_for_change_amount: Option<String>,
+    pub print_format: Option<String>,
+    pub allow_print_before_pay: bool,
+    pub set_grand_total_to_default_mop: bool,
+    pub utm_source: Option<String>,
+    pub utm_campaign: Option<String>,
+    pub utm_medium: Option<String>,
+    pub selling_price_list: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct MissingValuesPlan {
+    pub pos_profile: String,
+    pub company: Option<String>,
+    pub customer: Option<String>,
+    pub debit_to: Option<String>,
+    pub party_account_currency: Option<String>,
+    pub due_date: Option<String>,
+    pub print_format: Option<String>,
+    pub allow_print_before_pay: bool,
+    pub set_default_payment: bool,
+    pub utm_source: Option<String>,
+    pub utm_campaign: Option<String>,
+    pub utm_medium: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct PaymentRequestPlan {
+    pub use_existing_request: bool,
+    pub reference_doctype: String,
+    pub reference_name: String,
+    pub recipient_id: Option<String>,
+    pub mode_of_payment: Option<String>,
+    pub payment_account: Option<String>,
+    pub payment_request_type: String,
+    pub party_type: String,
+    pub party: Option<String>,
+    pub return_doc: bool,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct UpdatePaymentsPlan {
+    pub new_paid_amount: f64,
+    pub new_base_paid_amount: f64,
+    pub new_outstanding_amount: f64,
+    pub new_change_amount: f64,
+    pub added_payment_count: usize,
+    pub set_status_update: bool,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct MergeLogInvoiceInput {
+    pub name: String,
+    pub customer: String,
+    pub posting_date: String,
+    pub grand_total: f64,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct MergeLogPlan {
+    pub posting_date_source: String,
+    pub customer: Option<String>,
+    pub invoices: Vec<MergeLogInvoiceInput>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ItemQueryPlan {
+    pub doctype: String,
+    pub txt: String,
+    pub searchfield: String,
+    pub start: i32,
+    pub page_len: i32,
+    pub item_groups: Option<Vec<String>>,
+    pub as_dict: bool,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct SalesInvoicePaymentPlan {
+    pub idx: i32,
+    pub mode_of_payment: Option<String>,
+    pub amount: f64,
+    pub base_amount: f64,
+    pub parent: Option<String>,
+    pub parentfield: String,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -458,6 +555,147 @@ impl PosInvoice {
         }
         Ok(())
     }
+
+    pub fn set_missing_values_plan(
+        &self,
+        profile: &PosProfile,
+        pos_invoice_print_disabled: bool,
+        party_account: Option<&str>,
+        party_account_currency: Option<&str>,
+        due_date: Option<&str>,
+    ) -> MissingValuesPlan {
+        let debit_to = self
+            .debit_to
+            .clone()
+            .or_else(|| party_account.map(str::to_string));
+        let party_account_currency = self
+            .party_account_currency
+            .clone()
+            .or_else(|| party_account_currency.map(str::to_string));
+        let due_date = self
+            .due_date
+            .clone()
+            .or_else(|| due_date.map(str::to_string));
+        let print_format = profile.print_format.clone().or_else(|| {
+            if pos_invoice_print_disabled {
+                None
+            } else {
+                Some(Self::DOCTYPE.to_string())
+            }
+        });
+
+        MissingValuesPlan {
+            pos_profile: profile.name.clone(),
+            company: self
+                .company
+                .clone()
+                .or_else(|| Some(profile.company.clone())),
+            customer: self.customer.clone().or_else(|| profile.customer.clone()),
+            debit_to,
+            party_account_currency,
+            due_date,
+            print_format,
+            allow_print_before_pay: profile.allow_print_before_pay,
+            set_default_payment: profile.set_grand_total_to_default_mop,
+            utm_source: profile.utm_source.clone(),
+            utm_campaign: profile.utm_campaign.clone(),
+            utm_medium: profile.utm_medium.clone(),
+        }
+    }
+
+    pub fn reset_mode_of_payments_plan(&self) -> Option<&'static str> {
+        self.pos_profile
+            .as_ref()
+            .map(|_| "update_multi_mode_option")
+    }
+
+    pub fn create_payment_request_plan(
+        &self,
+        existing_payment_request: bool,
+    ) -> Result<PaymentRequestPlan, PosInvoiceError> {
+        for pay in &self.payments {
+            if pay.payment_type == "Phone" {
+                if pay.amount <= 0.0 {
+                    return Err(PosInvoiceError::Validation(
+                        "Payment amount cannot be less than or equal to 0".to_string(),
+                    ));
+                }
+                if self
+                    .contact_mobile
+                    .as_deref()
+                    .unwrap_or_default()
+                    .is_empty()
+                {
+                    return Err(PosInvoiceError::Validation(
+                        "Please enter the phone number first".to_string(),
+                    ));
+                }
+
+                return Ok(PaymentRequestPlan {
+                    use_existing_request: existing_payment_request,
+                    reference_doctype: Self::DOCTYPE.to_string(),
+                    reference_name: self.name.clone().unwrap_or_default(),
+                    recipient_id: self.contact_mobile.clone(),
+                    mode_of_payment: pay.mode_of_payment.clone(),
+                    payment_account: pay.account.clone(),
+                    payment_request_type: "Inward".to_string(),
+                    party_type: "Customer".to_string(),
+                    party: self.customer.clone(),
+                    return_doc: true,
+                });
+            }
+        }
+        Err(PosInvoiceError::Validation(
+            "No phone payment found".to_string(),
+        ))
+    }
+
+    pub fn update_payments_plan(
+        &self,
+        payments: &[PosInvoicePayment],
+        precision: u32,
+    ) -> Result<UpdatePaymentsPlan, PosInvoiceError> {
+        if self.status == "Consolidated" {
+            return Err(PosInvoiceError::Validation(
+                "Create Payment Entry for Consolidated POS Invoices.".to_string(),
+            ));
+        }
+
+        let total = self.rounded_total.unwrap_or(self.grand_total);
+        if self.paid_amount >= total {
+            return Err(PosInvoiceError::Validation(
+                "This invoice has already been paid.".to_string(),
+            ));
+        }
+
+        let mut paid_amount = self.paid_amount;
+        for payment in payments {
+            paid_amount += payment.amount;
+        }
+
+        let new_paid_amount = round_to_precision(paid_amount, precision);
+        let new_base_paid_amount =
+            round_to_precision(new_paid_amount * self.conversion_rate, precision);
+        let new_outstanding_amount = if total > new_paid_amount {
+            round_to_precision(total - new_paid_amount, precision)
+        } else {
+            0.0
+        };
+        let new_change_amount = if new_paid_amount > total {
+            round_to_precision(new_paid_amount - total, precision)
+        } else {
+            0.0
+        };
+
+        Ok(UpdatePaymentsPlan {
+            new_paid_amount,
+            new_base_paid_amount,
+            new_outstanding_amount,
+            new_change_amount,
+            added_payment_count: payments.len(),
+            set_status_update: true,
+        })
+    }
 }
 
 impl DocumentController for PosInvoice {
@@ -542,6 +780,60 @@ pub fn get_pos_reserved_qty(
     packed_item_reserved_qty: f64,
 ) -> f64 {
     pos_invoice_item_reserved_qty + packed_item_reserved_qty
+}
+
+pub fn make_sales_return_plan(source_name: &str) -> (String, String) {
+    (PosInvoice::DOCTYPE.to_string(), source_name.to_string())
+}
+
+pub fn make_merge_log_plan(
+    invoices: Vec<MergeLogInvoiceInput>,
+) -> Result<MergeLogPlan, PosInvoiceError> {
+    if invoices.is_empty() {
+        return Err(PosInvoiceError::Validation(
+            "At least one invoice has to be selected.".to_string(),
+        ));
+    }
+    Ok(MergeLogPlan {
+        posting_date_source: "today".to_string(),
+        customer: invoices.last().map(|invoice| invoice.customer.clone()),
+        invoices,
+    })
+}
+
+pub fn item_query_plan(
+    doctype: &str,
+    txt: &str,
+    searchfield: &str,
+    start: i32,
+    page_len: i32,
+    item_groups: Option<Vec<String>>,
+    as_dict: bool,
+) -> ItemQueryPlan {
+    ItemQueryPlan {
+        doctype: doctype.to_string(),
+        txt: txt.to_string(),
+        searchfield: searchfield.to_string(),
+        start,
+        page_len,
+        item_groups,
+        as_dict,
+    }
+}
+
+pub fn create_payments_on_invoice(
+    doc: &PosInvoice,
+    idx: i32,
+    payment_details: &PosInvoicePayment,
+) -> SalesInvoicePaymentPlan {
+    SalesInvoicePaymentPlan {
+        idx,
+        mode_of_payment: payment_details.mode_of_payment.clone(),
+        amount: payment_details.amount,
+        base_amount: payment_details.amount * doc.conversion_rate,
+        parent: doc.name.clone(),
+        parentfield: "payments".to_string(),
+    }
 }
 
 fn format_number(value: f64) -> String {

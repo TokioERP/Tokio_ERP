@@ -1,7 +1,9 @@
 use tokio_erp::erpnext::accounts::doctype::pos_invoice::pos_invoice::{
-    get_bundle_availability, get_pos_reserved_qty, get_stock_availability, BundleAvailabilityRow,
-    PosInvoice, PosInvoiceError, PosInvoiceItem, PosInvoicePayment, ProductBundleItem,
-    StockAvailability,
+    create_payments_on_invoice, get_bundle_availability, get_pos_reserved_qty,
+    get_stock_availability, item_query_plan, make_merge_log_plan, make_sales_return_plan,
+    BundleAvailabilityRow, ItemQueryPlan, MergeLogInvoiceInput, MergeLogPlan, MissingValuesPlan,
+    PaymentRequestPlan, PosInvoice, PosInvoiceError, PosInvoiceItem, PosInvoicePayment, PosProfile,
+    ProductBundleItem, SalesInvoicePaymentPlan, StockAvailability, UpdatePaymentsPlan,
 };
 use tokio_erp::erpnext::{DocumentController, FieldSpec};
 
@@ -322,5 +324,163 @@ fn pos_invoice_stock_serial_batch_and_return_guards_match_erpnext() {
         )
         .bundle_error(1),
         Some("<b>Row #1:</b> Bundle BUNDLE-001 in warehouse Stores - TC has insufficient packed items:<br><div style='margin-top: 15px;'><ul style='line-height: 0.8;'><li>Packed Item ITEM-A: Required 4, Available 3</li></ul></div>".to_string())
+    );
+}
+
+#[test]
+fn pos_invoice_profile_payment_request_update_and_query_plans_match_erpnext() {
+    let mut doc = base_invoice();
+    doc.pos_profile = Some("POS-PROFILE-001".to_string());
+    doc.contact_mobile = Some("+998901234567".to_string());
+    doc.debit_to = None;
+    doc.due_date = None;
+
+    let profile = PosProfile {
+        name: "POS-PROFILE-001".to_string(),
+        company: "TC".to_string(),
+        customer: Some("CUST-POS".to_string()),
+        currency: Some("USD".to_string()),
+        warehouse: Some("Stores - TC".to_string()),
+        account_for_change_amount: Some("Cash - TC".to_string()),
+        print_format: Some("POS Invoice".to_string()),
+        allow_print_before_pay: true,
+        set_grand_total_to_default_mop: true,
+        utm_source: Some("Counter".to_string()),
+        utm_campaign: Some("Retail".to_string()),
+        utm_medium: Some("POS".to_string()),
+        selling_price_list: Some("Retail USD".to_string()),
+    };
+    assert_eq!(
+        doc.set_missing_values_plan(
+            &profile,
+            false,
+            Some("Debtors - TC"),
+            Some("USD"),
+            Some("2026-06-30"),
+        ),
+        MissingValuesPlan {
+            pos_profile: "POS-PROFILE-001".to_string(),
+            company: Some("TC".to_string()),
+            customer: Some("CUST-001".to_string()),
+            debit_to: Some("Debtors - TC".to_string()),
+            party_account_currency: Some("USD".to_string()),
+            due_date: Some("2026-06-30".to_string()),
+            print_format: Some("POS Invoice".to_string()),
+            allow_print_before_pay: true,
+            set_default_payment: true,
+            utm_source: Some("Counter".to_string()),
+            utm_campaign: Some("Retail".to_string()),
+            utm_medium: Some("POS".to_string()),
+        }
+    );
+    assert_eq!(
+        doc.reset_mode_of_payments_plan(),
+        Some("update_multi_mode_option")
+    );
+
+    let mut phone = base_invoice();
+    phone.contact_mobile = Some("+998901234567".to_string());
+    phone.payments[0].payment_type = "Phone".to_string();
+    phone.payments[0].mode_of_payment = Some("PhonePe".to_string());
+    phone.payments[0].account = Some("Phone Gateway - TC".to_string());
+    phone.payments[0].amount = 75.0;
+    assert_eq!(
+        phone.create_payment_request_plan(false).unwrap(),
+        PaymentRequestPlan {
+            use_existing_request: false,
+            reference_doctype: "POS Invoice".to_string(),
+            reference_name: "POS-0001".to_string(),
+            recipient_id: Some("+998901234567".to_string()),
+            mode_of_payment: Some("PhonePe".to_string()),
+            payment_account: Some("Phone Gateway - TC".to_string()),
+            payment_request_type: "Inward".to_string(),
+            party_type: "Customer".to_string(),
+            party: Some("CUST-001".to_string()),
+            return_doc: true,
+        }
+    );
+    phone.payments[0].amount = 0.0;
+    assert_eq!(
+        phone.create_payment_request_plan(false).unwrap_err(),
+        PosInvoiceError::Validation("Payment amount cannot be less than or equal to 0".to_string())
+    );
+
+    let mut paid = base_invoice();
+    paid.paid_amount = 60.0;
+    assert_eq!(
+        paid.update_payments_plan(
+            &[PosInvoicePayment {
+                idx: 0,
+                mode_of_payment: Some("Card".to_string()),
+                payment_type: "Card".to_string(),
+                account: Some("Card - TC".to_string()),
+                amount: 30.0,
+            }],
+            2,
+        )
+        .unwrap(),
+        UpdatePaymentsPlan {
+            new_paid_amount: 90.0,
+            new_base_paid_amount: 1_125_000.0,
+            new_outstanding_amount: 10.0,
+            new_change_amount: 0.0,
+            added_payment_count: 1,
+            set_status_update: true,
+        }
+    );
+
+    assert_eq!(
+        make_sales_return_plan("POS-0001"),
+        ("POS Invoice".to_string(), "POS-0001".to_string())
+    );
+    assert_eq!(
+        make_merge_log_plan(vec![MergeLogInvoiceInput {
+            name: "POS-0001".to_string(),
+            customer: "CUST-001".to_string(),
+            posting_date: "2026-06-05".to_string(),
+            grand_total: 100.0,
+        }])
+        .unwrap(),
+        MergeLogPlan {
+            posting_date_source: "today".to_string(),
+            customer: Some("CUST-001".to_string()),
+            invoices: vec![MergeLogInvoiceInput {
+                name: "POS-0001".to_string(),
+                customer: "CUST-001".to_string(),
+                posting_date: "2026-06-05".to_string(),
+                grand_total: 100.0,
+            }],
+        }
+    );
+    assert_eq!(
+        item_query_plan(
+            "Item",
+            "coffee",
+            "item_name",
+            0,
+            20,
+            Some(vec!["Products".to_string(), "Beverages".to_string()]),
+            false,
+        ),
+        ItemQueryPlan {
+            doctype: "Item".to_string(),
+            txt: "coffee".to_string(),
+            searchfield: "item_name".to_string(),
+            start: 0,
+            page_len: 20,
+            item_groups: Some(vec!["Products".to_string(), "Beverages".to_string()]),
+            as_dict: false,
+        }
+    );
+    assert_eq!(
+        create_payments_on_invoice(&doc, 2, &doc.payments[0]),
+        SalesInvoicePaymentPlan {
+            idx: 2,
+            mode_of_payment: Some("Cash".to_string()),
+            amount: 100.0,
+            base_amount: 1_250_000.0,
+            parent: Some("POS-0001".to_string()),
+            parentfield: "payments".to_string(),
+        }
     );
 }
