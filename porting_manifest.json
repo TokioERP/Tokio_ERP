@@ -1718,7 +1718,7 @@
     {
       "source": "accounts/doctype/pricing_rule/utils.py",
       "target": "accounts/doctype/pricing_rule/utils.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pricing_rule_brand/__init__.py",
