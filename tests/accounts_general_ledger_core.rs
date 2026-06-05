@@ -1,13 +1,17 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use tokio_erp::erpnext::accounts::general_ledger::{
-    check_freezing_date, get_debit_credit_allowance, get_debit_credit_difference,
-    get_merge_properties, make_acc_dimensions_offsetting_entry, make_entry_plan,
-    make_gl_entries_plan, make_reverse_gl_entries_plan, process_debit_credit_difference,
-    process_gl_map, validate_against_pcv, validate_allowed_dimensions, validate_disabled_accounts,
-    AccountingDimensionOffset, DimensionFilterRule, DimensionPolicy, EntrySubmitPlan,
+    check_freezing_date, get_accounting_dimensions_for_offsetting_entry,
+    get_cost_center_allocation_data, get_debit_credit_allowance, get_debit_credit_difference,
+    get_merge_properties, get_round_off_account_and_cost_center,
+    make_acc_dimensions_offsetting_entry, make_entry_plan, make_gl_entries_plan,
+    make_reverse_gl_entries_plan, process_debit_credit_difference, process_gl_map,
+    save_entries_plan, update_accounting_dimensions, validate_accounting_period,
+    validate_against_pcv, validate_allowed_dimensions, validate_cwip_accounts,
+    validate_disabled_accounts, AccountingDimensionDefault, AccountingDimensionOffset,
+    AccountingPeriod, CancelOriginalPlan, DimensionFilterRule, DimensionPolicy, EntrySubmitPlan,
     GeneralLedgerContext, GeneralLedgerError, GlEntry, MakeGlEntriesPlan, ReverseGlPlan,
-    RoundOffSettings, SaveEntriesPlan,
+    RoundOffLookup, RoundOffSettings, SaveEntriesPlan,
 };
 
 fn gle(account: &str, debit: f64, credit: f64, cost_center: &str) -> GlEntry {
@@ -175,6 +179,10 @@ fn general_ledger_offset_roundoff_reverse_and_validation_helpers_match_erpnext()
         reverse,
         ReverseGlPlan {
             cancel_original_entries: true,
+            cancel_original_plan: CancelOriginalPlan::ByVoucher {
+                voucher_type: "Sales Invoice".to_string(),
+                voucher_no: "SINV-0001".to_string(),
+            },
             partial_cancel: false,
             reversed_entries: vec![GlEntry {
                 name: None,
@@ -387,5 +395,207 @@ fn general_ledger_make_entries_orchestration_plan_matches_erpnext() {
             validate_expense_against_budget: true,
             entry: gle("Income - TC", 0.0, 100.0, "Main - TC"),
         }
+    );
+}
+
+#[test]
+fn general_ledger_remaining_validation_lookup_and_cancel_plans_match_erpnext() {
+    let mut entry = gle("Expense - TC", 10.0, 0.0, "Main - TC");
+    entry.voucher_type = "Journal Entry".to_string();
+    entry
+        .dimensions
+        .insert("department".to_string(), "Sales".to_string());
+    let mut other = entry.clone();
+    other
+        .dimensions
+        .insert("department".to_string(), "Admin".to_string());
+
+    let selected = get_accounting_dimensions_for_offsetting_entry(
+        &[entry.clone(), other.clone()],
+        &[AccountingDimensionOffset {
+            fieldname: "department".to_string(),
+            name: "Department".to_string(),
+            offsetting_account: "Department Offset - TC".to_string(),
+            account_currency: "USD".to_string(),
+        }],
+    );
+    assert_eq!(selected.len(), 1);
+    assert_eq!(selected[0].fieldname, "department");
+    assert!(get_accounting_dimensions_for_offsetting_entry(
+        &[entry.clone(), entry.clone()],
+        &selected
+    )
+    .is_empty());
+
+    assert_eq!(
+        validate_accounting_period(
+            &entry,
+            &[AccountingPeriod {
+                name: "FY Lock".to_string(),
+                exempted_role: Some("Accounts Manager".to_string()),
+            }],
+            &BTreeSet::from(["Accounts User".to_string()]),
+        )
+        .unwrap_err(),
+        GeneralLedgerError::ClosedAccountingPeriod(
+            "You cannot create or cancel any accounting entries with in the closed Accounting Period <b>FY Lock</b>".to_string()
+        )
+    );
+    assert!(validate_accounting_period(
+        &entry,
+        &[AccountingPeriod {
+            name: "FY Lock".to_string(),
+            exempted_role: Some("Accounts Manager".to_string()),
+        }],
+        &BTreeSet::from(["Accounts Manager".to_string()]),
+    )
+    .is_ok());
+
+    assert_eq!(
+        validate_cwip_accounts(
+            &[entry.clone()],
+            true,
+            &BTreeSet::from(["Expense - TC".to_string()])
+        )
+        .unwrap_err(),
+        GeneralLedgerError::Validation(
+            "Account: <b>Expense - TC</b> is capital Work in progress and can not be updated by Journal Entry".to_string()
+        )
+    );
+    let sales_entry = gle("Expense - TC", 10.0, 0.0, "Main - TC");
+    assert!(validate_cwip_accounts(
+        &[sales_entry],
+        true,
+        &BTreeSet::from(["Expense - TC".to_string()])
+    )
+    .is_ok());
+
+    assert_eq!(
+        get_round_off_account_and_cost_center(
+            "TC",
+            RoundOffLookup {
+                company_round_off_account: None,
+                company_round_off_cost_center: Some("Company CC - TC".to_string()),
+                round_off_for_opening: Some("Opening Round Off - TC".to_string()),
+                default_expense_account: Some("Expense - TC".to_string()),
+                voucher_has_cost_center: true,
+                parent_cost_center: Some("Parent CC - TC".to_string()),
+                use_company_default: false,
+            },
+        )
+        .unwrap(),
+        RoundOffSettings {
+            round_off_account: Some("Expense - TC".to_string()),
+            round_off_cost_center: Some("Parent CC - TC".to_string()),
+            round_off_for_opening: Some("Opening Round Off - TC".to_string()),
+            default_expense_account: Some("Expense - TC".to_string()),
+        }
+    );
+
+    let mut named = gle("Receivable - TC", 100.0, 0.0, "Main - TC");
+    named.name = Some("GLE-0001".to_string());
+    let reverse = make_reverse_gl_entries_plan(&[named], false, Some("2026-06-01"));
+    assert_eq!(
+        reverse.cancel_original_plan,
+        CancelOriginalPlan::ByNames(vec!["GLE-0001".to_string()])
+    );
+
+    let unnamed = gle("Receivable - TC", 100.0, 0.0, "Main - TC");
+    let reverse = make_reverse_gl_entries_plan(&[unnamed], false, None);
+    assert_eq!(
+        reverse.cancel_original_plan,
+        CancelOriginalPlan::ByVoucher {
+            voucher_type: "Sales Invoice".to_string(),
+            voucher_no: "SINV-0001".to_string(),
+        }
+    );
+}
+
+#[test]
+fn general_ledger_lookup_save_and_dimension_update_helpers_match_erpnext() {
+    let mut context = GeneralLedgerContext {
+        precision: 2,
+        cost_center_allocations: BTreeMap::from([(
+            "Main - TC".to_string(),
+            vec![
+                ("North - TC".to_string(), 70.0),
+                ("South - TC".to_string(), 30.0),
+            ],
+        )]),
+        round_off_settings: RoundOffSettings {
+            round_off_account: Some("Round Off - TC".to_string()),
+            round_off_cost_center: Some("Main - TC".to_string()),
+            round_off_for_opening: None,
+            default_expense_account: None,
+        },
+        ..GeneralLedgerContext::default()
+    };
+    assert_eq!(
+        get_cost_center_allocation_data(&context, "TC", "2026-05-15", "Main - TC"),
+        vec![
+            ("North - TC".to_string(), 70.0),
+            ("South - TC".to_string(), 30.0)
+        ]
+    );
+    assert!(
+        get_cost_center_allocation_data(&context, "TC", "2026-05-15", "Direct - TC").is_empty()
+    );
+
+    let save_plan = save_entries_plan(
+        vec![
+            gle("Receivable - TC", 100.0, 0.0, "Main - TC"),
+            gle("Income - TC", 0.0, 99.99, "Main - TC"),
+        ],
+        false,
+        "Yes",
+        false,
+        &context,
+    )
+    .unwrap();
+    assert_eq!(save_plan.entries.len(), 3);
+    assert!(save_plan
+        .entries
+        .iter()
+        .any(|entry| entry.account == "Round Off - TC"));
+    assert_eq!(save_plan.adv_adj, false);
+    assert_eq!(save_plan.update_outstanding, "Yes");
+
+    let mut round_off = gle("Round Off - TC", 0.0, 0.01, "Main - TC");
+    update_accounting_dimensions(
+        &mut round_off,
+        &["department".to_string()],
+        &BTreeMap::from([("department".to_string(), "Sales".to_string())]),
+        "Profit and Loss",
+        &[AccountingDimensionDefault {
+            company: "TC".to_string(),
+            fieldname: "branch".to_string(),
+            mandatory_for_pl: true,
+            mandatory_for_bs: false,
+            default_dimension: Some("HQ".to_string()),
+        }],
+    );
+    assert_eq!(
+        round_off.dimensions.get("department").map(String::as_str),
+        Some("Sales")
+    );
+
+    context.accounting_dimensions.clear();
+    let mut fallback = gle("Round Off - TC", 0.0, 0.01, "Main - TC");
+    update_accounting_dimensions(
+        &mut fallback,
+        &[],
+        &BTreeMap::new(),
+        "Profit and Loss",
+        &[AccountingDimensionDefault {
+            company: "TC".to_string(),
+            fieldname: "branch".to_string(),
+            mandatory_for_pl: true,
+            mandatory_for_bs: false,
+            default_dimension: Some("HQ".to_string()),
+        }],
+    );
+    assert_eq!(
+        fallback.dimensions.get("branch").map(String::as_str),
+        Some("HQ")
     );
 }

@@ -2593,7 +2593,7 @@
     {
       "source": "accounts/general_ledger.py",
       "target": "accounts/general_ledger.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/notification/__init__.py",

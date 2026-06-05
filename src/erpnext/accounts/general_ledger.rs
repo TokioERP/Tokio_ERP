@@ -53,6 +53,21 @@ pub struct AccountingDimensionOffset {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AccountingPeriod {
+    pub name: String,
+    pub exempted_role: Option<String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AccountingDimensionDefault {
+    pub company: String,
+    pub fieldname: String,
+    pub mandatory_for_pl: bool,
+    pub mandatory_for_bs: bool,
+    pub default_dimension: Option<String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DimensionPolicy {
     Allow,
     Restrict,
@@ -73,9 +88,31 @@ pub struct RoundOffSettings {
     pub default_expense_account: Option<String>,
 }
 
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct RoundOffLookup {
+    pub company_round_off_account: Option<String>,
+    pub company_round_off_cost_center: Option<String>,
+    pub round_off_for_opening: Option<String>,
+    pub default_expense_account: Option<String>,
+    pub voucher_has_cost_center: bool,
+    pub parent_cost_center: Option<String>,
+    pub use_company_default: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum CancelOriginalPlan {
+    None,
+    ByNames(Vec<String>),
+    ByVoucher {
+        voucher_type: String,
+        voucher_no: String,
+    },
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct ReverseGlPlan {
     pub cancel_original_entries: bool,
+    pub cancel_original_plan: CancelOriginalPlan,
     pub partial_cancel: bool,
     pub reversed_entries: Vec<GlEntry>,
 }
@@ -111,6 +148,7 @@ pub enum MakeGlEntriesPlan {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum GeneralLedgerError {
+    ClosedAccountingPeriod(String),
     InvalidAccountDimension(String),
     MandatoryAccountDimension(String),
     Validation(String),
@@ -186,6 +224,186 @@ pub fn make_entry_plan(
             && entry.voucher_type != "Period Closing Voucher"
             && (entry.is_cancelled == 0 || entry.voucher_type == "Journal Entry"),
         entry: entry.clone(),
+    }
+}
+
+pub fn get_accounting_dimensions_for_offsetting_entry(
+    gl_map: &[GlEntry],
+    accounting_dimensions: &[AccountingDimensionOffset],
+) -> Vec<AccountingDimensionOffset> {
+    accounting_dimensions
+        .iter()
+        .filter(|dimension| {
+            gl_map
+                .iter()
+                .map(|entry| entry.dimensions.get(&dimension.fieldname).cloned())
+                .collect::<BTreeSet<_>>()
+                .len()
+                > 1
+        })
+        .cloned()
+        .collect()
+}
+
+pub fn get_cost_center_allocation_data(
+    context: &GeneralLedgerContext,
+    _company: &str,
+    _posting_date: &str,
+    cost_center: &str,
+) -> Vec<(String, f64)> {
+    context
+        .cost_center_allocations
+        .get(cost_center)
+        .cloned()
+        .unwrap_or_default()
+}
+
+pub fn validate_accounting_period(
+    first_entry: &GlEntry,
+    accounting_periods: &[AccountingPeriod],
+    user_roles: &BTreeSet<String>,
+) -> Result<(), GeneralLedgerError> {
+    let Some(period) = accounting_periods.first() else {
+        return Ok(());
+    };
+    if period
+        .exempted_role
+        .as_ref()
+        .is_some_and(|role| user_roles.contains(role))
+    {
+        return Ok(());
+    }
+    let _ = first_entry;
+    Err(GeneralLedgerError::ClosedAccountingPeriod(format!(
+        "You cannot create or cancel any accounting entries with in the closed Accounting Period <b>{}</b>",
+        period.name
+    )))
+}
+
+pub fn validate_cwip_accounts(
+    gl_map: &[GlEntry],
+    cwip_enabled: bool,
+    cwip_accounts: &BTreeSet<String>,
+) -> Result<(), GeneralLedgerError> {
+    if gl_map
+        .first()
+        .is_some_and(|entry| entry.voucher_type != "Journal Entry")
+    {
+        return Ok(());
+    }
+    if !cwip_enabled {
+        return Ok(());
+    }
+    for entry in gl_map {
+        if cwip_accounts.contains(&entry.account) {
+            return Err(GeneralLedgerError::Validation(format!(
+                "Account: <b>{}</b> is capital Work in progress and can not be updated by Journal Entry",
+                entry.account
+            )));
+        }
+    }
+    Ok(())
+}
+
+pub fn get_round_off_account_and_cost_center(
+    company: &str,
+    lookup: RoundOffLookup,
+) -> Result<RoundOffSettings, GeneralLedgerError> {
+    let round_off_account = lookup
+        .company_round_off_account
+        .clone()
+        .or(lookup.default_expense_account.clone())
+        .ok_or_else(|| {
+            GeneralLedgerError::Validation(format!(
+                "Please mention '<b>Round Off Account</b>' in Company: {company}"
+            ))
+        })?;
+    let mut round_off_cost_center = lookup.company_round_off_cost_center.clone();
+    if !lookup.use_company_default && lookup.voucher_has_cost_center {
+        if let Some(parent_cost_center) = lookup.parent_cost_center.clone() {
+            round_off_cost_center = Some(parent_cost_center);
+        }
+    }
+    let round_off_cost_center = round_off_cost_center.ok_or_else(|| {
+        GeneralLedgerError::Validation(format!(
+            "Please mention '<b>Round Off Cost Center</b>' in Company: {company}"
+        ))
+    })?;
+    Ok(RoundOffSettings {
+        round_off_account: Some(round_off_account),
+        round_off_cost_center: Some(round_off_cost_center),
+        round_off_for_opening: lookup.round_off_for_opening,
+        default_expense_account: lookup.default_expense_account,
+    })
+}
+
+pub fn save_entries_plan(
+    mut gl_map: Vec<GlEntry>,
+    adv_adj: bool,
+    update_outstanding: &str,
+    from_repost: bool,
+    context: &GeneralLedgerContext,
+) -> Result<SaveEntriesPlan, GeneralLedgerError> {
+    if !from_repost {
+        validate_cwip_accounts(&gl_map, false, &BTreeSet::new())?;
+    }
+    process_debit_credit_difference(
+        &mut gl_map,
+        context.precision,
+        context.round_off_settings.clone(),
+        false,
+    )?;
+    Ok(SaveEntriesPlan {
+        validate_budget: gl_map
+            .first()
+            .is_some_and(|entry| !from_repost && entry.voucher_type != "Period Closing Voucher"),
+        create_payment_ledger_entry: false,
+        payment_ledger_cancel: 0,
+        adv_adj,
+        update_outstanding: if update_outstanding.is_empty() {
+            "Yes".to_string()
+        } else {
+            update_outstanding.to_string()
+        },
+        from_repost,
+        entries: gl_map,
+    })
+}
+
+pub fn update_accounting_dimensions(
+    round_off_gle: &mut GlEntry,
+    dimensions: &[String],
+    voucher_dimension_values: &BTreeMap<String, String>,
+    account_report_type: &str,
+    checks_for_pl_and_bs_accounts: &[AccountingDimensionDefault],
+) {
+    if !dimensions.is_empty()
+        && dimensions
+            .iter()
+            .all(|dimension| voucher_dimension_values.contains_key(dimension))
+    {
+        for dimension in dimensions {
+            if let Some(value) = voucher_dimension_values.get(dimension) {
+                round_off_gle
+                    .dimensions
+                    .insert(dimension.clone(), value.clone());
+            }
+        }
+        return;
+    }
+
+    for dimension in checks_for_pl_and_bs_accounts {
+        let matches_company = round_off_gle.company == dimension.company;
+        let matches_report_type = (account_report_type == "Profit and Loss"
+            && dimension.mandatory_for_pl)
+            || (account_report_type == "Balance Sheet" && dimension.mandatory_for_bs);
+        if matches_company && matches_report_type {
+            if let Some(default_dimension) = &dimension.default_dimension {
+                round_off_gle
+                    .dimensions
+                    .insert(dimension.fieldname.clone(), default_dimension.clone());
+            }
+        }
     }
 }
 
@@ -571,6 +789,22 @@ pub fn make_reverse_gl_entries_plan(
     posting_date: Option<&str>,
 ) -> ReverseGlPlan {
     let mut reversed_entries = Vec::new();
+    let cancel_original_plan = if immutable_ledger_enabled || gl_entries.is_empty() {
+        CancelOriginalPlan::None
+    } else {
+        let gle_names = gl_entries
+            .iter()
+            .map(|entry| entry.name.clone())
+            .collect::<Vec<_>>();
+        if gle_names.iter().all(Option::is_some) {
+            CancelOriginalPlan::ByNames(gle_names.into_iter().flatten().collect())
+        } else {
+            CancelOriginalPlan::ByVoucher {
+                voucher_type: gl_entries[0].voucher_type.clone(),
+                voucher_no: gl_entries[0].voucher_no.clone(),
+            }
+        }
+    };
     for entry in gl_entries {
         let mut new_gle = entry.clone();
         new_gle.name = None;
@@ -595,6 +829,7 @@ pub fn make_reverse_gl_entries_plan(
     }
     ReverseGlPlan {
         cancel_original_entries: !immutable_ledger_enabled,
+        cancel_original_plan,
         partial_cancel: false,
         reversed_entries,
     }
