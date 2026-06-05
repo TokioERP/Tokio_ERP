@@ -1,11 +1,14 @@
 use tokio_erp::erpnext::accounts::doctype::payment_request::payment_request::{
     apply_payment_references, get_amount, get_dummy_message, get_open_payment_requests_query_plan,
     get_print_format_list, make_payment_order_plan, set_payment_references,
-    update_payment_requests_as_per_pe_references, validate_payment, OpenPaymentRequestsQueryPlan,
-    PaymentEntryReferenceRow, PaymentEntryRequestPlan, PaymentEntrySourceDoc,
-    PaymentOrderFromRequestPlan, PaymentReferenceRow, PaymentRequest, PaymentRequestAmountSource,
-    PaymentRequestError, PaymentRequestUpdate, PaymentSubmitPlan, PaymentUrlPlan,
-    PhonePaymentRequestPlan, SendEmailPlan, SubscriptionPlanInput, SubscriptionValidationPlan,
+    update_payment_requests_as_per_pe_references, validate_payment, AvailablePaymentSchedulesPlan,
+    CancelOldPaymentRequestsPlan, ExistingPaymentEntryQueryPlan,
+    ExistingPaymentRequestAmountQueryPlan, IntegrationRequestStatusQueryPlan,
+    OpenPaymentRequestsQueryPlan, PaymentEntryReferenceRow, PaymentEntryRequestPlan,
+    PaymentEntrySourceDoc, PaymentOrderFromRequestPlan, PaymentReferenceRow, PaymentRequest,
+    PaymentRequestAmountSource, PaymentRequestError, PaymentRequestLifecyclePlan,
+    PaymentRequestUpdate, PaymentSubmitPlan, PaymentUrlPlan, PhonePaymentRequestPlan,
+    SendEmailPlan, SubscriptionPlanInput, SubscriptionValidationPlan,
 };
 use tokio_erp::erpnext::{DocumentController, FieldSpec};
 
@@ -562,6 +565,123 @@ fn payment_request_validation_gateway_and_email_plans_match_erpnext() {
             queue: "short".to_string(),
             timeout: 300,
             enqueue_after_commit: true,
+        }
+    );
+}
+
+#[test]
+fn payment_request_query_and_lifecycle_plans_match_erpnext() {
+    assert_eq!(
+        PaymentRequest::get_existing_payment_entry_plan("SINV-0001"),
+        ExistingPaymentEntryQueryPlan {
+            reference_name: "SINV-0001".to_string(),
+            payment_entry_docstatus_lt: 2,
+            limit: 1,
+        }
+    );
+    assert_eq!(
+        PaymentRequest::get_irequest_status_plan(&["PREQ-0001".to_string()]),
+        IntegrationRequestStatusQueryPlan {
+            reference_doctype: "Payment Request".to_string(),
+            reference_docnames: vec!["PREQ-0001".to_string()],
+            statuses: vec!["Authorized".to_string(), "Completed".to_string()],
+        }
+    );
+    assert_eq!(
+        PaymentRequest::get_existing_payment_request_amount_plan(
+            "Sales Invoice",
+            "SINV-0001",
+            Some(vec!["Initiated".to_string(), "Paid".to_string()]),
+            "USD",
+            "UZS",
+            12_500.0,
+        ),
+        ExistingPaymentRequestAmountQueryPlan {
+            reference_doctype: "Sales Invoice".to_string(),
+            reference_name: "SINV-0001".to_string(),
+            docstatus: 1,
+            statuses: Some(vec!["Initiated".to_string(), "Paid".to_string()]),
+            convert_to_transaction_currency: true,
+            conversion_rate: 12_500.0,
+        }
+    );
+
+    assert_eq!(
+        PaymentRequest::cancel_old_payment_requests_plan(
+            "Sales Order",
+            "SO-0001",
+            vec!["PREQ-0001".to_string(), "PREQ-0002".to_string()],
+            false,
+        )
+        .unwrap(),
+        CancelOldPaymentRequestsPlan {
+            reference_doctype: "Sales Order".to_string(),
+            reference_name: "SO-0001".to_string(),
+            candidate_statuses: vec!["Draft".to_string(), "Requested".to_string()],
+            cancel_payment_requests: vec!["PREQ-0001".to_string(), "PREQ-0002".to_string()],
+            cancel_queued_integration_requests: true,
+        }
+    );
+    assert_eq!(
+        PaymentRequest::cancel_old_payment_requests_plan(
+            "Sales Order",
+            "SO-0001",
+            vec!["PREQ-0001".to_string()],
+            true,
+        )
+        .unwrap_err(),
+        PaymentRequestError::Validation("Another Payment Request is already processed".to_string())
+    );
+
+    assert_eq!(
+        PaymentRequest::get_available_payment_schedules_plan(
+            true,
+            false,
+            vec!["SCH-001".to_string(), "SCH-002".to_string()],
+            vec!["SCH-001".to_string()],
+        ),
+        AvailablePaymentSchedulesPlan {
+            has_payment_schedule: true,
+            has_existing_payment_entry: false,
+            available_payment_schedules: vec!["SCH-002".to_string()],
+        }
+    );
+
+    let doc = PaymentRequest {
+        reference_doctype: Some("Sales Order".to_string()),
+        reference_name: Some("SO-0001".to_string()),
+        status: "Paid".to_string(),
+        payment_channel: "Phone".to_string(),
+        ..PaymentRequest::default()
+    };
+    assert_eq!(
+        doc.on_discard_plan(),
+        PaymentRequestLifecyclePlan {
+            status_update: Some(("status".to_string(), "Cancelled".to_string())),
+            check_payment_entry_exists: false,
+            update_reference_advance_payment_status: false,
+            create_payment_entry: false,
+            make_invoice: false,
+        }
+    );
+    assert_eq!(
+        doc.on_cancel_plan(),
+        PaymentRequestLifecyclePlan {
+            status_update: Some(("status".to_string(), "Cancelled".to_string())),
+            check_payment_entry_exists: true,
+            update_reference_advance_payment_status: true,
+            create_payment_entry: false,
+            make_invoice: false,
+        }
+    );
+    assert_eq!(
+        doc.set_as_paid_plan(false),
+        PaymentRequestLifecyclePlan {
+            status_update: Some(("status".to_string(), "Paid:0".to_string())),
+            check_payment_entry_exists: false,
+            update_reference_advance_payment_status: false,
+            create_payment_entry: false,
+            make_invoice: false,
         }
     );
 }

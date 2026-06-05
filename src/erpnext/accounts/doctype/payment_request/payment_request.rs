@@ -184,6 +184,55 @@ pub struct SendEmailPlan {
     pub enqueue_after_commit: bool,
 }
 
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct ExistingPaymentEntryQueryPlan {
+    pub reference_name: String,
+    pub payment_entry_docstatus_lt: i32,
+    pub limit: i32,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct IntegrationRequestStatusQueryPlan {
+    pub reference_doctype: String,
+    pub reference_docnames: Vec<String>,
+    pub statuses: Vec<String>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ExistingPaymentRequestAmountQueryPlan {
+    pub reference_doctype: String,
+    pub reference_name: String,
+    pub docstatus: i32,
+    pub statuses: Option<Vec<String>>,
+    pub convert_to_transaction_currency: bool,
+    pub conversion_rate: f64,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct CancelOldPaymentRequestsPlan {
+    pub reference_doctype: String,
+    pub reference_name: String,
+    pub candidate_statuses: Vec<String>,
+    pub cancel_payment_requests: Vec<String>,
+    pub cancel_queued_integration_requests: bool,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct AvailablePaymentSchedulesPlan {
+    pub has_payment_schedule: bool,
+    pub has_existing_payment_entry: bool,
+    pub available_payment_schedules: Vec<String>,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct PaymentRequestLifecyclePlan {
+    pub status_update: Option<(String, String)>,
+    pub check_payment_entry_exists: bool,
+    pub update_reference_advance_payment_status: bool,
+    pub create_payment_entry: bool,
+    pub make_invoice: bool,
+}
+
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct PaymentOrderFromRequestPlan {
     pub payment_order_type: String,
@@ -542,6 +591,37 @@ impl PaymentRequest {
         }
     }
 
+    pub fn on_discard_plan(&self) -> PaymentRequestLifecyclePlan {
+        PaymentRequestLifecyclePlan {
+            status_update: Some(("status".to_string(), "Cancelled".to_string())),
+            ..PaymentRequestLifecyclePlan::default()
+        }
+    }
+
+    pub fn on_cancel_plan(&self) -> PaymentRequestLifecyclePlan {
+        PaymentRequestLifecyclePlan {
+            status_update: Some(("status".to_string(), "Cancelled".to_string())),
+            check_payment_entry_exists: true,
+            update_reference_advance_payment_status: true,
+            ..PaymentRequestLifecyclePlan::default()
+        }
+    }
+
+    pub fn set_as_paid_plan(&self, make_sales_invoice: bool) -> PaymentRequestLifecyclePlan {
+        if self.payment_channel == "Phone" {
+            PaymentRequestLifecyclePlan {
+                status_update: Some(("status".to_string(), "Paid:0".to_string())),
+                ..PaymentRequestLifecyclePlan::default()
+            }
+        } else {
+            PaymentRequestLifecyclePlan {
+                create_payment_entry: true,
+                make_invoice: make_sales_invoice || self.make_sales_invoice,
+                ..PaymentRequestLifecyclePlan::default()
+            }
+        }
+    }
+
     pub fn create_payment_entry_plan(
         &self,
         ref_doc: &PaymentEntrySourceDoc,
@@ -647,6 +727,83 @@ impl PaymentRequest {
             }
         }
         output
+    }
+
+    pub fn get_existing_payment_entry_plan(ref_docname: &str) -> ExistingPaymentEntryQueryPlan {
+        ExistingPaymentEntryQueryPlan {
+            reference_name: ref_docname.to_string(),
+            payment_entry_docstatus_lt: 2,
+            limit: 1,
+        }
+    }
+
+    pub fn get_irequest_status_plan(
+        payment_requests: &[String],
+    ) -> IntegrationRequestStatusQueryPlan {
+        IntegrationRequestStatusQueryPlan {
+            reference_doctype: "Payment Request".to_string(),
+            reference_docnames: payment_requests.to_vec(),
+            statuses: vec!["Authorized".to_string(), "Completed".to_string()],
+        }
+    }
+
+    pub fn get_existing_payment_request_amount_plan(
+        reference_doctype: &str,
+        reference_name: &str,
+        statuses: Option<Vec<String>>,
+        currency: &str,
+        party_account_currency: &str,
+        conversion_rate: f64,
+    ) -> ExistingPaymentRequestAmountQueryPlan {
+        ExistingPaymentRequestAmountQueryPlan {
+            reference_doctype: reference_doctype.to_string(),
+            reference_name: reference_name.to_string(),
+            docstatus: 1,
+            statuses,
+            convert_to_transaction_currency: currency != party_account_currency,
+            conversion_rate,
+        }
+    }
+
+    pub fn cancel_old_payment_requests_plan(
+        reference_doctype: &str,
+        reference_name: &str,
+        candidate_payment_requests: Vec<String>,
+        has_processed_integration_request: bool,
+    ) -> Result<CancelOldPaymentRequestsPlan, PaymentRequestError> {
+        if has_processed_integration_request {
+            return Err(PaymentRequestError::Validation(
+                "Another Payment Request is already processed".to_string(),
+            ));
+        }
+        Ok(CancelOldPaymentRequestsPlan {
+            reference_doctype: reference_doctype.to_string(),
+            reference_name: reference_name.to_string(),
+            candidate_statuses: vec!["Draft".to_string(), "Requested".to_string()],
+            cancel_payment_requests: candidate_payment_requests,
+            cancel_queued_integration_requests: true,
+        })
+    }
+
+    pub fn get_available_payment_schedules_plan(
+        has_payment_schedule: bool,
+        has_existing_payment_entry: bool,
+        payment_schedules: Vec<String>,
+        existing_payment_schedule_refs: Vec<String>,
+    ) -> AvailablePaymentSchedulesPlan {
+        let available_payment_schedules = if !has_payment_schedule || has_existing_payment_entry {
+            Vec::new()
+        } else {
+            payment_schedules
+                .into_iter()
+                .filter(|schedule| !existing_payment_schedule_refs.contains(schedule))
+                .collect()
+        };
+        AvailablePaymentSchedulesPlan {
+            has_payment_schedule,
+            has_existing_payment_entry,
+            available_payment_schedules,
+        }
     }
 }
 
