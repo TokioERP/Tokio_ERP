@@ -803,7 +803,7 @@
     {
       "source": "accounts/doctype/financial_report_template/financial_report_engine.py",
       "target": "accounts/doctype/financial_report_template/financial_report_engine.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/financial_report_template/financial_report_template.py",
@@ -938,7 +938,7 @@
     {
       "source": "accounts/doctype/journal_entry/journal_entry.py",
       "target": "accounts/doctype/journal_entry/journal_entry.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/journal_entry/test_journal_entry.py",
@@ -1223,7 +1223,7 @@
     {
       "source": "accounts/doctype/payment_entry/payment_entry.py",
       "target": "accounts/doctype/payment_entry/payment_entry.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/payment_entry/test_payment_entry.py",
@@ -1553,12 +1553,12 @@
     {
       "source": "accounts/doctype/pos_invoice/pos_invoice.py",
       "target": "accounts/doctype/pos_invoice/pos_invoice.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_invoice/test_pos_invoice.py",
       "target": "accounts/doctype/pos_invoice/test_pos_invoice.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pos_invoice/test_pos_invoice_merge.py",
@@ -1963,7 +1963,7 @@
     {
       "source": "accounts/doctype/purchase_invoice/purchase_invoice.py",
       "target": "accounts/doctype/purchase_invoice/purchase_invoice.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/purchase_invoice/purchase_invoice_dashboard.py",
@@ -2093,7 +2093,7 @@
     {
       "source": "accounts/doctype/sales_invoice/sales_invoice.py",
       "target": "accounts/doctype/sales_invoice/sales_invoice.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/sales_invoice/sales_invoice_dashboard.py",
@@ -2473,17 +2473,17 @@
     {
       "source": "accounts/doctype/tax_withholding_entry/__init__.py",
       "target": "accounts/doctype/tax_withholding_entry/mod.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/tax_withholding_entry/tax_withholding_entry.py",
       "target": "accounts/doctype/tax_withholding_entry/tax_withholding_entry.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/tax_withholding_entry/test_tax_withholding_entry.py",
       "target": "accounts/doctype/tax_withholding_entry/test_tax_withholding_entry.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/tax_withholding_group/__init__.py",
@@ -2618,7 +2618,7 @@
     {
       "source": "accounts/party.py",
       "target": "accounts/party.rs",
-      "status": "ported"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/print_format/__init__.py",

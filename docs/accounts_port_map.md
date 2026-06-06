@@ -53,7 +53,7 @@ This is not an MVP list. Every source folder and file is tracked. A row is close
 
 | Source File | Target | Status | Notes |
 |---|---|---|---|
-| `accounts/party.py` | `src/erpnext/accounts/party.rs` | ported | Rust covers transaction type constants, account/due-date result shaping, party account and advance-account fallback ordering, payment terms and due-date template math, address tax-category selection, tax-rule args shaping, frozen/disabled guard, and shipping address selection in `accounts_party`. DB permission, address rendering, tax template lookup, dashboard SQL, and GL query side effects remain external. |
+| `accounts/party.py` | `src/erpnext/accounts/party.rs` | parity_tested | Rust covers transaction type constants, account/due-date result shaping, party account and advance-account fallback ordering, payment terms and due-date template math, address tax-category selection, tax-rule args shaping, frozen/disabled guard, and shipping address selection in `accounts_party`. DB permission, address rendering, tax template lookup, dashboard SQL, and GL query side effects remain external. |
 | `accounts/utils.py` | `src/erpnext/accounts/utils.rs` | parity_tested | Rust covers fiscal-year lookup/filter option shaping, balance-on SQL condition planning, reconciliation effect-date selection, allocated amount validation, exchange gain/loss dimension copying, tuple-to-list conversion, currency precision and zero-cutoff helpers, numbered autoname formatting, GL-entry comparison quirks, stock adjustment journal drafts, advance ledger entry shaping, and voucher-outstanding update planning in `accounts_utils`. Direct Frappe DB reads/writes, document saves, and query execution remain external. |
 
 ## First Pass Order
