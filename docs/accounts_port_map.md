@@ -49,6 +49,12 @@ This is not an MVP list. Every source folder and file is tracked. A row is close
 | `test` | 1 | 4 | 4 | 0 | 0 | mapped | `accounts_mixin.py` parity-tested; remaining test helpers pending. |
 | `workspace` | 3 | 2 | 0 | 2 | 0 | external_kept | Financial Reports and Invoicing workspace JSON files contain workspace layout/shortcut metadata only; no Python controller logic exists to port. Workspace definitions remain owned by ERPNext/Frappe. |
 
+## Root Python Files
+
+| Source File | Target | Status | Notes |
+|---|---|---|---|
+| `accounts/party.py` | `src/erpnext/accounts/party.rs` | ported | Rust covers transaction type constants, account/due-date result shaping, party account and advance-account fallback ordering, payment terms and due-date template math, address tax-category selection, tax-rule args shaping, frozen/disabled guard, and shipping address selection in `accounts_party`. DB permission, address rendering, tax template lookup, dashboard SQL, and GL query side effects remain external. |
+
 ## First Pass Order
 
 1. `doctype`: primary Accounts Python controllers and child table controllers.
