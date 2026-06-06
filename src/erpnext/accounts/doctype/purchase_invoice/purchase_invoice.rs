@@ -533,19 +533,16 @@ impl PurchaseInvoice {
     }
 
     fn total_in_party_account_currency(&self) -> f64 {
-        let rounded_total = if self.disable_rounded_total {
-            self.grand_total
-        } else {
-            non_zero_or(self.rounded_total, self.grand_total)
-        };
         if self.party_account_currency.as_deref() != Some(self.currency.as_str()) {
             if self.disable_rounded_total {
                 self.base_grand_total
             } else {
-                non_zero_or(self.base_rounded_total, self.base_grand_total)
+                self.base_rounded_total.unwrap_or(0.0)
             }
+        } else if self.disable_rounded_total {
+            self.grand_total
         } else {
-            rounded_total
+            self.rounded_total.unwrap_or(0.0)
         }
     }
 

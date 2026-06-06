@@ -2093,7 +2093,7 @@
     {
       "source": "accounts/doctype/sales_invoice/sales_invoice.py",
       "target": "accounts/doctype/sales_invoice/sales_invoice.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/sales_invoice/sales_invoice_dashboard.py",

@@ -275,4 +275,16 @@ fn purchase_invoice_status_branches_match_erpnext_order() {
         ..Default::default()
     };
     assert_eq!(base_total_doc.set_status(None, "2026-06-06"), "Partly Paid");
+
+    let mut zero_rounded_total = PurchaseInvoice {
+        docstatus: 1,
+        rounded_total: Some(0.0),
+        grand_total: 100.0,
+        outstanding_amount: 40.0,
+        currency: "USD".to_string(),
+        party_account_currency: Some("USD".to_string()),
+        due_date: Some("2026-06-06".to_string()),
+        ..Default::default()
+    };
+    assert_eq!(zero_rounded_total.set_status(None, "2026-06-06"), "Unpaid");
 }
