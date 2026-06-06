@@ -11,3 +11,4 @@ pub mod print_format;
 pub mod print_format_field_template;
 pub mod report;
 pub mod test;
+pub mod utils;
