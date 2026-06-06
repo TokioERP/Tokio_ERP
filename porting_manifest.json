@@ -938,7 +938,7 @@
     {
       "source": "accounts/doctype/journal_entry/journal_entry.py",
       "target": "accounts/doctype/journal_entry/journal_entry.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/journal_entry/test_journal_entry.py",
@@ -1223,7 +1223,7 @@
     {
       "source": "accounts/doctype/payment_entry/payment_entry.py",
       "target": "accounts/doctype/payment_entry/payment_entry.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/payment_entry/test_payment_entry.py",
