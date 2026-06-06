@@ -265,3 +265,37 @@ fn payment_entry_build_gl_map_matches_receive_party_bank_and_deductions() {
     assert_eq!(gl[3].debit_in_account_currency, 20.0);
     assert_eq!(gl[3].debit, 20.0);
 }
+
+#[test]
+fn payment_entry_exchange_rate_defaults_and_advance_reference_match_erpnext() {
+    let mut doc = receive_entry();
+    doc.source_exchange_rate = 0.0;
+    doc.target_exchange_rate = 0.0;
+    doc.received_amount = 100.0;
+    doc.references[0].reference_doctype = "Sales Order".to_string();
+    doc.references[0].reference_name = "SO-0001".to_string();
+    doc.references[0].exchange_rate = Some(2.0);
+
+    doc.validate().unwrap();
+
+    assert_eq!(doc.source_exchange_rate, 1.0);
+    assert_eq!(doc.target_exchange_rate, 1.0);
+    assert_eq!(doc.references[0].exchange_gain_loss, 0.0);
+
+    let gl = doc.build_gl_map();
+    assert_eq!(gl[0].against_voucher_type.as_deref(), Some("Payment Entry"));
+    assert_eq!(gl[0].against_voucher.as_deref(), Some("ACC-PAY-0001"));
+    assert_eq!(gl[0].advance_voucher_type.as_deref(), Some("Sales Order"));
+    assert_eq!(gl[0].advance_voucher_no.as_deref(), Some("SO-0001"));
+}
+
+#[test]
+fn payment_entry_build_gl_map_sets_party_account_when_validate_was_not_called() {
+    let doc = receive_entry();
+
+    let gl = doc.build_gl_map();
+
+    assert_eq!(gl[0].account, "Debtors - TC");
+    assert_eq!(gl[0].party_type.as_deref(), Some("Customer"));
+    assert_eq!(gl[0].against.as_deref(), Some("Bank - TC"));
+}

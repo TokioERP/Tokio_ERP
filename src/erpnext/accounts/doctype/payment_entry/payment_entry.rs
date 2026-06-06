@@ -363,6 +363,7 @@ impl PaymentEntry {
         self.setup_party_account_field();
         self.set_missing_values()?;
         self.validate_payment_type()?;
+        self.set_exchange_rate();
         self.validate_mandatory()?;
         self.validate_duplicate_entry()?;
         self.set_amounts()?;
@@ -441,6 +442,30 @@ impl PaymentEntry {
         Ok(())
     }
 
+    pub fn set_exchange_rate(&mut self) {
+        self.set_source_exchange_rate();
+        self.set_target_exchange_rate();
+    }
+
+    pub fn set_source_exchange_rate(&mut self) {
+        if self.paid_from.is_none() {
+            return;
+        }
+        if self.paid_from_account_currency == self.company_currency {
+            self.source_exchange_rate = 1.0;
+        } else if self.source_exchange_rate == 0.0 {
+            self.source_exchange_rate = 1.0;
+        }
+    }
+
+    pub fn set_target_exchange_rate(&mut self) {
+        if self.paid_from_account_currency == self.paid_to_account_currency {
+            self.target_exchange_rate = self.source_exchange_rate;
+        } else if self.paid_to.is_some() && self.target_exchange_rate == 0.0 {
+            self.target_exchange_rate = 1.0;
+        }
+    }
+
     pub fn validate_duplicate_entry(&self) -> Result<(), PaymentEntryError> {
         let mut seen = BTreeSet::new();
         for (index, row) in self.references.iter().enumerate() {
@@ -511,6 +536,9 @@ impl PaymentEntry {
             1.0
         };
         let base_allocated = flt(self.references[index].allocated_amount * exchange_rate);
+        if is_advance_doctype(&self.references[index].reference_doctype) {
+            return base_allocated;
+        }
         let reference_exchange_rate = self.references[index].exchange_rate.unwrap_or(1.0);
         let reference_base = flt(self.references[index].allocated_amount * reference_exchange_rate);
         self.references[index].exchange_gain_loss = flt(base_allocated - reference_base);
@@ -780,6 +808,11 @@ impl PaymentEntry {
 
     pub fn build_gl_map(&self) -> Vec<GlEntryPlan> {
         let mut doc = self.clone();
+        if matches!(doc.payment_type.as_str(), "Receive" | "Pay")
+            && doc.party_account_field.is_none()
+        {
+            doc.setup_party_account_field();
+        }
         doc.set_transaction_currency_and_rate();
         let mut gl_entries = Vec::new();
         doc.add_party_gl_entries(&mut gl_entries);
