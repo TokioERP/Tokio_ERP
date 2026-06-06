@@ -1963,7 +1963,7 @@
     {
       "source": "accounts/doctype/purchase_invoice/purchase_invoice.py",
       "target": "accounts/doctype/purchase_invoice/purchase_invoice.rs",
-      "status": "not_started"
+      "status": "ported"
     },
     {
       "source": "accounts/doctype/purchase_invoice/purchase_invoice_dashboard.py",

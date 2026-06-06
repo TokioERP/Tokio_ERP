@@ -211,7 +211,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `promotional_scheme_product_discount` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_promotional_scheme_product_discount`. JSON kept external. |
 | `psoa_cost_center` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_psoa_cost_center`. JSON kept external. |
 | `psoa_project` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_psoa_project`. JSON kept external. |
-| `purchase_invoice` | 9 | 4 | 2 | 2 | not_started | |
+| `purchase_invoice` | 9 | 4 | 2 | 2 | ported | Rust covers controller metadata, status updater, onload/before-save hold behavior, release-date/cash/credit-to guards, remarks, received percentage, hold actions, and core status transitions in `accounts_purchase_invoice`. DB-heavy ledger, tax, stock, previous-doc, and submit/cancel side effects remain external. |
 | `purchase_invoice_advance` | 4 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_purchase_invoice_advance`. JSON kept external. |
 | `purchase_invoice_item` | 4 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust field order, key metadata, and controller behavior covered by `accounts_purchase_invoice_item`. Full JSON kept external. |
 | `purchase_taxes_and_charges` | 4 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust field order, key metadata, and controller behavior covered by `accounts_purchase_taxes_and_charges`. JSON kept external. |
