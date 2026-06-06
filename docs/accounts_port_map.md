@@ -223,7 +223,7 @@ For a Python file to move from `not_started` to `parity_tested`:
 | `repost_payment_ledger_items` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_repost_payment_ledger_items`. JSON kept external. |
 | `sales_invoice` | 10 | 4 | 2 | 3 | not_started | |
 | `sales_invoice_advance` | 4 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_sales_invoice_advance`. JSON kept external. |
-| `sales_invoice_item` | 4 | 2 | 1 | 0 | not_started | |
+| `sales_invoice_item` | 4 | 2 | 1 | 0 | parity_tested | Rust covers Sales Invoice Item metadata, full field order and key field specs, cost-center company validation, stock actual-quantity helper, and fixed-asset disposal income account/cost-center behavior in `accounts_sales_invoice_item`. JSON/README remain external metadata. |
 | `sales_invoice_payment` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_sales_invoice_payment`. JSON kept external. |
 | `sales_invoice_reference` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_sales_invoice_reference`. JSON kept external. |
 | `sales_invoice_timesheet` | 3 | 2 | 1 | 0 | parity_tested | Python controller is pass/no-op; Rust metadata and controller behavior covered by `accounts_sales_invoice_timesheet`. JSON kept external. |
