@@ -1,7 +1,8 @@
 use tokio_erp::erpnext::accounts::doctype::financial_report_row::financial_report_row::FinancialReportRow;
 use tokio_erp::erpnext::accounts::doctype::financial_report_template::financial_report_engine::{
-    AccountData, DependencyResolver, EngineFilterValidation, FilterExpressionParser,
-    FinancialReportEngine, FormattingRule, FormulaCalculator, PeriodValue, ReportContext, RowData,
+    AccountData, AccountReportMeta, DependencyResolver, EngineFilterValidation,
+    FilterExpressionParser, FinancialQueryBuilder, FinancialReportEngine, FinancialReportPeriod,
+    FormattingRule, FormulaCalculator, GlMovementRow, PeriodValue, ReportContext, RowData,
     SectionData, SegmentData, DEFAULT_BULLET_PREFIX, SEGMENT_PREFIX,
 };
 use tokio_erp::erpnext::accounts::doctype::financial_report_template::financial_report_template::FinancialReportTemplate;
@@ -505,4 +506,186 @@ fn filter_expression_parser_build_conditions_ors_valid_account_rows() {
         Some("(root_type = 'Income' OR root_type = 'Expense')".to_string())
     );
     assert_eq!(parser.build_conditions(&[]), None);
+}
+
+#[test]
+fn financial_query_builder_calculates_running_balances_from_opening_and_gl_movements() {
+    let periods = vec![
+        FinancialReportPeriod::new("2024_jan", "2024-01-01", "2024-01-31"),
+        FinancialReportPeriod::new("2024_feb", "2024-02-01", "2024-02-29"),
+        FinancialReportPeriod::new("2024_mar", "2024-03-01", "2024-03-31"),
+    ];
+    let builder = FinancialQueryBuilder::new(
+        serde_json::json!({"company": "_Test Company"}),
+        periods,
+        [(
+            "_Test Bank - _TC".to_string(),
+            AccountReportMeta {
+                account_name: "Bank".to_string(),
+                account_number: "1002".to_string(),
+            },
+        )]
+        .into_iter()
+        .collect(),
+    );
+    let mut balances_data = [(
+        "_Test Cash - _TC".to_string(),
+        AccountData {
+            account: "_Test Cash - _TC".to_string(),
+            account_name: "Cash".to_string(),
+            account_number: "1001".to_string(),
+            period_values: vec![PeriodValue {
+                period_key: "2024_jan".to_string(),
+                opening: 5000.0,
+                closing: 0.0,
+                movement: 0.0,
+            }],
+        },
+    )]
+    .into_iter()
+    .collect();
+    let gl_data = vec![
+        GlMovementRow::new(
+            "_Test Cash - _TC",
+            [
+                ("2024_jan".to_string(), 100.0),
+                ("2024_mar".to_string(), -50.0),
+            ]
+            .into_iter()
+            .collect(),
+        ),
+        GlMovementRow::new(
+            "_Test Bank - _TC",
+            [
+                ("2024_jan".to_string(), -100.0),
+                ("2024_feb".to_string(), -25.0),
+            ]
+            .into_iter()
+            .collect(),
+        ),
+    ];
+
+    builder.calculate_running_balances(&mut balances_data, &gl_data);
+
+    let cash = balances_data.get("_Test Cash - _TC").unwrap();
+    assert_eq!(
+        cash.get_ordered_values(
+            &[
+                "2024_jan".to_string(),
+                "2024_feb".to_string(),
+                "2024_mar".to_string()
+            ],
+            "Opening Balance"
+        ),
+        [5000.0, 5100.0, 5100.0]
+    );
+    assert_eq!(
+        cash.get_ordered_values(
+            &[
+                "2024_jan".to_string(),
+                "2024_feb".to_string(),
+                "2024_mar".to_string()
+            ],
+            "Closing Balance"
+        ),
+        [5100.0, 5100.0, 5050.0]
+    );
+    assert_eq!(
+        cash.get_ordered_values(
+            &[
+                "2024_jan".to_string(),
+                "2024_feb".to_string(),
+                "2024_mar".to_string()
+            ],
+            "Period Movement (Debits - Credits)"
+        ),
+        [100.0, 0.0, -50.0]
+    );
+
+    let bank = balances_data.get("_Test Bank - _TC").unwrap();
+    assert_eq!(bank.account_name, "Bank");
+    assert_eq!(bank.account_number, "1002");
+    assert_eq!(
+        bank.get_ordered_values(
+            &[
+                "2024_jan".to_string(),
+                "2024_feb".to_string(),
+                "2024_mar".to_string()
+            ],
+            "Closing Balance"
+        ),
+        [-100.0, -125.0, -125.0]
+    );
+}
+
+#[test]
+fn financial_query_builder_handles_accumulated_values_like_erpnext() {
+    let base = AccountData {
+        account: "Cash".to_string(),
+        account_name: "Cash".to_string(),
+        account_number: "1001".to_string(),
+        period_values: vec![
+            PeriodValue {
+                period_key: "p1".to_string(),
+                opening: 10.0,
+                closing: 25.0,
+                movement: 15.0,
+            },
+            PeriodValue {
+                period_key: "p2".to_string(),
+                opening: 2.0,
+                closing: 8.0,
+                movement: 6.0,
+            },
+        ],
+    };
+
+    let mut default_data = [("Cash".to_string(), base.clone())].into_iter().collect();
+    FinancialQueryBuilder::new(serde_json::json!({}), Vec::new(), Default::default())
+        .handle_balance_accumulation(&mut default_data);
+    assert_eq!(default_data.get("Cash").unwrap(), &base);
+
+    let mut accumulated = [("Cash".to_string(), base.clone())].into_iter().collect();
+    FinancialQueryBuilder::new(
+        serde_json::json!({"accumulated_values": true}),
+        Vec::new(),
+        Default::default(),
+    )
+    .handle_balance_accumulation(&mut accumulated);
+    assert_eq!(
+        accumulated
+            .get("Cash")
+            .unwrap()
+            .get_values_by_type("Period Movement (Debits - Credits)"),
+        [25.0, 8.0]
+    );
+    assert_eq!(
+        accumulated
+            .get("Cash")
+            .unwrap()
+            .get_values_by_type("Closing Balance"),
+        [25.0, 8.0]
+    );
+
+    let mut unaccumulated = [("Cash".to_string(), base)].into_iter().collect();
+    FinancialQueryBuilder::new(
+        serde_json::json!({"accumulated_values": false}),
+        Vec::new(),
+        Default::default(),
+    )
+    .handle_balance_accumulation(&mut unaccumulated);
+    assert_eq!(
+        unaccumulated
+            .get("Cash")
+            .unwrap()
+            .get_values_by_type("Closing Balance"),
+        [15.0, 6.0]
+    );
+    assert_eq!(
+        unaccumulated
+            .get("Cash")
+            .unwrap()
+            .get_values_by_type("Period Movement (Debits - Credits)"),
+        [15.0, 6.0]
+    );
 }

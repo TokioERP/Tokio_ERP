@@ -98,6 +98,32 @@ pub struct FinancialReportEngine;
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct FilterExpressionParser;
 
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct FinancialReportPeriod {
+    pub key: String,
+    pub from_date: String,
+    pub to_date: String,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct AccountReportMeta {
+    pub account_name: String,
+    pub account_number: String,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct GlMovementRow {
+    pub account: String,
+    pub period_movements: BTreeMap<String, f64>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct FinancialQueryBuilder {
+    filters: Value,
+    periods: Vec<FinancialReportPeriod>,
+    account_meta: BTreeMap<String, AccountReportMeta>,
+}
+
 impl PeriodValue {
     pub fn get_value(&self, balance_type: &str) -> f64 {
         match balance_type {
@@ -287,6 +313,125 @@ impl FinancialReportEngine {
             missing_required,
             warnings,
         }
+    }
+}
+
+impl FinancialReportPeriod {
+    pub fn new(key: &str, from_date: &str, to_date: &str) -> Self {
+        Self {
+            key: key.to_string(),
+            from_date: from_date.to_string(),
+            to_date: to_date.to_string(),
+        }
+    }
+}
+
+impl GlMovementRow {
+    pub fn new(account: &str, period_movements: BTreeMap<String, f64>) -> Self {
+        Self {
+            account: account.to_string(),
+            period_movements,
+        }
+    }
+}
+
+impl FinancialQueryBuilder {
+    pub fn new(
+        filters: Value,
+        periods: Vec<FinancialReportPeriod>,
+        account_meta: BTreeMap<String, AccountReportMeta>,
+    ) -> Self {
+        Self {
+            filters,
+            periods,
+            account_meta,
+        }
+    }
+
+    pub fn calculate_running_balances(
+        &self,
+        balances_data: &mut BTreeMap<String, AccountData>,
+        gl_data: &[GlMovementRow],
+    ) {
+        let gl_dict = gl_data
+            .iter()
+            .map(|row| (row.account.clone(), row))
+            .collect::<BTreeMap<_, _>>();
+        let mut accounts = balances_data.keys().cloned().collect::<Vec<_>>();
+        for account in gl_dict.keys() {
+            if !accounts.iter().any(|existing| existing == account) {
+                accounts.push(account.clone());
+            }
+        }
+
+        for account in accounts {
+            if !balances_data.contains_key(&account) {
+                let meta = self.get_account_meta(&account);
+                balances_data.insert(
+                    account.clone(),
+                    AccountData {
+                        account: account.clone(),
+                        account_name: meta.account_name,
+                        account_number: meta.account_number,
+                        ..Default::default()
+                    },
+                );
+            }
+
+            let account_data = balances_data
+                .get_mut(&account)
+                .expect("account was inserted before balance calculation");
+            let gl_movement = gl_dict.get(&account);
+            let mut current_balance = if account_data.has_periods() {
+                account_data
+                    .get_period(&self.periods[0].key)
+                    .map(|period| period.get_value("Opening Balance"))
+                    .unwrap_or(0.0)
+            } else {
+                0.0
+            };
+
+            for period in &self.periods {
+                let movement = gl_movement
+                    .and_then(|row| row.period_movements.get(&period.key))
+                    .copied()
+                    .unwrap_or(0.0);
+                let closing_balance = current_balance + movement;
+
+                account_data.add_period(PeriodValue {
+                    period_key: period.key.clone(),
+                    opening: current_balance,
+                    closing: closing_balance,
+                    movement,
+                });
+                current_balance = closing_balance;
+            }
+        }
+    }
+
+    pub fn handle_balance_accumulation(&self, balances_data: &mut BTreeMap<String, AccountData>) {
+        let accumulated_values = self
+            .filters
+            .get("accumulated_values")
+            .and_then(Value::as_bool);
+
+        match accumulated_values {
+            None => {}
+            Some(true) => {
+                for account_data in balances_data.values_mut() {
+                    account_data.accumulate_values();
+                }
+            }
+            Some(false) => {
+                for account_data in balances_data.values_mut() {
+                    account_data.unaccumulate_values();
+                }
+            }
+        }
+    }
+
+    fn get_account_meta(&self, account: &str) -> AccountReportMeta {
+        self.account_meta.get(account).cloned().unwrap_or_default()
     }
 }
 
