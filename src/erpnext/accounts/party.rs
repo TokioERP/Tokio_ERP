@@ -43,6 +43,13 @@ pub struct PartyRecord {
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct PartyPriceListRecord {
+    pub doctype: String,
+    pub default_price_list: Option<String>,
+    pub customer_group: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct PartyAccountInputs {
     pub direct_accounts: BTreeMap<(String, String, String), String>,
     pub direct_advance_accounts: BTreeMap<(String, String, String), String>,
@@ -288,6 +295,26 @@ pub fn get_payment_terms_template(
                 .and_then(|group| group_templates.get(group).cloned())
         })
         .or_else(|| company_template.map(ToOwned::to_owned))
+}
+
+pub fn get_default_price_list(
+    party: &PartyPriceListRecord,
+    customer_group_price_lists: &BTreeMap<String, Option<String>>,
+) -> Option<String> {
+    if party.default_price_list.is_some() {
+        return party.default_price_list.clone();
+    }
+
+    if party.doctype == "Customer" {
+        return party
+            .customer_group
+            .as_ref()
+            .and_then(|group| customer_group_price_lists.get(group))
+            .cloned()
+            .flatten();
+    }
+
+    None
 }
 
 pub fn choose_address_tax_category(

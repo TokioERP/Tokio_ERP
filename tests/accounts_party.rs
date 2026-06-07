@@ -2,10 +2,11 @@ use std::collections::BTreeMap;
 
 use tokio_erp::erpnext::accounts::party::{
     build_tax_args, choose_address_tax_category, choose_party_account,
-    choose_party_advance_account, get_due_date_from_template, get_party_shipping_address,
-    get_payment_terms_template, set_account_and_due_date, validate_party_frozen_disabled,
-    AddressRecord, CompanyDefaults, PartyAccountInputs, PartyFrozenDisabledError, PartyRecord,
-    PaymentTerm, PURCHASE_TRANSACTION_TYPES, SALES_TRANSACTION_TYPES, TRANSACTION_TYPES,
+    choose_party_advance_account, get_default_price_list, get_due_date_from_template,
+    get_party_shipping_address, get_payment_terms_template, set_account_and_due_date,
+    validate_party_frozen_disabled, AddressRecord, CompanyDefaults, PartyAccountInputs,
+    PartyFrozenDisabledError, PartyPriceListRecord, PartyRecord, PaymentTerm,
+    PURCHASE_TRANSACTION_TYPES, SALES_TRANSACTION_TYPES, TRANSACTION_TYPES,
 };
 
 #[test]
@@ -184,6 +185,61 @@ fn party_due_date_payment_terms_and_tax_helpers_match_erpnext() {
     assert_eq!(args["customer"], "");
     assert!(!args.contains_key("lead"));
     assert_eq!(args["use_for_shopping_cart"], "1");
+}
+
+#[test]
+fn party_default_price_list_matches_direct_and_customer_group_fallback() {
+    let groups = BTreeMap::from([
+        ("Retail".to_string(), Some("Retail Selling".to_string())),
+        ("Wholesale".to_string(), None),
+    ]);
+
+    assert_eq!(
+        get_default_price_list(
+            &PartyPriceListRecord {
+                doctype: "Customer".to_string(),
+                default_price_list: Some("Direct Selling".to_string()),
+                customer_group: Some("Retail".to_string()),
+            },
+            &groups,
+        )
+        .as_deref(),
+        Some("Direct Selling")
+    );
+    assert_eq!(
+        get_default_price_list(
+            &PartyPriceListRecord {
+                doctype: "Customer".to_string(),
+                default_price_list: None,
+                customer_group: Some("Retail".to_string()),
+            },
+            &groups,
+        )
+        .as_deref(),
+        Some("Retail Selling")
+    );
+    assert_eq!(
+        get_default_price_list(
+            &PartyPriceListRecord {
+                doctype: "Customer".to_string(),
+                default_price_list: None,
+                customer_group: None,
+            },
+            &groups,
+        ),
+        None
+    );
+    assert_eq!(
+        get_default_price_list(
+            &PartyPriceListRecord {
+                doctype: "Supplier".to_string(),
+                default_price_list: None,
+                customer_group: Some("Retail".to_string()),
+            },
+            &groups,
+        ),
+        None
+    );
 }
 
 #[test]
