@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use serde_json::Value;
 
@@ -122,6 +122,25 @@ pub struct FinancialQueryBuilder {
     filters: Value,
     periods: Vec<FinancialReportPeriod>,
     account_meta: BTreeMap<String, AccountReportMeta>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FormulaFieldExtractor {
+    field_name: String,
+    exclude_operators: Vec<String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FormulaFieldUpdater {
+    field_name: String,
+    value_mapping: BTreeMap<String, String>,
+    exclude_operators: Vec<String>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct RowProcessor {
+    context: ReportContext,
+    period_keys: Vec<String>,
 }
 
 impl PeriodValue {
@@ -435,6 +454,306 @@ impl FinancialQueryBuilder {
     }
 }
 
+impl FormulaFieldExtractor {
+    pub fn new(field_name: &str, exclude_operators: Vec<String>) -> Self {
+        Self {
+            field_name: field_name.to_string(),
+            exclude_operators: exclude_operators
+                .into_iter()
+                .map(|operator| operator.to_ascii_lowercase())
+                .collect(),
+        }
+    }
+
+    pub fn extract_from_rows(&self, rows: &[FinancialReportRow]) -> BTreeSet<String> {
+        let mut values = BTreeSet::new();
+        for row in rows {
+            let Some(formula) = row.calculation_formula.as_deref() else {
+                continue;
+            };
+            let Ok(parsed) = serde_json::from_str::<Value>(formula) else {
+                continue;
+            };
+            self.extract_recursive(&parsed, &mut values);
+        }
+        values
+    }
+
+    fn extract_recursive(&self, parsed: &Value, values: &mut BTreeSet<String>) {
+        match parsed {
+            Value::Array(condition) if condition.len() == 3 => {
+                let field = condition[0].as_str().unwrap_or_default();
+                let operator = condition[1]
+                    .as_str()
+                    .unwrap_or_default()
+                    .to_ascii_lowercase();
+                if field != self.field_name || self.exclude_operators.contains(&operator) {
+                    return;
+                }
+                match &condition[2] {
+                    Value::String(value) => {
+                        values.insert(value.clone());
+                    }
+                    Value::Array(items) => {
+                        values.extend(
+                            items
+                                .iter()
+                                .filter_map(Value::as_str)
+                                .map(ToString::to_string),
+                        );
+                    }
+                    _ => {}
+                }
+            }
+            Value::Object(condition) => {
+                for sub_conditions in condition.values() {
+                    if let Some(sub_conditions) = sub_conditions.as_array() {
+                        for sub_condition in sub_conditions {
+                            self.extract_recursive(sub_condition, values);
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+impl FormulaFieldUpdater {
+    pub fn new(
+        field_name: &str,
+        value_mapping: BTreeMap<String, String>,
+        exclude_operators: Vec<String>,
+    ) -> Self {
+        Self {
+            field_name: field_name.to_string(),
+            value_mapping,
+            exclude_operators: exclude_operators
+                .into_iter()
+                .map(|operator| operator.to_ascii_lowercase())
+                .collect(),
+        }
+    }
+
+    pub fn update_in_rows(
+        &self,
+        rows: BTreeMap<String, String>,
+    ) -> BTreeMap<String, BTreeMap<String, String>> {
+        let mut updated_rows = BTreeMap::new();
+        for (row_name, formula) in rows {
+            if formula.trim().is_empty() {
+                continue;
+            }
+            let Ok(parsed) = serde_json::from_str::<Value>(&formula) else {
+                continue;
+            };
+            let updated = self.update_recursive(&parsed);
+            if updated != parsed {
+                let calculation_formula =
+                    serde_json::to_string(&updated).expect("JSON value serialization cannot fail");
+                updated_rows.insert(
+                    row_name,
+                    BTreeMap::from([("calculation_formula".to_string(), calculation_formula)]),
+                );
+            }
+        }
+        updated_rows
+    }
+
+    fn update_recursive(&self, parsed: &Value) -> Value {
+        match parsed {
+            Value::Array(condition) if condition.len() == 3 => {
+                let field = condition[0].as_str().unwrap_or_default();
+                let operator = condition[1]
+                    .as_str()
+                    .unwrap_or_default()
+                    .to_ascii_lowercase();
+                if field == self.field_name && !self.exclude_operators.contains(&operator) {
+                    Value::Array(vec![
+                        condition[0].clone(),
+                        condition[1].clone(),
+                        self.update_value(&condition[2]),
+                    ])
+                } else {
+                    parsed.clone()
+                }
+            }
+            Value::Object(condition) => Value::Object(
+                condition
+                    .iter()
+                    .map(|(key, sub_conditions)| {
+                        let updated = sub_conditions
+                            .as_array()
+                            .map(|items| {
+                                Value::Array(
+                                    items
+                                        .iter()
+                                        .map(|sub_condition| self.update_recursive(sub_condition))
+                                        .collect(),
+                                )
+                            })
+                            .unwrap_or_else(|| sub_conditions.clone());
+                        (key.clone(), updated)
+                    })
+                    .collect(),
+            ),
+            _ => parsed.clone(),
+        }
+    }
+
+    fn update_value(&self, value: &Value) -> Value {
+        match value {
+            Value::String(value) => self
+                .value_mapping
+                .get(value)
+                .cloned()
+                .map(Value::String)
+                .unwrap_or_else(|| Value::String(value.clone())),
+            Value::Array(items) => Value::Array(
+                items
+                    .iter()
+                    .map(|item| {
+                        item.as_str()
+                            .and_then(|value| self.value_mapping.get(value))
+                            .cloned()
+                            .map(Value::String)
+                            .unwrap_or_else(|| item.clone())
+                    })
+                    .collect(),
+            ),
+            _ => value.clone(),
+        }
+    }
+}
+
+impl RowProcessor {
+    pub fn new(context: &ReportContext) -> Result<Self, String> {
+        DependencyResolver::new(&context.template)?;
+        Ok(Self {
+            context: context.clone(),
+            period_keys: period_keys(&context.period_list),
+        })
+    }
+
+    pub fn process_all_rows(&self) -> Vec<RowData> {
+        let dependency_resolver =
+            DependencyResolver::new(&self.context.template).expect("dependencies validated in new");
+        let processing_order = dependency_resolver.get_processing_order();
+        let account_summary = self.context.raw_data.get("summary");
+        let api_summary = self.context.raw_data.get("api_summary");
+        let account_details = self.context.raw_data.get("account_details");
+        let mut row_values = BTreeMap::new();
+        let mut processed_rows = Vec::new();
+
+        for row in processing_order {
+            let row_data = self.process_single_row(
+                row,
+                account_summary,
+                api_summary,
+                account_details,
+                &mut row_values,
+            );
+            processed_rows.push(row_data);
+        }
+
+        processed_rows
+    }
+
+    fn process_single_row(
+        &self,
+        row: FinancialReportRow,
+        account_summary: Option<&Value>,
+        api_summary: Option<&Value>,
+        account_details: Option<&Value>,
+        row_values: &mut BTreeMap<String, Vec<f64>>,
+    ) -> RowData {
+        match row.data_source.as_deref() {
+            Some("Account Data") => {
+                self.process_account_row(row, account_summary, account_details, row_values)
+            }
+            Some("Custom API") => self.process_api_row(row, api_summary, row_values),
+            Some("Calculated Amount") => self.process_formula_row(row, row_values),
+            Some("Blank Line") => RowData {
+                row,
+                values: vec![0.0; self.period_keys.len()],
+                ..Default::default()
+            },
+            Some("Column Break" | "Section Break") => RowData {
+                row,
+                ..Default::default()
+            },
+            _ => RowData {
+                row,
+                values: vec![0.0; self.period_keys.len()],
+                ..Default::default()
+            },
+        }
+    }
+
+    fn process_account_row(
+        &self,
+        row: FinancialReportRow,
+        account_summary: Option<&Value>,
+        account_details: Option<&Value>,
+        row_values: &mut BTreeMap<String, Vec<f64>>,
+    ) -> RowData {
+        let ref_code = row.reference_code.as_deref().unwrap_or_default();
+        let values = values_for_reference(account_summary, ref_code, self.period_keys.len());
+        if !ref_code.is_empty() {
+            row_values.insert(ref_code.to_string(), values.clone());
+        }
+        let details = account_details_for_reference(account_details, ref_code);
+        RowData {
+            row,
+            values,
+            account_details: Some(details),
+            ..Default::default()
+        }
+    }
+
+    fn process_api_row(
+        &self,
+        row: FinancialReportRow,
+        api_summary: Option<&Value>,
+        row_values: &mut BTreeMap<String, Vec<f64>>,
+    ) -> RowData {
+        let ref_code = row.reference_code.as_deref().unwrap_or_default();
+        let mut values = values_for_reference(api_summary, ref_code, self.period_keys.len());
+        if row.reverse_sign != 0 {
+            values = values.into_iter().map(|value| -value).collect();
+        }
+        if !ref_code.is_empty() {
+            row_values.insert(ref_code.to_string(), values.clone());
+        }
+        RowData {
+            row,
+            values,
+            ..Default::default()
+        }
+    }
+
+    fn process_formula_row(
+        &self,
+        row: FinancialReportRow,
+        row_values: &mut BTreeMap<String, Vec<f64>>,
+    ) -> RowData {
+        let calculator = FormulaCalculator::new(row_values.clone(), self.period_keys.clone(), 2);
+        let values = calculator.evaluate_formula(&row);
+        if let Some(ref_code) = row
+            .reference_code
+            .as_deref()
+            .filter(|code| !code.is_empty())
+        {
+            row_values.insert(ref_code.to_string(), values.clone());
+        }
+        RowData {
+            row,
+            values,
+            ..Default::default()
+        }
+    }
+}
+
 impl FilterExpressionParser {
     pub const fn new() -> Self {
         Self
@@ -724,6 +1043,89 @@ fn is_valid_filter_operator(operator: &str) -> bool {
         operator.to_ascii_lowercase().as_str(),
         "=" | "!=" | ">" | ">=" | "<" | "<=" | "like" | "not like" | "in" | "not in"
     )
+}
+
+fn period_keys(period_list: &[BTreeMap<String, Value>]) -> Vec<String> {
+    period_list
+        .iter()
+        .filter_map(|period| period.get("key").and_then(Value::as_str))
+        .map(ToString::to_string)
+        .collect()
+}
+
+fn values_for_reference(summary: Option<&Value>, ref_code: &str, period_count: usize) -> Vec<f64> {
+    summary
+        .and_then(|summary| summary.get(ref_code))
+        .and_then(Value::as_array)
+        .map(|values| {
+            values
+                .iter()
+                .map(|value| value.as_f64().unwrap_or(0.0))
+                .collect()
+        })
+        .unwrap_or_else(|| vec![0.0; period_count])
+}
+
+fn account_details_for_reference(
+    account_details: Option<&Value>,
+    ref_code: &str,
+) -> BTreeMap<String, AccountData> {
+    let Some(details) = account_details
+        .and_then(|details| details.get(ref_code))
+        .and_then(Value::as_object)
+    else {
+        return BTreeMap::new();
+    };
+
+    details
+        .iter()
+        .filter_map(|(account, value)| {
+            let account_object = value.as_object()?;
+            Some((
+                account.clone(),
+                AccountData {
+                    account: account_object
+                        .get("account")
+                        .and_then(Value::as_str)
+                        .unwrap_or(account)
+                        .to_string(),
+                    account_name: account_object
+                        .get("account_name")
+                        .and_then(Value::as_str)
+                        .unwrap_or_default()
+                        .to_string(),
+                    account_number: account_object
+                        .get("account_number")
+                        .and_then(Value::as_str)
+                        .unwrap_or_default()
+                        .to_string(),
+                    period_values: account_object
+                        .get("period_values")
+                        .and_then(Value::as_array)
+                        .map(|period_values| {
+                            period_values
+                                .iter()
+                                .filter_map(period_value_from_json)
+                                .collect()
+                        })
+                        .unwrap_or_default(),
+                },
+            ))
+        })
+        .collect()
+}
+
+fn period_value_from_json(value: &Value) -> Option<PeriodValue> {
+    let object = value.as_object()?;
+    Some(PeriodValue {
+        period_key: object.get("period_key")?.as_str()?.to_string(),
+        opening: object.get("opening").and_then(Value::as_f64).unwrap_or(0.0),
+        closing: object.get("closing").and_then(Value::as_f64).unwrap_or(0.0),
+        movement: object
+            .get("movement")
+            .and_then(Value::as_f64)
+            .unwrap_or(0.0),
+    })
 }
 
 fn combine_conditions(operator: &str, conditions: Vec<String>) -> Option<String> {

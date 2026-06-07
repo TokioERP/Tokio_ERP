@@ -1,9 +1,12 @@
+use std::collections::BTreeMap;
+
 use tokio_erp::erpnext::accounts::doctype::financial_report_row::financial_report_row::FinancialReportRow;
 use tokio_erp::erpnext::accounts::doctype::financial_report_template::financial_report_engine::{
     AccountData, AccountReportMeta, DependencyResolver, EngineFilterValidation,
     FilterExpressionParser, FinancialQueryBuilder, FinancialReportEngine, FinancialReportPeriod,
-    FormattingRule, FormulaCalculator, GlMovementRow, PeriodValue, ReportContext, RowData,
-    SectionData, SegmentData, DEFAULT_BULLET_PREFIX, SEGMENT_PREFIX,
+    FormattingRule, FormulaCalculator, FormulaFieldExtractor, FormulaFieldUpdater, GlMovementRow,
+    PeriodValue, ReportContext, RowData, RowProcessor, SectionData, SegmentData,
+    DEFAULT_BULLET_PREFIX, SEGMENT_PREFIX,
 };
 use tokio_erp::erpnext::accounts::doctype::financial_report_template::financial_report_template::FinancialReportTemplate;
 
@@ -688,4 +691,162 @@ fn financial_query_builder_handles_accumulated_values_like_erpnext() {
             .get_values_by_type("Period Movement (Debits - Credits)"),
         [15.0, 6.0]
     );
+}
+
+#[test]
+fn formula_field_extractor_and_updater_match_nested_filter_formula_behavior() {
+    let rows = vec![
+        FinancialReportRow {
+            calculation_formula: Some(
+                r#"{"and": [["account_category", "=", "Revenue"], {"or": [["account_category", "in", ["Direct Income", "Indirect Income"]], ["account_category", "like", "Tax"]]}]}"#
+                    .to_string(),
+            ),
+            ..Default::default()
+        },
+        FinancialReportRow {
+            calculation_formula: Some("invalid formula".to_string()),
+            ..Default::default()
+        },
+    ];
+
+    let extractor = FormulaFieldExtractor::new("account_category", vec!["like".to_string()]);
+    assert_eq!(
+        extractor.extract_from_rows(&rows),
+        ["Direct Income", "Indirect Income", "Revenue"]
+            .into_iter()
+            .map(str::to_string)
+            .collect()
+    );
+
+    let updater = FormulaFieldUpdater::new(
+        "account_category",
+        [
+            ("Revenue".to_string(), "Operating Revenue".to_string()),
+            ("Direct Income".to_string(), "Primary Revenue".to_string()),
+            ("Tax".to_string(), "Ignored Tax".to_string()),
+        ]
+        .into_iter()
+        .collect(),
+        vec!["like".to_string(), "not like".to_string()],
+    );
+    let updates = updater.update_in_rows(
+        [
+            (
+                "ROW1".to_string(),
+                rows[0].calculation_formula.clone().unwrap(),
+            ),
+            ("ROW2".to_string(), "invalid formula".to_string()),
+        ]
+        .into_iter()
+        .collect(),
+    );
+    assert_eq!(
+        updates
+            .get("ROW1")
+            .unwrap()
+            .get("calculation_formula")
+            .unwrap(),
+        r#"{"and":[["account_category","=","Operating Revenue"],{"or":[["account_category","in",["Primary Revenue","Indirect Income"]],["account_category","like","Tax"]]}]}"#
+    );
+    assert!(!updates.contains_key("ROW2"));
+}
+
+#[test]
+fn row_processor_matches_erpnext_processing_order_and_row_value_outputs() {
+    let template = FinancialReportTemplate {
+        rows: vec![
+            FinancialReportRow {
+                reference_code: Some("TOTAL".to_string()),
+                display_name: Some("Total".to_string()),
+                data_source: Some("Calculated Amount".to_string()),
+                calculation_formula: Some("ACC001 + API001".to_string()),
+                ..Default::default()
+            },
+            FinancialReportRow {
+                reference_code: Some("ACC001".to_string()),
+                display_name: Some("Account".to_string()),
+                data_source: Some("Account Data".to_string()),
+                ..Default::default()
+            },
+            FinancialReportRow {
+                reference_code: Some("API001".to_string()),
+                display_name: Some("API".to_string()),
+                data_source: Some("Custom API".to_string()),
+                ..Default::default()
+            },
+            FinancialReportRow {
+                display_name: Some("Spacer".to_string()),
+                data_source: Some("Blank Line".to_string()),
+                ..Default::default()
+            },
+            FinancialReportRow {
+                display_name: Some("Break".to_string()),
+                data_source: Some("Column Break".to_string()),
+                ..Default::default()
+            },
+            FinancialReportRow {
+                display_name: Some("Section".to_string()),
+                data_source: Some("Section Break".to_string()),
+                ..Default::default()
+            },
+        ],
+        ..Default::default()
+    };
+    let mut context = ReportContext::new(template);
+    context.period_list = vec![
+        BTreeMap::from([("key".to_string(), serde_json::json!("p1"))]),
+        BTreeMap::from([("key".to_string(), serde_json::json!("p2"))]),
+    ];
+    context.raw_data.insert(
+        "summary".to_string(),
+        serde_json::json!({"ACC001": [10.0, 20.0], "API001": [3.0, 4.0]}),
+    );
+    context.raw_data.insert(
+        "api_summary".to_string(),
+        serde_json::json!({"API001": [3.0, 4.0]}),
+    );
+    context.raw_data.insert(
+        "account_details".to_string(),
+        serde_json::json!({"ACC001": {"Cash": {
+            "account": "Cash",
+            "account_name": "Cash",
+            "account_number": "1001",
+            "period_values": [
+                {"period_key": "p1", "opening": 0.0, "closing": 10.0, "movement": 10.0},
+                {"period_key": "p2", "opening": 10.0, "closing": 20.0, "movement": 10.0}
+            ]
+        }}}),
+    );
+
+    let processor = RowProcessor::new(&context).unwrap();
+    let processed = processor.process_all_rows();
+    let rows = processed
+        .iter()
+        .map(|row| {
+            (
+                row.row
+                    .reference_code
+                    .as_deref()
+                    .unwrap_or(row.row.data_source.as_deref().unwrap_or("")),
+                row.values.clone(),
+            )
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        rows,
+        vec![
+            ("API001", vec![3.0, 4.0]),
+            ("ACC001", vec![10.0, 20.0]),
+            ("TOTAL", vec![13.0, 24.0]),
+            ("Blank Line", vec![0.0, 0.0]),
+            ("Column Break", vec![]),
+            ("Section Break", vec![]),
+        ]
+    );
+    assert!(processed[1]
+        .account_details
+        .as_ref()
+        .unwrap()
+        .contains_key("Cash"));
 }
