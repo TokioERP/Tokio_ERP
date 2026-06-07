@@ -1,0 +1,98 @@
+[
+  {
+    "scenario": "payment_entry_receive_gl",
+    "source": "erpnext.accounts.doctype.payment_entry.test_payment_entry",
+    "expected": {
+      "difference_amount": 0.0,
+      "gl_entries": [
+        {
+          "account": "Debtors - TC",
+          "account_currency": "USD",
+          "against": "Bank - TC",
+          "against_voucher": "SINV-0001",
+          "against_voucher_type": "Sales Invoice",
+          "credit": 80.0,
+          "credit_in_account_currency": 80.0,
+          "credit_in_transaction_currency": 80.0,
+          "debit": 0.0,
+          "debit_in_account_currency": 0.0,
+          "debit_in_transaction_currency": 0.0,
+          "party": "_Test Customer",
+          "party_type": "Customer",
+          "post_net_value": false,
+          "transaction_exchange_rate": 1.0
+        },
+        {
+          "account": "Debtors - TC",
+          "account_currency": "USD",
+          "against": "Bank - TC",
+          "credit": 40.0,
+          "credit_in_account_currency": 40.0,
+          "credit_in_transaction_currency": 40.0,
+          "debit": 0.0,
+          "debit_in_account_currency": 0.0,
+          "debit_in_transaction_currency": 0.0,
+          "party": "_Test Customer",
+          "party_type": "Customer",
+          "post_net_value": false,
+          "transaction_exchange_rate": 0.0
+        },
+        {
+          "account": "Bank - TC",
+          "account_currency": "USD",
+          "against": "_Test Customer",
+          "credit": 0.0,
+          "credit_in_account_currency": 0.0,
+          "credit_in_transaction_currency": 0.0,
+          "debit": 100.0,
+          "debit_in_account_currency": 100.0,
+          "debit_in_transaction_currency": 100.0,
+          "post_net_value": false,
+          "transaction_exchange_rate": 0.0
+        },
+        {
+          "account": "Write Off - TC",
+          "account_currency": "USD",
+          "against": "_Test Customer",
+          "credit": 0.0,
+          "credit_in_account_currency": 0.0,
+          "credit_in_transaction_currency": 0.0,
+          "debit": 20.0,
+          "debit_in_account_currency": 20.0,
+          "debit_in_transaction_currency": 20.0,
+          "post_net_value": false,
+          "transaction_exchange_rate": 0.0
+        }
+      ],
+      "status": "Draft",
+      "total_allocated_amount": 80.0,
+      "unallocated_amount": 40.0
+    }
+  },
+  {
+    "scenario": "purchase_invoice_supplier_hold",
+    "source": "erpnext.accounts.doctype.purchase_invoice.test_purchase_invoice",
+    "expected": {
+      "error": {
+        "supplier": "_Test Supplier",
+        "type": "SupplierBlocked"
+      }
+    }
+  },
+  {
+    "scenario": "sales_invoice_cancelled_status",
+    "source": "erpnext.accounts.doctype.sales_invoice.test_sales_invoice",
+    "expected": {
+      "status": "Cancelled"
+    }
+  },
+  {
+    "scenario": "pricing_rule_stacked_discounts",
+    "source": "erpnext.accounts.doctype.pricing_rule.test_pricing_rule",
+    "expected": {
+      "discount_amount": 200.0,
+      "discount_percentage": 10.0,
+      "price_list_rate": 1000.0
+    }
+  }
+]
