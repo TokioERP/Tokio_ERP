@@ -2103,7 +2103,7 @@
     {
       "source": "accounts/doctype/sales_invoice/test_sales_invoice.py",
       "target": "accounts/doctype/sales_invoice/test_sales_invoice.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/sales_invoice_advance/__init__.py",

@@ -533,10 +533,6 @@ impl SalesInvoice {
             return self.status.clone();
         }
 
-        if self.docstatus == 2 {
-            return self.status.clone();
-        }
-
         self.status = if self.docstatus == 1 {
             if self.internal_transfer {
                 "Internal Transfer".to_string()
@@ -556,6 +552,8 @@ impl SalesInvoice {
             } else {
                 "Submitted".to_string()
             }
+        } else if self.docstatus == 2 {
+            "Cancelled".to_string()
         } else {
             "Draft".to_string()
         };

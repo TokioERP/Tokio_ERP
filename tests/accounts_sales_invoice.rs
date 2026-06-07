@@ -256,13 +256,10 @@ fn sales_invoice_status_branches_match_erpnext_order() {
         "Internal Transfer"
     );
     doc.docstatus = 2;
-    assert_eq!(
-        doc.set_status(None, "2026-06-06", None),
-        "Internal Transfer"
-    );
+    assert_eq!(doc.set_status(None, "2026-06-06", None), "Cancelled");
     assert_eq!(
         doc.set_status(Some("Force Skipped"), "2026-06-06", None),
-        "Internal Transfer"
+        "Cancelled"
     );
     doc.docstatus = 0;
     assert_eq!(doc.set_status(None, "2026-06-06", None), "Draft");
