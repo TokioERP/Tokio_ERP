@@ -81,6 +81,8 @@ TRADEMARKS.md             Trademark and affiliation notice
 
 ## Development
 
+Agents continuing the rewrite should read [AI_HANDOFF.md](AI_HANDOFF.md) before making changes.
+
 Run a focused test while working on one module:
 
 ```bash
