@@ -285,6 +285,26 @@ impl Budget {
                 .read_only_depends_on("eval: doc.revision_of"),
             FieldSpec::table("budget_distribution", "Budget Distribution")
                 .options("Budget Distribution"),
+            FieldSpec::section_break("control_action_for_cumulative_expense_section")
+                .label("Control Action for Cumulative Expense"),
+            FieldSpec::check(
+                "applicable_on_cumulative_expense",
+                "Applicable on Cumulative Expense",
+            )
+            .default("0")
+            .description("(Purchase Order + Material Request + Actual Expense)"),
+            FieldSpec::select(
+                "action_if_annual_exceeded_on_cumulative_expense",
+                "Action if Anual Budget Exceeded on Cumulative Expense",
+            )
+            .options("\nStop\nWarn\nIgnore")
+            .depends_on("eval:doc.applicable_on_cumulative_expense == 1"),
+            FieldSpec::select(
+                "action_if_accumulated_monthly_exceeded_on_cumulative_expense",
+                "Action if Accumulative Monthly Budget Exceeded on Cumulative Expense",
+            )
+            .options("\nStop\nWarn\nIgnore")
+            .depends_on("eval:doc.applicable_on_cumulative_expense == 1"),
         ]
     }
 

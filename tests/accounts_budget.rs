@@ -75,6 +75,22 @@ fn budget_metadata_matches_erpnext_json() {
         &FieldSpec::table("budget_distribution", "Budget Distribution")
             .options("Budget Distribution")
     ));
+    assert!(Budget::fields().contains(
+        &FieldSpec::check(
+            "applicable_on_cumulative_expense",
+            "Applicable on Cumulative Expense"
+        )
+        .default("0")
+        .description("(Purchase Order + Material Request + Actual Expense)")
+    ));
+    assert!(Budget::fields().contains(
+        &FieldSpec::select(
+            "action_if_accumulated_monthly_exceeded_on_cumulative_expense",
+            "Action if Accumulative Monthly Budget Exceeded on Cumulative Expense"
+        )
+        .options("\nStop\nWarn\nIgnore")
+        .depends_on("eval:doc.applicable_on_cumulative_expense == 1")
+    ));
 }
 
 #[test]
@@ -173,6 +189,24 @@ fn budget_applicable_flags_nulling_and_distribution_generation_match_erpnext() {
         }
     );
     assert_eq!(budget.budget_distribution_total, 1200.0);
+
+    let mut monthly = base_budget();
+    monthly.distribution_frequency = "Monthly".to_string();
+    monthly.budget_amount = 120000.0;
+    monthly.before_save();
+    assert_eq!(monthly.budget_distribution.len(), 12);
+    assert_eq!(
+        monthly
+            .budget_distribution
+            .iter()
+            .map(|row| row.amount)
+            .sum::<f64>(),
+        120000.0
+    );
+    assert!(monthly
+        .budget_distribution
+        .iter()
+        .all(|row| row.amount == 10000.0));
 }
 
 #[test]

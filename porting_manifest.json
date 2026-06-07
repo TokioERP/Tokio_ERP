@@ -473,7 +473,7 @@
     {
       "source": "accounts/doctype/budget/test_budget.py",
       "target": "accounts/doctype/budget/test_budget.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/budget_account/__init__.py",
