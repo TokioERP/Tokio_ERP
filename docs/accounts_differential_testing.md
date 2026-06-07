@@ -34,6 +34,16 @@ fails with the scenario name and ERPNext source path.
 - `purchase_invoice_supplier_hold`: validates Supplier invoice hold rejection.
 - `sales_invoice_cancelled_status`: validates Sales Invoice cancel precedence over internal transfer.
 - `pricing_rule_stacked_discounts`: validates stacked Discount Percentage + Discount Amount behavior.
+- `journal_entry_validate_core`: validates Journal Entry opening default, amount conversion, totals,
+  against-account assignment, remarks, title, and cleared-date reset.
+- `sales_invoice_status_matrix`: validates ERPNext Sales Invoice status precedence for paid,
+  partly paid, overdue, discounted, unpaid, return, credit note, internal transfer, cancelled,
+  draft, amended-new, and party-account-currency total cases.
+- `purchase_invoice_status_matrix`: validates ERPNext Purchase Invoice status precedence for paid,
+  partly paid, overdue, unpaid, return, debit note, internal transfer, cancelled, draft,
+  amended-new, and party-account-currency total cases.
+- `payment_entry_hold_guards`: validates supplier payment hold release-date behavior and Purchase
+  Invoice on-hold reference rejection.
 
 ## Expansion Rule
 

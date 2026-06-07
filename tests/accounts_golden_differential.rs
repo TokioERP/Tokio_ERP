@@ -13,6 +13,10 @@ fn accounts_core_golden_scenarios_match_erpnext_snapshots() {
             "purchase_invoice_supplier_hold" => AccountsGoldenScenario::PurchaseInvoiceSupplierHold,
             "sales_invoice_cancelled_status" => AccountsGoldenScenario::SalesInvoiceCancelledStatus,
             "pricing_rule_stacked_discounts" => AccountsGoldenScenario::PricingRuleStackedDiscounts,
+            "journal_entry_validate_core" => AccountsGoldenScenario::JournalEntryValidateCore,
+            "sales_invoice_status_matrix" => AccountsGoldenScenario::SalesInvoiceStatusMatrix,
+            "purchase_invoice_status_matrix" => AccountsGoldenScenario::PurchaseInvoiceStatusMatrix,
+            "payment_entry_hold_guards" => AccountsGoldenScenario::PaymentEntryHoldGuards,
             other => panic!("unknown accounts golden scenario: {other}"),
         };
 

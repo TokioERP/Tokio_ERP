@@ -94,5 +94,96 @@
       "discount_percentage": 10.0,
       "price_list_rate": 1000.0
     }
+  },
+  {
+    "scenario": "journal_entry_validate_core",
+    "source": "erpnext.accounts.doctype.journal_entry.test_journal_entry",
+    "expected": {
+      "accounts": [
+        {
+          "account": "Debtors - TC",
+          "against_account": "Cash - TC",
+          "credit": 0.0,
+          "credit_in_account_currency": 0.0,
+          "debit": 125.0,
+          "debit_in_account_currency": 125.0
+        },
+        {
+          "account": "Cash - TC",
+          "against_account": "_Test Customer",
+          "credit": 125.0,
+          "credit_in_account_currency": 125.0,
+          "debit": 0.0,
+          "debit_in_account_currency": 0.0
+        }
+      ],
+      "clearance_date": null,
+      "difference": 0.0,
+      "is_opening": "Yes",
+      "remark": "Reference #CHK-1 dated 2026-06-05",
+      "title": "_Test Customer",
+      "total_credit": 125.0,
+      "total_debit": 125.0
+    }
+  },
+  {
+    "scenario": "sales_invoice_status_matrix",
+    "source": "erpnext.accounts.doctype.sales_invoice.sales_invoice.set_status",
+    "expected": {
+      "amended_new": "Draft",
+      "base_total_party_currency": "Partly Paid",
+      "cancelled_ignores_forced_status": "Cancelled",
+      "credit_note_issued": "Credit Note Issued",
+      "discounted_overdue": "Overdue and Discounted",
+      "discounted_partly_paid": "Partly Paid and Discounted",
+      "draft": "Draft",
+      "internal_transfer": "Internal Transfer",
+      "overdue": "Overdue",
+      "paid": "Paid",
+      "partly_paid": "Partly Paid",
+      "return": "Return",
+      "unpaid": "Unpaid",
+      "zero_rounded_total": "Unpaid"
+    }
+  },
+  {
+    "scenario": "purchase_invoice_status_matrix",
+    "source": "erpnext.accounts.doctype.purchase_invoice.purchase_invoice.set_status",
+    "expected": {
+      "amended_new": "Draft",
+      "base_total_party_currency": "Partly Paid",
+      "cancelled_ignores_forced_status": "Cancelled",
+      "debit_note_issued": "Debit Note Issued",
+      "draft": "Draft",
+      "internal_transfer": "Internal Transfer",
+      "overdue": "Overdue",
+      "paid": "Paid",
+      "partly_paid": "Partly Paid",
+      "return": "Return",
+      "unpaid": "Unpaid",
+      "zero_rounded_total": "Unpaid"
+    }
+  },
+  {
+    "scenario": "payment_entry_hold_guards",
+    "source": "erpnext.accounts.doctype.payment_entry.payment_entry.validate_reference_documents",
+    "expected": {
+      "released_supplier_payment": {
+        "status": "Draft"
+      },
+      "supplier_blocked": {
+        "error": {
+          "supplier": "_Test Supplier",
+          "type": "SupplierBlocked"
+        }
+      },
+      "reference_on_hold": {
+        "error": {
+          "reference_doctype": "Purchase Invoice",
+          "reference_name": "PINV-HOLD-0001",
+          "type": "ReferenceDocumentOnHold"
+        }
+      }
+    }
   }
 ]
