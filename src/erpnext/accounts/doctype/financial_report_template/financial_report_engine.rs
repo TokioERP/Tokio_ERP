@@ -79,6 +79,13 @@ pub struct DependencyResolver {
     pub dependencies: BTreeMap<String, Vec<String>>,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct FormulaCalculator {
+    row_data: BTreeMap<String, Vec<f64>>,
+    period_keys: Vec<String>,
+    precision: u32,
+}
+
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct EngineFilterValidation {
     pub missing_required: Vec<String>,
@@ -368,6 +375,59 @@ impl DependencyResolver {
     }
 }
 
+impl FormulaCalculator {
+    pub fn new(
+        row_data: BTreeMap<String, Vec<f64>>,
+        period_keys: Vec<String>,
+        precision: u32,
+    ) -> Self {
+        Self {
+            row_data,
+            period_keys,
+            precision,
+        }
+    }
+
+    pub fn evaluate_formula(&self, report_row: &FinancialReportRow) -> Vec<f64> {
+        let formula = report_row
+            .calculation_formula
+            .as_deref()
+            .unwrap_or_default()
+            .trim();
+        if formula.is_empty() {
+            return vec![0.0; self.period_keys.len()];
+        }
+
+        let negation_factor = if report_row.reverse_sign != 0 {
+            -1.0
+        } else {
+            1.0
+        };
+        (0..self.period_keys.len())
+            .map(|period_index| {
+                let context = self.build_context(period_index);
+                let mut parser = FormulaParser::new(formula, &context);
+                parser
+                    .parse()
+                    .map(|value| round_to(value * negation_factor, self.precision))
+                    .unwrap_or(0.0)
+            })
+            .collect()
+    }
+
+    pub fn build_context(&self, period_index: usize) -> BTreeMap<String, f64> {
+        self.row_data
+            .iter()
+            .map(|(code, values)| {
+                (
+                    code.clone(),
+                    values.get(period_index).copied().unwrap_or(0.0),
+                )
+            })
+            .collect()
+    }
+}
+
 fn get_string<'a>(value: &'a Value, key: &str) -> Option<&'a str> {
     value.get(key).and_then(Value::as_str)
 }
@@ -463,4 +523,189 @@ fn has_cycle(dependencies: &BTreeMap<String, Vec<String>>) -> bool {
     dependencies
         .keys()
         .any(|code| visit(code, dependencies, &mut visiting, &mut visited))
+}
+
+struct FormulaParser<'a> {
+    chars: Vec<char>,
+    pos: usize,
+    context: &'a BTreeMap<String, f64>,
+}
+
+impl<'a> FormulaParser<'a> {
+    fn new(formula: &str, context: &'a BTreeMap<String, f64>) -> Self {
+        Self {
+            chars: formula.chars().collect(),
+            pos: 0,
+            context,
+        }
+    }
+
+    fn parse(&mut self) -> Result<f64, String> {
+        let value = self.parse_expression()?;
+        self.skip_whitespace();
+        if self.pos == self.chars.len() {
+            Ok(value)
+        } else {
+            Err("unexpected trailing input".to_string())
+        }
+    }
+
+    fn parse_expression(&mut self) -> Result<f64, String> {
+        let mut value = self.parse_term()?;
+        loop {
+            self.skip_whitespace();
+            if self.consume('+') {
+                value += self.parse_term()?;
+            } else if self.consume('-') {
+                value -= self.parse_term()?;
+            } else {
+                return Ok(value);
+            }
+        }
+    }
+
+    fn parse_term(&mut self) -> Result<f64, String> {
+        let mut value = self.parse_factor()?;
+        loop {
+            self.skip_whitespace();
+            if self.consume('*') {
+                value *= self.parse_factor()?;
+            } else if self.consume('/') {
+                let divisor = self.parse_factor()?;
+                if divisor == 0.0 {
+                    return Err("division by zero".to_string());
+                }
+                value /= divisor;
+            } else {
+                return Ok(value);
+            }
+        }
+    }
+
+    fn parse_factor(&mut self) -> Result<f64, String> {
+        self.skip_whitespace();
+        if self.consume('+') {
+            return self.parse_factor();
+        }
+        if self.consume('-') {
+            return Ok(-self.parse_factor()?);
+        }
+        if self.consume('(') {
+            let value = self.parse_expression()?;
+            self.skip_whitespace();
+            if !self.consume(')') {
+                return Err("missing closing parenthesis".to_string());
+            }
+            return Ok(value);
+        }
+        if self
+            .peek()
+            .is_some_and(|ch| ch.is_ascii_digit() || ch == '.')
+        {
+            return self.parse_number();
+        }
+        if self
+            .peek()
+            .is_some_and(|ch| ch.is_ascii_alphabetic() || ch == '_')
+        {
+            return self.parse_identifier_or_function();
+        }
+        Err("unexpected token".to_string())
+    }
+
+    fn parse_number(&mut self) -> Result<f64, String> {
+        let start = self.pos;
+        while self
+            .peek()
+            .is_some_and(|ch| ch.is_ascii_digit() || ch == '.')
+        {
+            self.pos += 1;
+        }
+        self.chars[start..self.pos]
+            .iter()
+            .collect::<String>()
+            .parse::<f64>()
+            .map_err(|_| "invalid number".to_string())
+    }
+
+    fn parse_identifier_or_function(&mut self) -> Result<f64, String> {
+        let ident = self.parse_identifier();
+        self.skip_whitespace();
+        if self.consume('(') {
+            let args = self.parse_arguments()?;
+            return evaluate_function(&ident, &args);
+        }
+        self.context
+            .get(&ident)
+            .copied()
+            .ok_or_else(|| "unknown identifier".to_string())
+    }
+
+    fn parse_identifier(&mut self) -> String {
+        let start = self.pos;
+        while self
+            .peek()
+            .is_some_and(|ch| ch.is_ascii_alphanumeric() || ch == '_')
+        {
+            self.pos += 1;
+        }
+        self.chars[start..self.pos].iter().collect()
+    }
+
+    fn parse_arguments(&mut self) -> Result<Vec<f64>, String> {
+        let mut args = Vec::new();
+        self.skip_whitespace();
+        if self.consume(')') {
+            return Ok(args);
+        }
+        loop {
+            args.push(self.parse_expression()?);
+            self.skip_whitespace();
+            if self.consume(')') {
+                return Ok(args);
+            }
+            if !self.consume(',') {
+                return Err("missing argument separator".to_string());
+            }
+        }
+    }
+
+    fn skip_whitespace(&mut self) {
+        while self.peek().is_some_and(char::is_whitespace) {
+            self.pos += 1;
+        }
+    }
+
+    fn consume(&mut self, expected: char) -> bool {
+        if self.peek() == Some(expected) {
+            self.pos += 1;
+            true
+        } else {
+            false
+        }
+    }
+
+    fn peek(&self) -> Option<char> {
+        self.chars.get(self.pos).copied()
+    }
+}
+
+fn evaluate_function(name: &str, args: &[f64]) -> Result<f64, String> {
+    match name {
+        "abs" if args.len() == 1 => Ok(args[0].abs()),
+        "round" if args.len() == 1 => Ok(args[0].round()),
+        "round" if args.len() == 2 => Ok(round_to(args[0], args[1].max(0.0) as u32)),
+        "min" if !args.is_empty() => Ok(args.iter().copied().fold(f64::INFINITY, f64::min)),
+        "max" if !args.is_empty() => Ok(args.iter().copied().fold(f64::NEG_INFINITY, f64::max)),
+        "sqrt" if args.len() == 1 && args[0] >= 0.0 => Ok(args[0].sqrt()),
+        "pow" if args.len() == 2 => Ok(args[0].powf(args[1])),
+        "ceil" if args.len() == 1 => Ok(args[0].ceil()),
+        "floor" if args.len() == 1 => Ok(args[0].floor()),
+        _ => Err("unknown function".to_string()),
+    }
+}
+
+fn round_to(value: f64, precision: u32) -> f64 {
+    let factor = 10_f64.powi(precision as i32);
+    (value * factor).round() / factor
 }

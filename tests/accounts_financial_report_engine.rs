@@ -1,8 +1,8 @@
 use tokio_erp::erpnext::accounts::doctype::financial_report_row::financial_report_row::FinancialReportRow;
 use tokio_erp::erpnext::accounts::doctype::financial_report_template::financial_report_engine::{
     AccountData, DependencyResolver, EngineFilterValidation, FinancialReportEngine, FormattingRule,
-    PeriodValue, ReportContext, RowData, SectionData, SegmentData, DEFAULT_BULLET_PREFIX,
-    SEGMENT_PREFIX,
+    FormulaCalculator, PeriodValue, ReportContext, RowData, SectionData, SegmentData,
+    DEFAULT_BULLET_PREFIX, SEGMENT_PREFIX,
 };
 use tokio_erp::erpnext::accounts::doctype::financial_report_template::financial_report_template::FinancialReportTemplate;
 
@@ -284,5 +284,115 @@ fn dependency_resolver_rejects_circular_formula_dependencies() {
     assert_eq!(
         DependencyResolver::new(&template).unwrap_err(),
         "Circular dependency detected".to_string()
+    );
+}
+
+#[test]
+fn formula_calculator_matches_erpnext_period_arithmetic_and_math_functions() {
+    let calculator = FormulaCalculator::new(
+        [
+            ("INC001".to_string(), vec![1000.0, 1200.0, 1500.0]),
+            ("EXP001".to_string(), vec![800.0, 900.0, 1100.0]),
+            ("TAX001".to_string(), vec![50.0, 60.0, 75.0]),
+            ("NEG_VAL".to_string(), vec![-100.0, -200.0, -150.0]),
+            ("BASE".to_string(), vec![4.0, 9.0, 16.0]),
+            ("DECIMAL".to_string(), vec![2.7, 3.2, 4.9]),
+        ]
+        .into_iter()
+        .collect(),
+        vec![
+            "2023_q1".to_string(),
+            "2023_q2".to_string(),
+            "2023_q3".to_string(),
+        ],
+        2,
+    );
+
+    assert_eq!(
+        calculator.evaluate_formula(&FinancialReportRow {
+            calculation_formula: Some("(INC001 - EXP001) * 0.8".to_string()),
+            ..Default::default()
+        }),
+        vec![160.0, 240.0, 320.0]
+    );
+    assert_eq!(
+        calculator.evaluate_formula(&FinancialReportRow {
+            calculation_formula: Some("abs(NEG_VAL) + round(TAX001 / 3, 2)".to_string()),
+            ..Default::default()
+        }),
+        vec![116.67, 220.0, 175.0]
+    );
+    assert_eq!(
+        calculator.evaluate_formula(&FinancialReportRow {
+            calculation_formula: Some("max(INC001, EXP001) + min(TAX001, 55)".to_string()),
+            ..Default::default()
+        }),
+        vec![1050.0, 1255.0, 1555.0]
+    );
+    assert_eq!(
+        calculator.evaluate_formula(&FinancialReportRow {
+            calculation_formula: Some("sqrt(BASE) + floor(DECIMAL) + ceil(DECIMAL)".to_string()),
+            ..Default::default()
+        }),
+        vec![7.0, 10.0, 13.0]
+    );
+    assert_eq!(
+        calculator.evaluate_formula(&FinancialReportRow {
+            calculation_formula: Some("pow(BASE, 2)".to_string()),
+            ..Default::default()
+        }),
+        vec![16.0, 81.0, 256.0]
+    );
+}
+
+#[test]
+fn formula_calculator_matches_erpnext_missing_values_reverse_and_error_handling() {
+    let calculator = FormulaCalculator::new(
+        [
+            ("SHORT".to_string(), vec![100.0]),
+            ("NORMAL".to_string(), vec![10.0, 20.0, 30.0]),
+            ("ZERO".to_string(), vec![0.0, 0.0, 0.0]),
+        ]
+        .into_iter()
+        .collect(),
+        vec!["p1".to_string(), "p2".to_string(), "p3".to_string()],
+        2,
+    );
+
+    assert_eq!(
+        calculator.evaluate_formula(&FinancialReportRow {
+            calculation_formula: Some("SHORT + NORMAL".to_string()),
+            ..Default::default()
+        }),
+        vec![110.0, 20.0, 30.0]
+    );
+    assert_eq!(
+        calculator.evaluate_formula(&FinancialReportRow {
+            calculation_formula: Some("NORMAL / ZERO".to_string()),
+            ..Default::default()
+        }),
+        vec![0.0, 0.0, 0.0]
+    );
+    assert_eq!(
+        calculator.evaluate_formula(&FinancialReportRow {
+            calculation_formula: Some("NORMAL + +".to_string()),
+            ..Default::default()
+        }),
+        vec![0.0, 0.0, 0.0]
+    );
+    assert_eq!(
+        calculator.evaluate_formula(&FinancialReportRow {
+            calculation_formula: Some("__import__('os').system('ls')".to_string()),
+            ..Default::default()
+        }),
+        vec![0.0, 0.0, 0.0]
+    );
+    assert_eq!(
+        calculator.evaluate_formula(&FinancialReportRow {
+            calculation_formula: Some("NORMAL + 100".to_string()),
+            reverse_sign: 1,
+            ..Default::default()
+        }),
+        vec![-110.0, -120.0, -130.0]
     );
 }
