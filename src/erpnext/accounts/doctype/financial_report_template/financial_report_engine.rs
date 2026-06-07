@@ -151,6 +151,10 @@ pub struct GrowthViewTransformer<'a> {
     context: &'a mut ReportContext,
 }
 
+pub struct DetailRowBuilder<'a> {
+    parent_row_data: &'a RowData,
+}
+
 impl PeriodValue {
     pub fn get_value(&self, balance_type: &str) -> f64 {
         match balance_type {
@@ -901,6 +905,64 @@ impl<'a> GrowthViewTransformer<'a> {
                     row_object.insert(key, value);
                 }
             }
+        }
+    }
+}
+
+impl<'a> DetailRowBuilder<'a> {
+    pub fn new(parent_row_data: &'a RowData) -> Self {
+        Self { parent_row_data }
+    }
+
+    pub fn build(&self) -> Vec<RowData> {
+        let Some(account_details) = &self.parent_row_data.account_details else {
+            return Vec::new();
+        };
+
+        account_details
+            .values()
+            .map(|account_data| {
+                let detail_row = self.create_detail_row_object(account_data);
+                let balance_type = self
+                    .parent_row_data
+                    .row
+                    .balance_type
+                    .as_deref()
+                    .unwrap_or("Closing Balance");
+                RowData {
+                    values: account_data.get_values_by_type(balance_type),
+                    row: detail_row,
+                    is_detail_row: true,
+                    parent_reference: self.parent_row_data.row.reference_code.clone(),
+                    ..Default::default()
+                }
+            })
+            .collect()
+    }
+
+    fn create_detail_row_object(&self, account_data: &AccountData) -> FinancialReportRow {
+        let display_name = if account_data.account_number.is_empty() {
+            account_data.account_name.clone()
+        } else {
+            format!(
+                "{} - {}",
+                account_data.account_number, account_data.account_name
+            )
+        };
+
+        FinancialReportRow {
+            account: Some(account_data.account.clone()),
+            display_name: Some(display_name),
+            account_name: Some(account_data.account_name.clone()),
+            account_number: Some(account_data.account_number.clone()),
+            data_source: Some("Account Detail".to_string()),
+            indentation_level: self.parent_row_data.row.indentation_level + 1,
+            fieldtype: self.parent_row_data.row.fieldtype.clone(),
+            italic_text: 1,
+            reverse_sign: self.parent_row_data.row.reverse_sign,
+            warn_if_negative: self.parent_row_data.row.warn_if_negative,
+            hide_when_empty: self.parent_row_data.row.hide_when_empty,
+            ..Default::default()
         }
     }
 }

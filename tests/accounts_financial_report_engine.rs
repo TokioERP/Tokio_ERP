@@ -2,11 +2,11 @@ use std::collections::BTreeMap;
 
 use tokio_erp::erpnext::accounts::doctype::financial_report_row::financial_report_row::FinancialReportRow;
 use tokio_erp::erpnext::accounts::doctype::financial_report_template::financial_report_engine::{
-    AccountData, AccountReportMeta, ChartDataGenerator, DependencyResolver, EngineFilterValidation,
-    FilterExpressionParser, FinancialQueryBuilder, FinancialReportEngine, FinancialReportPeriod,
-    FormattingRule, FormulaCalculator, FormulaFieldExtractor, FormulaFieldUpdater, GlMovementRow,
-    GrowthViewTransformer, PeriodValue, ReportContext, RowData, RowProcessor, SectionData,
-    SegmentData, DEFAULT_BULLET_PREFIX, SEGMENT_PREFIX,
+    AccountData, AccountReportMeta, ChartDataGenerator, DependencyResolver, DetailRowBuilder,
+    EngineFilterValidation, FilterExpressionParser, FinancialQueryBuilder, FinancialReportEngine,
+    FinancialReportPeriod, FormattingRule, FormulaCalculator, FormulaFieldExtractor,
+    FormulaFieldUpdater, GlMovementRow, GrowthViewTransformer, PeriodValue, ReportContext, RowData,
+    RowProcessor, SectionData, SegmentData, DEFAULT_BULLET_PREFIX, SEGMENT_PREFIX,
 };
 use tokio_erp::erpnext::accounts::doctype::financial_report_template::financial_report_template::FinancialReportTemplate;
 
@@ -941,4 +941,71 @@ fn growth_view_transformer_matches_erpnext_growth_rules() {
             {"account_name": "", "is_blank_line": true, "2024": "", "2025": "", "2026": ""}
         ])
     );
+}
+
+#[test]
+fn detail_row_builder_matches_erpnext_account_breakdown_rows() {
+    let parent_row = FinancialReportRow {
+        reference_code: Some("ACC001".to_string()),
+        display_name: Some("Cash Summary".to_string()),
+        data_source: Some("Account Data".to_string()),
+        balance_type: Some("Closing Balance".to_string()),
+        indentation_level: 1,
+        fieldtype: Some("Currency".to_string()),
+        reverse_sign: 1,
+        warn_if_negative: 1,
+        hide_when_empty: 1,
+        ..Default::default()
+    };
+    let parent_row_data = RowData {
+        row: parent_row,
+        account_details: Some(BTreeMap::from([(
+            "Cash - _TC".to_string(),
+            AccountData {
+                account: "Cash - _TC".to_string(),
+                account_name: "Cash".to_string(),
+                account_number: "1001".to_string(),
+                period_values: vec![
+                    PeriodValue {
+                        period_key: "p1".to_string(),
+                        opening: 10.0,
+                        closing: 25.0,
+                        movement: 15.0,
+                    },
+                    PeriodValue {
+                        period_key: "p2".to_string(),
+                        opening: 2.0,
+                        closing: 8.0,
+                        movement: 6.0,
+                    },
+                ],
+            },
+        )])),
+        ..Default::default()
+    };
+
+    let detail_rows = DetailRowBuilder::new(&parent_row_data).build();
+
+    assert_eq!(detail_rows.len(), 1);
+    assert_eq!(detail_rows[0].values, [25.0, 8.0]);
+    assert!(detail_rows[0].is_detail_row);
+    assert_eq!(detail_rows[0].parent_reference.as_deref(), Some("ACC001"));
+    assert_eq!(detail_rows[0].row.account.as_deref(), Some("Cash - _TC"));
+    assert_eq!(
+        detail_rows[0].row.display_name.as_deref(),
+        Some("1001 - Cash")
+    );
+    assert_eq!(detail_rows[0].row.account_name.as_deref(), Some("Cash"));
+    assert_eq!(detail_rows[0].row.account_number.as_deref(), Some("1001"));
+    assert_eq!(
+        detail_rows[0].row.data_source.as_deref(),
+        Some("Account Detail")
+    );
+    assert_eq!(detail_rows[0].row.indentation_level, 2);
+    assert_eq!(detail_rows[0].row.fieldtype.as_deref(), Some("Currency"));
+    assert_eq!(detail_rows[0].row.italic_text, 1);
+    assert_eq!(detail_rows[0].row.reverse_sign, 1);
+    assert_eq!(detail_rows[0].row.warn_if_negative, 1);
+    assert_eq!(detail_rows[0].row.hide_when_empty, 1);
+    assert_eq!(DetailRowBuilder::new(&RowData::default()).build(), []);
 }
