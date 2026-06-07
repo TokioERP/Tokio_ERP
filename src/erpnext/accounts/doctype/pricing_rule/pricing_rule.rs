@@ -494,28 +494,51 @@ impl PricingRule {
             self.brands.clear();
         }
 
-        match self.applicable_for.as_deref().unwrap_or_default() {
-            "Customer" => {
-                self.customer_group = None;
-                self.territory = None;
-                self.sales_partner = None;
-                self.campaign = None;
-                self.supplier = None;
-                self.supplier_group = None;
-            }
-            "Supplier" => {
-                self.customer = None;
-                self.customer_group = None;
-                self.territory = None;
-                self.sales_partner = None;
-                self.campaign = None;
-                self.supplier_group = None;
-            }
-            _ => {}
+        let applicable_for = self.applicable_for.as_deref().unwrap_or_default();
+        if applicable_for != "Customer" {
+            self.customer = None;
+        }
+        if applicable_for != "Customer Group" {
+            self.customer_group = None;
+        }
+        if applicable_for != "Territory" {
+            self.territory = None;
+        }
+        if applicable_for != "Sales Partner" {
+            self.sales_partner = None;
+        }
+        if applicable_for != "Campaign" {
+            self.campaign = None;
+        }
+        if applicable_for != "Supplier" {
+            self.supplier = None;
+        }
+        if applicable_for != "Supplier Group" {
+            self.supplier_group = None;
         }
 
         if self.mixed_conditions && self.same_item {
             self.same_item = false;
+        }
+
+        match self.rate_or_discount.as_deref().unwrap_or_default() {
+            "Rate" => {
+                self.discount_amount = 0.0;
+                self.discount_percentage = 0.0;
+            }
+            "Discount Amount" => {
+                self.rate = 0.0;
+                self.discount_percentage = 0.0;
+            }
+            "Discount Percentage" => {
+                self.rate = 0.0;
+                self.discount_amount = 0.0;
+            }
+            _ => {
+                self.rate = 0.0;
+                self.discount_amount = 0.0;
+                self.discount_percentage = 0.0;
+            }
         }
 
         match self.apply_rule_on_other.as_deref().unwrap_or_default() {

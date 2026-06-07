@@ -1713,7 +1713,7 @@
     {
       "source": "accounts/doctype/pricing_rule/test_pricing_rule.py",
       "target": "accounts/doctype/pricing_rule/test_pricing_rule.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/pricing_rule/utils.py",

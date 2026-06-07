@@ -344,3 +344,69 @@ fn pricing_rule_remaining_helpers_match_erpnext_orchestration_shapes() {
         }
     );
 }
+
+#[test]
+fn pricing_rule_multiple_percentage_and_amount_discounts_stack_like_erpnext() {
+    let args = PricingRuleArgs {
+        doctype: "Sales Order".to_string(),
+        item_code: Some("_Test Item".to_string()),
+        currency: Some("USD".to_string()),
+        price_list_rate: 1000.0,
+        conversion_factor: 1.0,
+        ..PricingRuleArgs::default()
+    };
+    let mut details = PricingItemDetails::default();
+
+    let mut percentage_rule = base_rule();
+    percentage_rule.apply_multiple_pricing_rules = true;
+    percentage_rule.rate_or_discount = Some("Discount Percentage".to_string());
+    percentage_rule.discount_percentage = 10.0;
+    apply_price_discount_rule(&percentage_rule, &mut details, &args);
+
+    let mut amount_rule = base_rule();
+    amount_rule.apply_multiple_pricing_rules = true;
+    amount_rule.rate_or_discount = Some("Discount Amount".to_string());
+    amount_rule.discount_amount = 100.0;
+    apply_price_discount_rule(&amount_rule, &mut details, &args);
+
+    assert_eq!(details.discount_amount, 200.0);
+    assert_eq!(details.discount_percentage, 10.0);
+}
+
+#[test]
+fn pricing_rule_cleanup_rate_or_discount_fields_matches_erpnext() {
+    let mut rule = base_rule();
+    rule.rate_or_discount = Some("Discount Amount".to_string());
+    rule.rate = -1.0;
+    rule.discount_amount = 25.0;
+    rule.discount_percentage = 10.0;
+
+    rule.validate().unwrap();
+
+    assert_eq!(rule.rate, 0.0);
+    assert_eq!(rule.discount_amount, 25.0);
+    assert_eq!(rule.discount_percentage, 0.0);
+}
+
+#[test]
+fn pricing_rule_cleanup_applicable_for_fields_matches_erpnext() {
+    let mut rule = base_rule();
+    rule.applicable_for = Some("Customer Group".to_string());
+    rule.customer = Some("CUST-001".to_string());
+    rule.customer_group = Some("Retail".to_string());
+    rule.territory = Some("Uzbekistan".to_string());
+    rule.sales_partner = Some("Partner".to_string());
+    rule.campaign = Some("Campaign".to_string());
+    rule.supplier = Some("SUP-001".to_string());
+    rule.supplier_group = Some("Local Suppliers".to_string());
+
+    rule.validate().unwrap();
+
+    assert_eq!(rule.customer, None);
+    assert_eq!(rule.customer_group.as_deref(), Some("Retail"));
+    assert_eq!(rule.territory, None);
+    assert_eq!(rule.sales_partner, None);
+    assert_eq!(rule.campaign, None);
+    assert_eq!(rule.supplier, None);
+    assert_eq!(rule.supplier_group, None);
+}
