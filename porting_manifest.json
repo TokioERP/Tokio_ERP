@@ -83,7 +83,7 @@
     {
       "source": "accounts/doctype/account/test_account.py",
       "target": "accounts/doctype/account/test_account.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/account_category/__init__.py",
