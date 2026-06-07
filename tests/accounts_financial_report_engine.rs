@@ -1,8 +1,8 @@
 use tokio_erp::erpnext::accounts::doctype::financial_report_row::financial_report_row::FinancialReportRow;
 use tokio_erp::erpnext::accounts::doctype::financial_report_template::financial_report_engine::{
-    AccountData, DependencyResolver, EngineFilterValidation, FinancialReportEngine, FormattingRule,
-    FormulaCalculator, PeriodValue, ReportContext, RowData, SectionData, SegmentData,
-    DEFAULT_BULLET_PREFIX, SEGMENT_PREFIX,
+    AccountData, DependencyResolver, EngineFilterValidation, FilterExpressionParser,
+    FinancialReportEngine, FormattingRule, FormulaCalculator, PeriodValue, ReportContext, RowData,
+    SectionData, SegmentData, DEFAULT_BULLET_PREFIX, SEGMENT_PREFIX,
 };
 use tokio_erp::erpnext::accounts::doctype::financial_report_template::financial_report_template::FinancialReportTemplate;
 
@@ -395,4 +395,114 @@ fn formula_calculator_matches_erpnext_missing_values_reverse_and_error_handling(
         }),
         vec![-110.0, -120.0, -130.0]
     );
+}
+
+#[test]
+fn filter_expression_parser_matches_erpnext_simple_and_logical_conditions() {
+    let parser = FilterExpressionParser::new();
+    let row = |formula: &str| FinancialReportRow {
+        reference_code: Some("TEST_ROW".to_string()),
+        data_source: Some("Account Data".to_string()),
+        calculation_formula: Some(formula.to_string()),
+        ..Default::default()
+    };
+
+    assert_eq!(
+        parser.build_condition(&row(r#"["account_type", "=", "Income"]"#)),
+        Some("account_type = 'Income'".to_string())
+    );
+    assert_eq!(
+        parser.build_condition(&row(r#"["account_name", "like", "Cash"]"#)),
+        Some("account_name LIKE '%Cash%'".to_string())
+    );
+    assert_eq!(
+        parser.build_condition(&row(r#"["account_number", "like", "%100%"]"#)),
+        Some("account_number LIKE '%100%'".to_string())
+    );
+    assert_eq!(
+        parser.build_condition(&row(r#"["account_type", "in", ["Income", "Expense"]]"#)),
+        Some("account_type IN ('Income', 'Expense')".to_string())
+    );
+    assert_eq!(
+        parser.build_condition(&row(
+            r#"{"and": [["account_type", "=", "Income"], ["is_group", "=", 0], ["disabled", "=", 0]]}"#
+        )),
+        Some("((account_type = 'Income' AND is_group = 0) AND disabled = 0)".to_string())
+    );
+    assert_eq!(
+        parser.build_condition(&row(
+            r#"{"or": [["root_type", "=", "Asset"], ["root_type", "=", "Liability"]]}"#
+        )),
+        Some("(root_type = 'Asset' OR root_type = 'Liability')".to_string())
+    );
+    assert_eq!(
+        parser.build_condition(&row(
+            r#"{"and": [{"or": [["root_type", "=", "Income"], ["root_type", "=", "Expense"]]}, ["is_group", "=", 0]]}"#
+        )),
+        Some("((root_type = 'Income' OR root_type = 'Expense') AND is_group = 0)".to_string())
+    );
+}
+
+#[test]
+fn filter_expression_parser_rejects_erpnext_invalid_filter_shapes() {
+    let parser = FilterExpressionParser::new();
+    let row = |formula: &str| FinancialReportRow {
+        reference_code: Some("TEST_ROW".to_string()),
+        data_source: Some("Account Data".to_string()),
+        calculation_formula: Some(formula.to_string()),
+        ..Default::default()
+    };
+
+    for formula in [
+        r#"["incomplete"]"#,
+        r#"{"invalid": "structure"}"#,
+        "not_a_list_or_dict",
+        r#"["field", "=", "value", "extra"]"#,
+        r#"["field"]"#,
+        r#"["field", "="]"#,
+        r#"{"AND": [["field", "=", "value"]]}"#,
+        r#"{"and": [["field", "=", "value"]], "or": [["field2", "=", "value2"]]}"#,
+        r#"{"xor": [["field", "=", "value"]]}"#,
+        r#"{"and": "not_a_list"}"#,
+        r#"{"and": []}"#,
+        r#"{"and": [["account_type", "=", "Bank"], "string", 123]}"#,
+        r#"["account_type", "in", "Income"]"#,
+        r#"["missing_field", "=", "Income"]"#,
+        r#"["account_type", "bad", "Income"]"#,
+    ] {
+        assert_eq!(
+            parser.build_condition(&row(formula)),
+            None,
+            "{formula} should be invalid"
+        );
+    }
+
+    assert_eq!(parser.build_condition(&FinancialReportRow::default()), None);
+}
+
+#[test]
+fn filter_expression_parser_build_conditions_ors_valid_account_rows() {
+    let parser = FilterExpressionParser::new();
+    let rows = vec![
+        FinancialReportRow {
+            data_source: Some("Account Data".to_string()),
+            calculation_formula: Some(r#"["root_type", "=", "Income"]"#.to_string()),
+            ..Default::default()
+        },
+        FinancialReportRow {
+            data_source: Some("Account Data".to_string()),
+            calculation_formula: Some(r#"["root_type", "=", "Expense"]"#.to_string()),
+            ..Default::default()
+        },
+        FinancialReportRow {
+            data_source: Some("Blank Line".to_string()),
+            ..Default::default()
+        },
+    ];
+
+    assert_eq!(
+        parser.build_conditions(&rows),
+        Some("(root_type = 'Income' OR root_type = 'Expense')".to_string())
+    );
+    assert_eq!(parser.build_conditions(&[]), None);
 }

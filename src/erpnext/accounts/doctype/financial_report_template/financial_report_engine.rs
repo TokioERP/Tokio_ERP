@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use serde_json::Value;
 
+use crate::erpnext::accounts::doctype::account::account::Account;
 use crate::erpnext::accounts::doctype::financial_report_row::financial_report_row::FinancialReportRow;
 use crate::erpnext::accounts::doctype::financial_report_template::financial_report_template::FinancialReportTemplate;
 
@@ -93,6 +94,9 @@ pub struct EngineFilterValidation {
 }
 
 pub struct FinancialReportEngine;
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct FilterExpressionParser;
 
 impl PeriodValue {
     pub fn get_value(&self, balance_type: &str) -> f64 {
@@ -286,6 +290,148 @@ impl FinancialReportEngine {
     }
 }
 
+impl FilterExpressionParser {
+    pub const fn new() -> Self {
+        Self
+    }
+
+    pub fn build_conditions(&self, report_rows: &[FinancialReportRow]) -> Option<String> {
+        combine_conditions(
+            "OR",
+            report_rows
+                .iter()
+                .filter_map(|row| self.build_condition(row))
+                .collect(),
+        )
+    }
+
+    pub fn build_condition(&self, report_row: &FinancialReportRow) -> Option<String> {
+        let filter_formula = report_row.calculation_formula.as_deref()?.trim();
+        if filter_formula.is_empty() {
+            return None;
+        }
+
+        let parsed = serde_json::from_str::<Value>(filter_formula).ok()?;
+        self.validate_filter_structure(&parsed).ok()?;
+        self.build_from_parsed(&parsed)
+    }
+
+    fn validate_filter_structure(&self, parsed: &Value) -> Result<(), ()> {
+        match parsed {
+            Value::Array(condition) => {
+                if condition.len() != 3 {
+                    return Err(());
+                }
+                let Some(field) = condition[0].as_str() else {
+                    return Err(());
+                };
+                let Some(operator) = condition[1].as_str() else {
+                    return Err(());
+                };
+                if !Account::FIELD_ORDER.contains(&field) {
+                    return Err(());
+                }
+                if !is_valid_filter_operator(operator) {
+                    return Err(());
+                }
+                if matches!(operator, "in" | "not in") && !condition[2].is_array() {
+                    return Err(());
+                }
+                Ok(())
+            }
+            Value::Object(condition) => {
+                if condition.len() != 1 {
+                    return Err(());
+                }
+                let (operator, sub_conditions) = condition.iter().next().ok_or(())?;
+                if !matches!(operator.as_str(), "and" | "or") {
+                    return Err(());
+                }
+                let Some(sub_conditions) = sub_conditions.as_array() else {
+                    return Err(());
+                };
+                if sub_conditions.is_empty() {
+                    return Err(());
+                }
+                for sub_condition in sub_conditions {
+                    self.validate_filter_structure(sub_condition)?;
+                }
+                Ok(())
+            }
+            _ => Err(()),
+        }
+    }
+
+    fn build_from_parsed(&self, parsed: &Value) -> Option<String> {
+        match parsed {
+            Value::Array(condition) => self.build_simple_condition(condition),
+            Value::Object(condition) => self.build_logical_condition(condition),
+            _ => None,
+        }
+    }
+
+    fn build_simple_condition(&self, condition: &[Value]) -> Option<String> {
+        let field_name = condition.first()?.as_str()?;
+        let operator = condition.get(1)?.as_str()?;
+        let value = condition.get(2)?;
+        if value.is_null() {
+            return None;
+        }
+
+        let operator_key = operator.to_ascii_lowercase();
+        match operator_key.as_str() {
+            "=" | "!=" | ">" | ">=" | "<" | "<=" => Some(format!(
+                "{field_name} {operator_key} {}",
+                render_value(value)?
+            )),
+            "like" | "not like" => {
+                let mut value = value.as_str()?.to_string();
+                if !value.contains('%') {
+                    value = format!("%{value}%");
+                }
+                Some(format!(
+                    "{field_name} {} {}",
+                    operator_key.to_ascii_uppercase(),
+                    quote_sql_string(&value)
+                ))
+            }
+            "in" | "not in" => {
+                let values = value.as_array()?;
+                let rendered_values = values
+                    .iter()
+                    .map(render_value)
+                    .collect::<Option<Vec<_>>>()?;
+                Some(format!(
+                    "{field_name} {} ({})",
+                    operator_key.to_ascii_uppercase(),
+                    rendered_values.join(", ")
+                ))
+            }
+            _ => None,
+        }
+    }
+
+    fn build_logical_condition(
+        &self,
+        condition: &serde_json::Map<String, Value>,
+    ) -> Option<String> {
+        if condition.len() != 1 {
+            return None;
+        }
+        let (operator, sub_conditions) = condition.iter().next()?;
+        if !matches!(operator.as_str(), "and" | "or") {
+            return None;
+        }
+        let operator = operator.to_ascii_uppercase();
+        let built_conditions = sub_conditions
+            .as_array()?
+            .iter()
+            .filter_map(|sub_condition| self.build_from_parsed(sub_condition))
+            .collect::<Vec<_>>();
+        combine_conditions(&operator, built_conditions)
+    }
+}
+
 impl DependencyResolver {
     pub fn new(template: &FinancialReportTemplate) -> Result<Self, String> {
         let rows = template.rows.clone();
@@ -426,6 +572,32 @@ impl FormulaCalculator {
             })
             .collect()
     }
+}
+
+fn is_valid_filter_operator(operator: &str) -> bool {
+    matches!(
+        operator.to_ascii_lowercase().as_str(),
+        "=" | "!=" | ">" | ">=" | "<" | "<=" | "like" | "not like" | "in" | "not in"
+    )
+}
+
+fn combine_conditions(operator: &str, conditions: Vec<String>) -> Option<String> {
+    let mut iter = conditions.into_iter();
+    let first = iter.next()?;
+    Some(iter.fold(first, |left, right| format!("({left} {operator} {right})")))
+}
+
+fn render_value(value: &Value) -> Option<String> {
+    match value {
+        Value::String(value) => Some(quote_sql_string(value)),
+        Value::Number(value) => Some(value.to_string()),
+        Value::Bool(value) => Some(value.to_string()),
+        Value::Null | Value::Array(_) | Value::Object(_) => None,
+    }
+}
+
+fn quote_sql_string(value: &str) -> String {
+    format!("'{}'", value.replace('\'', "''"))
 }
 
 fn get_string<'a>(value: &'a Value, key: &str) -> Option<&'a str> {
