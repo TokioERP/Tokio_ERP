@@ -4,11 +4,13 @@ use tokio_erp::erpnext::accounts::utils::{
     build_dimensions_dict_for_exc_gain_loss, compare_existing_and_expected_gle, convert_to_list,
     get_advance_ledger_entry, get_autoname_with_number, get_balance_on_plan,
     get_currency_precision, get_fiscal_year, get_fiscal_year_filter_field, get_fiscal_years,
-    get_journal_entry, get_reconciliation_effect_date, get_zero_cutoff,
-    update_voucher_outstanding_plan, validate_allocated_amount, AccountMeta, AdvanceLedgerEntry,
-    AllocatedAmountArgs, AllocatedAmountError, BalanceOnInput, CostCenterMeta, FiscalYearError,
-    FiscalYearRecord, GlEntryLike, ReconciliationEffectInput, UpdateVoucherOutstandingPlan,
-    GL_REPOSTING_CHUNK, OUTSTANDING_DOCTYPES,
+    get_future_stock_vouchers, get_journal_entry, get_reconciliation_effect_date,
+    get_voucherwise_gl_entries, get_zero_cutoff, parse_naming_series_variable,
+    sort_stock_vouchers_by_posting_date, update_voucher_outstanding_plan,
+    validate_allocated_amount, AccountMeta, AdvanceLedgerEntry, AllocatedAmountArgs,
+    AllocatedAmountError, BalanceOnInput, CostCenterMeta, FiscalYearError, FiscalYearRecord,
+    GlEntryLike, NamingSeriesContext, NamingSeriesDoc, ReconciliationEffectInput, StockGlEntry,
+    StockLedgerEntryRecord, UpdateVoucherOutstandingPlan, GL_REPOSTING_CHUNK, OUTSTANDING_DOCTYPES,
 };
 
 #[test]
@@ -321,5 +323,208 @@ fn gl_comparison_stock_journal_and_ledger_plans_match_erpnext() {
     assert_eq!(
         update_voucher_outstanding_plan("Sales Invoice", "", None, None, None, &[]),
         UpdateVoucherOutstandingPlan::Noop
+    );
+}
+
+#[test]
+fn stock_voucher_helpers_match_erpnext_test_utils_regressions() {
+    let sles = vec![
+        StockLedgerEntryRecord {
+            voucher_type: "Stock Entry".to_string(),
+            voucher_no: "SE-3".to_string(),
+            posting_date: "2022-03-01".to_string(),
+            posting_time: "00:00:00".to_string(),
+            creation: "2022-03-01 00:00:03".to_string(),
+            item_code: "_Test Item".to_string(),
+            warehouse: "_Test Warehouse - _TC".to_string(),
+            company: "_Test Company".to_string(),
+            is_cancelled: false,
+        },
+        StockLedgerEntryRecord {
+            voucher_type: "Stock Entry".to_string(),
+            voucher_no: "SE-1".to_string(),
+            posting_date: "2022-01-01".to_string(),
+            posting_time: "00:00:00".to_string(),
+            creation: "2022-01-01 00:00:01".to_string(),
+            item_code: "_Test Item".to_string(),
+            warehouse: "_Test Warehouse - _TC".to_string(),
+            company: "_Test Company".to_string(),
+            is_cancelled: false,
+        },
+        StockLedgerEntryRecord {
+            voucher_type: "Stock Entry".to_string(),
+            voucher_no: "SE-2".to_string(),
+            posting_date: "2022-02-01".to_string(),
+            posting_time: "00:00:00".to_string(),
+            creation: "2022-02-01 00:00:02".to_string(),
+            item_code: "_Test Item".to_string(),
+            warehouse: "_Test Warehouse - _TC".to_string(),
+            company: "_Test Company".to_string(),
+            is_cancelled: false,
+        },
+        StockLedgerEntryRecord {
+            voucher_type: "Stock Entry".to_string(),
+            voucher_no: "SE-CANCELLED".to_string(),
+            posting_date: "2022-01-15".to_string(),
+            posting_time: "00:00:00".to_string(),
+            creation: "2022-01-15 00:00:01".to_string(),
+            item_code: "_Test Item".to_string(),
+            warehouse: "_Test Warehouse - _TC".to_string(),
+            company: "_Test Company".to_string(),
+            is_cancelled: true,
+        },
+    ];
+
+    let vouchers = vec![
+        ("Stock Entry".to_string(), "Wat".to_string()),
+        ("Stock Entry".to_string(), "SE-2".to_string()),
+        ("Stock Entry".to_string(), "SE-3".to_string()),
+        ("Stock Entry".to_string(), "SE-1".to_string()),
+    ];
+    assert_eq!(
+        sort_stock_vouchers_by_posting_date(&vouchers, None, &sles),
+        vec![
+            ("Stock Entry".to_string(), "SE-1".to_string()),
+            ("Stock Entry".to_string(), "SE-2".to_string()),
+            ("Stock Entry".to_string(), "SE-3".to_string()),
+            ("Stock Entry".to_string(), "Wat".to_string()),
+        ]
+    );
+
+    assert_eq!(
+        get_future_stock_vouchers(
+            "2022-01-01",
+            "00:00:00",
+            None,
+            Some(&["_Test Item".to_string()]),
+            Some("_Test Company"),
+            &sles,
+        ),
+        vec![
+            ("Stock Entry".to_string(), "SE-1".to_string()),
+            ("Stock Entry".to_string(), "SE-2".to_string()),
+            ("Stock Entry".to_string(), "SE-3".to_string()),
+        ]
+    );
+
+    let grouped = get_voucherwise_gl_entries(
+        &[
+            ("Stock Entry".to_string(), "SE-1".to_string()),
+            ("Stock Entry".to_string(), "SE-3".to_string()),
+        ],
+        "2022-01-01",
+        &[
+            StockGlEntry {
+                name: "GLE-1".to_string(),
+                account: "Stock - TC".to_string(),
+                credit: 0.0,
+                debit: 10.0,
+                cost_center: Some("Main - TC".to_string()),
+                project: None,
+                voucher_type: "Stock Entry".to_string(),
+                voucher_no: "SE-1".to_string(),
+                posting_date: "2022-01-01".to_string(),
+            },
+            StockGlEntry {
+                name: "GLE-OLD".to_string(),
+                account: "Stock - TC".to_string(),
+                credit: 0.0,
+                debit: 10.0,
+                cost_center: None,
+                project: None,
+                voucher_type: "Stock Entry".to_string(),
+                voucher_no: "SE-3".to_string(),
+                posting_date: "2021-12-31".to_string(),
+            },
+        ],
+    );
+    assert_eq!(
+        grouped.keys().cloned().collect::<Vec<_>>(),
+        vec![("Stock Entry".to_string(), "SE-1".to_string())]
+    );
+    assert_eq!(
+        grouped[&("Stock Entry".to_string(), "SE-1".to_string())][0].name,
+        "GLE-1"
+    );
+}
+
+#[test]
+fn naming_series_variable_parsing_matches_fy_abbr_and_date_tokens() {
+    let fiscal_years = vec![FiscalYearRecord {
+        name: "2026-2027".to_string(),
+        year_start_date: "2026-04-01".to_string(),
+        year_end_date: "2027-03-31".to_string(),
+        disabled: false,
+        companies: vec!["Acme".to_string()],
+    }];
+    let context = NamingSeriesContext {
+        fiscal_years,
+        company_abbrs: BTreeMap::from([("Acme".to_string(), "TC".to_string())]),
+        default_company: Some("Acme".to_string()),
+        now_datetime: "2026-06-07 12:30:00".to_string(),
+        use_posting_datetime_for_naming_documents: true,
+        reference_docs: BTreeMap::new(),
+    };
+    let doc = NamingSeriesDoc {
+        doctype: "Supplier".to_string(),
+        posting_date: Some("2026-06-06".to_string()),
+        transaction_date: None,
+        posting_datetime: None,
+        company: Some("Acme".to_string()),
+        reference_doctype: None,
+        reference_name: None,
+    };
+
+    assert_eq!(
+        parse_naming_series_variable(Some(&doc), "FY", &context),
+        "2026-2027"
+    );
+    assert_eq!(
+        parse_naming_series_variable(Some(&doc), "TFY", &context),
+        "26-27"
+    );
+    assert_eq!(
+        parse_naming_series_variable(Some(&doc), "ABBR", &context),
+        "TC"
+    );
+    assert_eq!(
+        parse_naming_series_variable(Some(&doc), "YY", &context),
+        "26"
+    );
+    assert_eq!(
+        parse_naming_series_variable(Some(&doc), "YYYY", &context),
+        "2026"
+    );
+    assert_eq!(
+        parse_naming_series_variable(Some(&doc), "MM", &context),
+        "06"
+    );
+    assert_eq!(
+        parse_naming_series_variable(Some(&doc), "DD", &context),
+        "06"
+    );
+    assert_eq!(
+        parse_naming_series_variable(Some(&doc), "JJJ", &context),
+        "157"
+    );
+
+    let no_company_doc = NamingSeriesDoc {
+        company: None,
+        ..doc.clone()
+    };
+    let unrestricted_context = NamingSeriesContext {
+        fiscal_years: vec![FiscalYearRecord {
+            name: "2026-BETA".to_string(),
+            year_start_date: "2026-04-01".to_string(),
+            year_end_date: "2027-03-31".to_string(),
+            disabled: false,
+            companies: vec!["Beta".to_string()],
+        }],
+        default_company: Some("Acme".to_string()),
+        ..context
+    };
+    assert_eq!(
+        parse_naming_series_variable(Some(&no_company_doc), "FY", &unrestricted_context),
+        "2026-BETA"
     );
 }

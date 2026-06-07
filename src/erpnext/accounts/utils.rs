@@ -173,6 +173,53 @@ pub enum UpdateVoucherOutstandingPlan {
     },
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StockLedgerEntryRecord {
+    pub voucher_type: String,
+    pub voucher_no: String,
+    pub posting_date: String,
+    pub posting_time: String,
+    pub creation: String,
+    pub item_code: String,
+    pub warehouse: String,
+    pub company: String,
+    pub is_cancelled: bool,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct StockGlEntry {
+    pub name: String,
+    pub account: String,
+    pub credit: f64,
+    pub debit: f64,
+    pub cost_center: Option<String>,
+    pub project: Option<String>,
+    pub voucher_type: String,
+    pub voucher_no: String,
+    pub posting_date: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NamingSeriesDoc {
+    pub doctype: String,
+    pub posting_date: Option<String>,
+    pub transaction_date: Option<String>,
+    pub posting_datetime: Option<String>,
+    pub company: Option<String>,
+    pub reference_doctype: Option<String>,
+    pub reference_name: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NamingSeriesContext {
+    pub fiscal_years: Vec<FiscalYearRecord>,
+    pub company_abbrs: BTreeMap<String, String>,
+    pub default_company: Option<String>,
+    pub now_datetime: String,
+    pub use_posting_datetime_for_naming_documents: bool,
+    pub reference_docs: BTreeMap<(String, String), NamingSeriesDoc>,
+}
+
 pub fn get_fiscal_year(
     date: Option<&str>,
     fiscal_year: Option<&str>,
@@ -475,6 +522,60 @@ pub fn get_autoname_with_number(
     parts.join(" - ")
 }
 
+pub fn parse_naming_series_variable(
+    doc: Option<&NamingSeriesDoc>,
+    variable: &str,
+    context: &NamingSeriesContext,
+) -> String {
+    if matches!(variable, "FY" | "TFY") {
+        let date = doc
+            .and_then(document_date)
+            .unwrap_or_else(|| date_part(&context.now_datetime).to_string());
+        let company = doc.and_then(|doc| doc.company.as_deref());
+        return get_fiscal_year(
+            Some(&date),
+            None,
+            company,
+            true,
+            variable == "TFY",
+            &context.fiscal_years,
+        )
+        .ok()
+        .flatten()
+        .map(|year| year.name)
+        .unwrap_or_default();
+    }
+
+    if variable == "ABBR" {
+        let company = doc
+            .and_then(|doc| doc.company.as_deref())
+            .or(context.default_company.as_deref());
+        return company
+            .and_then(|company| context.company_abbrs.get(company))
+            .cloned()
+            .unwrap_or_default();
+    }
+
+    let resolved_doc = resolve_naming_doc(doc, context);
+    let date = if context.use_posting_datetime_for_naming_documents {
+        resolved_doc
+            .and_then(document_date)
+            .unwrap_or_else(|| date_part(&context.now_datetime).to_string())
+    } else {
+        date_part(&context.now_datetime).to_string()
+    };
+    let (year, month, day) = parse_date_tuple(&date);
+
+    match variable {
+        "YY" => format!("{:02}", year.rem_euclid(100)),
+        "YYYY" => format!("{year:04}"),
+        "MM" => format!("{month:02}"),
+        "DD" => format!("{day:02}"),
+        "JJJ" => format!("{:03}", day_of_year(year, month, day)),
+        _ => determine_consecutive_week_number(year, month, day).to_string(),
+    }
+}
+
 pub fn compare_existing_and_expected_gle(
     existing_gle: &[GlEntryLike],
     expected_gle: &[GlEntryLike],
@@ -512,6 +613,129 @@ pub fn compare_existing_and_expected_gle(
     }
 
     true
+}
+
+pub fn sort_stock_vouchers_by_posting_date(
+    stock_vouchers: &[(String, String)],
+    company: Option<&str>,
+    stock_ledger_entries: &[StockLedgerEntryRecord],
+) -> Vec<(String, String)> {
+    let voucher_nos = stock_vouchers
+        .iter()
+        .map(|(_, voucher_no)| voucher_no.as_str())
+        .collect::<Vec<_>>();
+    let mut entries = stock_ledger_entries
+        .iter()
+        .filter(|entry| !entry.is_cancelled)
+        .filter(|entry| voucher_nos.contains(&entry.voucher_no.as_str()))
+        .filter(|entry| company.is_none_or(|company| entry.company == company))
+        .collect::<Vec<_>>();
+    entries.sort_by(|left, right| {
+        (
+            left.posting_date.as_str(),
+            left.posting_time.as_str(),
+            left.creation.as_str(),
+        )
+            .cmp(&(
+                right.posting_date.as_str(),
+                right.posting_time.as_str(),
+                right.creation.as_str(),
+            ))
+    });
+
+    let mut sorted_vouchers: Vec<(String, String)> = Vec::new();
+    for entry in entries {
+        let voucher = (entry.voucher_type.clone(), entry.voucher_no.clone());
+        if !sorted_vouchers.contains(&voucher) {
+            sorted_vouchers.push(voucher);
+        }
+    }
+
+    for voucher in stock_vouchers {
+        if !sorted_vouchers.contains(voucher) {
+            sorted_vouchers.push(voucher.clone());
+        }
+    }
+
+    sorted_vouchers
+}
+
+pub fn get_future_stock_vouchers(
+    posting_date: &str,
+    posting_time: &str,
+    for_warehouses: Option<&[String]>,
+    for_items: Option<&[String]>,
+    company: Option<&str>,
+    stock_ledger_entries: &[StockLedgerEntryRecord],
+) -> Vec<(String, String)> {
+    let mut entries = stock_ledger_entries
+        .iter()
+        .filter(|entry| !entry.is_cancelled)
+        .filter(|entry| {
+            (entry.posting_date.as_str(), entry.posting_time.as_str())
+                >= (posting_date, posting_time)
+        })
+        .filter(|entry| {
+            for_items.is_none_or(|items| items.iter().any(|item| item == &entry.item_code))
+        })
+        .filter(|entry| {
+            for_warehouses.is_none_or(|warehouses| {
+                warehouses
+                    .iter()
+                    .any(|warehouse| warehouse == &entry.warehouse)
+            })
+        })
+        .filter(|entry| company.is_none_or(|company| entry.company == company))
+        .collect::<Vec<_>>();
+    entries.sort_by(|left, right| {
+        (
+            left.posting_date.as_str(),
+            left.posting_time.as_str(),
+            left.creation.as_str(),
+        )
+            .cmp(&(
+                right.posting_date.as_str(),
+                right.posting_time.as_str(),
+                right.creation.as_str(),
+            ))
+    });
+
+    let mut vouchers = Vec::new();
+    for entry in entries {
+        let voucher = (entry.voucher_type.clone(), entry.voucher_no.clone());
+        if !vouchers.contains(&voucher) {
+            vouchers.push(voucher);
+        }
+    }
+    vouchers
+}
+
+pub fn get_voucherwise_gl_entries(
+    future_stock_vouchers: &[(String, String)],
+    posting_date: &str,
+    gl_entries: &[StockGlEntry],
+) -> BTreeMap<(String, String), Vec<StockGlEntry>> {
+    let voucher_nos = future_stock_vouchers
+        .iter()
+        .map(|(_, voucher_no)| voucher_no.as_str())
+        .collect::<Vec<_>>();
+    let mut grouped: BTreeMap<(String, String), Vec<StockGlEntry>> = BTreeMap::new();
+    if voucher_nos.is_empty() {
+        return grouped;
+    }
+
+    for entry in gl_entries
+        .iter()
+        .filter(|entry| entry.posting_date.as_str() >= posting_date)
+        .filter(|entry| voucher_nos.contains(&entry.voucher_no.as_str()))
+    {
+        grouped
+            .entry((entry.voucher_type.clone(), entry.voucher_no.clone()))
+            .or_default()
+            .push(entry.clone());
+    }
+
+    grouped
 }
 
 pub fn get_journal_entry(
@@ -642,4 +866,66 @@ fn parse_date_tuple(value: &str) -> (i32, u32, u32) {
     let month = parts.next().and_then(|part| part.parse().ok()).unwrap_or(0);
     let day = parts.next().and_then(|part| part.parse().ok()).unwrap_or(0);
     (year, month, day)
+}
+
+fn resolve_naming_doc<'a>(
+    doc: Option<&'a NamingSeriesDoc>,
+    context: &'a NamingSeriesContext,
+) -> Option<&'a NamingSeriesDoc> {
+    let Some(doc) = doc else {
+        return None;
+    };
+    if matches!(doc.doctype.as_str(), "Batch" | "Serial No") {
+        if let (Some(reference_doctype), Some(reference_name)) =
+            (doc.reference_doctype.as_ref(), doc.reference_name.as_ref())
+        {
+            return context
+                .reference_docs
+                .get(&(reference_doctype.clone(), reference_name.clone()))
+                .or(Some(doc));
+        }
+    }
+    Some(doc)
+}
+
+fn document_date(doc: &NamingSeriesDoc) -> Option<String> {
+    doc.posting_date
+        .as_ref()
+        .or(doc.transaction_date.as_ref())
+        .or(doc.posting_datetime.as_ref())
+        .map(|date| date_part(date).to_string())
+}
+
+fn date_part(value: &str) -> &str {
+    value.split_whitespace().next().unwrap_or(value)
+}
+
+fn day_of_year(year: i32, month: u32, day: u32) -> u32 {
+    let month_lengths = [
+        31,
+        if is_leap_year(year) { 29 } else { 28 },
+        31,
+        30,
+        31,
+        30,
+        31,
+        31,
+        30,
+        31,
+        30,
+        31,
+    ];
+    month_lengths
+        .iter()
+        .take(month.saturating_sub(1) as usize)
+        .sum::<u32>()
+        + day
+}
+
+fn is_leap_year(year: i32) -> bool {
+    (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
+}
+
+fn determine_consecutive_week_number(year: i32, month: u32, day: u32) -> u32 {
+    ((day_of_year(year, month, day).saturating_sub(1)) / 7) + 1
 }

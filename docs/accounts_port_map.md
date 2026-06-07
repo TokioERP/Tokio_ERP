@@ -46,7 +46,7 @@ This is not an MVP list. Every source folder and file is tracked. A row is close
 | `print_format` | 26 | 57 | 26 | 25 | 0 | parity_tested | Python init files are empty/no-op; Rust preserves 25 static print format names, folders, report/doc type targets, format type, and standard flags in `accounts_print_static_formats`. JSON/HTML kept external. |
 | `print_format_field_template` | 3 | 5 | 3 | 2 | 0 | parity_tested | Python init files are empty/no-op; Rust preserves field template names, document types, field names, template file paths, and standard flags in `accounts_print_static_formats`. JSON kept external. |
 | `report` | 53 | 244 | 128 | 52 | 50 | not_started | |
-| `test` | 1 | 4 | 4 | 0 | 0 | mapped | `accounts_mixin.py` parity-tested; remaining test helpers pending. |
+| `test` | 1 | 4 | 4 | 0 | 0 | mapped | `accounts_mixin.py` and `test_utils.py` parity-tested; remaining report execution fixture pending. |
 | `workspace` | 3 | 2 | 0 | 2 | 0 | external_kept | Financial Reports and Invoicing workspace JSON files contain workspace layout/shortcut metadata only; no Python controller logic exists to port. Workspace definitions remain owned by ERPNext/Frappe. |
 
 ## Root Python Files
@@ -55,6 +55,7 @@ This is not an MVP list. Every source folder and file is tracked. A row is close
 |---|---|---|---|
 | `accounts/party.py` | `src/erpnext/accounts/party.rs` | parity_tested | Rust covers transaction type constants, account/due-date result shaping, party account and advance-account fallback ordering, default price-list/customer-group fallback, payment terms and due-date template math, address tax-category selection, tax-rule args shaping, frozen/disabled guard, and shipping address selection in `accounts_party`. DB permission, address rendering, tax template lookup, dashboard SQL, and GL query side effects remain external. |
 | `accounts/test_party.py` | `tests/accounts_party.rs` | parity_tested | Rust covers the ERPNext regression where a Customer without a customer group returns no default price list, alongside direct party default and customer-group fallback branches in `accounts_party`. |
+| `accounts/test/test_utils.py` | `tests/accounts_utils.rs` | parity_tested | Rust covers party shipping address selection, stock voucher future filtering/sorting, voucherwise GL grouping, naming-series FY/ABBR/date token parsing, zero cutoff, payment ledger planning, and reconciliation helper regressions from ERPNext test utilities. Frappe document factories and DB mutation flows remain external integration tests. |
 | `accounts/utils.py` | `src/erpnext/accounts/utils.rs` | parity_tested | Rust covers fiscal-year lookup/filter option shaping, balance-on SQL condition planning, reconciliation effect-date selection, allocated amount validation, exchange gain/loss dimension copying, tuple-to-list conversion, currency precision and zero-cutoff helpers, numbered autoname formatting, GL-entry comparison quirks, stock adjustment journal drafts, advance ledger entry shaping, and voucher-outstanding update planning in `accounts_utils`. Direct Frappe DB reads/writes, document saves, and query execution remain external. |
 
 ## First Pass Order
