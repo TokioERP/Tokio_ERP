@@ -1,9 +1,10 @@
 use std::collections::{BTreeMap, HashMap};
 
 use tokio_erp::erpnext::accounts::doctype::journal_entry::journal_entry::{
-    get_account_details_and_party_type, get_outstanding, make_inter_company_journal_entry,
-    make_payment_entry_against_invoice, make_payment_entry_against_order,
-    make_reverse_journal_entry, AccountDetails, AccountMeta, BankCashAccount, InvoiceRef,
+    check_customer_credit_limits, get_account_details_and_party_type, get_outstanding,
+    make_inter_company_journal_entry, make_payment_entry_against_invoice,
+    make_payment_entry_against_order, make_reverse_journal_entry,
+    validate_stock_account_transaction, AccountDetails, AccountMeta, BankCashAccount, InvoiceRef,
     JournalEntry, JournalEntryAccountRow, JournalEntryError, OrderRef, OutstandingArgs,
     PartyTypeMeta, ReferenceDoc, ReverseEntryError,
 };
@@ -403,5 +404,97 @@ fn journal_entry_reverse_and_inter_company_mappers_match_erpnext() {
     assert_eq!(
         make_reverse_journal_entry(&source, true),
         Err(ReverseEntryError::ReverseAlreadyExists)
+    );
+}
+
+#[test]
+fn journal_entry_python_stock_account_guard_regression_matches_erpnext() {
+    assert_eq!(
+        validate_stock_account_transaction(
+            true,
+            "Journal Entry",
+            "Stock In Hand - TCP1",
+            100.0,
+            100.0,
+        ),
+        Err(JournalEntryError::StockAccountInvalidTransaction {
+            account: "Stock In Hand - TCP1".to_string(),
+        })
+    );
+    assert_eq!(
+        validate_stock_account_transaction(
+            true,
+            "Periodic Accounting Entry",
+            "Stock In Hand - TCP1",
+            100.0,
+            100.0,
+        ),
+        Ok(())
+    );
+    assert_eq!(
+        validate_stock_account_transaction(
+            false,
+            "Journal Entry",
+            "Stock In Hand - TCP1",
+            100.0,
+            100.0,
+        ),
+        Ok(())
+    );
+    assert_eq!(
+        validate_stock_account_transaction(
+            true,
+            "Journal Entry",
+            "Stock In Hand - TCP1",
+            90.0,
+            100.0,
+        ),
+        Ok(())
+    );
+}
+
+#[test]
+fn journal_entry_python_customer_credit_limit_regression_matches_erpnext() {
+    let je = JournalEntry {
+        company: "_Test Company".to_string(),
+        accounts: vec![
+            JournalEntryAccountRow {
+                debit: 100.0,
+                debit_in_account_currency: 100.0,
+                party_type: Some("Customer".to_string()),
+                party: Some("_Test New Customer".to_string()),
+                ..row(1, "Debtors - TC")
+            },
+            JournalEntryAccountRow {
+                credit: 100.0,
+                credit_in_account_currency: 100.0,
+                ..row(2, "_Test Cash - TC")
+            },
+        ],
+        ..Default::default()
+    };
+
+    assert_eq!(
+        check_customer_credit_limits(
+            &je,
+            &HashMap::from([("_Test New Customer".to_string(), 50.0)]),
+            &HashMap::from([("_Test New Customer".to_string(), 100.0)]),
+            &HashMap::new(),
+        ),
+        Err(JournalEntryError::CreditLimitCrossed {
+            customer: "_Test New Customer".to_string(),
+            outstanding: "100".to_string(),
+            credit_limit: "50".to_string(),
+        })
+    );
+
+    assert_eq!(
+        check_customer_credit_limits(
+            &je,
+            &HashMap::from([("_Test New Customer".to_string(), 50.0)]),
+            &HashMap::from([("_Test New Customer".to_string(), 100.0)]),
+            &HashMap::from([("_Test New Customer".to_string(), true)]),
+        ),
+        Ok(())
     );
 }

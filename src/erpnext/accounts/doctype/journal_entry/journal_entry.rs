@@ -285,6 +285,14 @@ pub enum JournalEntryError {
     },
     BankEntryReferenceRequired,
     ChequeNoRequired,
+    StockAccountInvalidTransaction {
+        account: String,
+    },
+    CreditLimitCrossed {
+        customer: String,
+        outstanding: String,
+        credit_limit: String,
+    },
 }
 
 impl JournalEntry {
@@ -1288,6 +1296,68 @@ pub fn get_account_details_and_party_type(
             None
         },
     })
+}
+
+pub fn validate_stock_account_transaction(
+    perpetual_inventory_enabled: bool,
+    voucher_type: &str,
+    account: &str,
+    account_balance: f64,
+    stock_balance: f64,
+) -> Result<(), JournalEntryError> {
+    if !perpetual_inventory_enabled || voucher_type == "Periodic Accounting Entry" {
+        return Ok(());
+    }
+    if flt(account_balance) == flt(stock_balance) {
+        return Err(JournalEntryError::StockAccountInvalidTransaction {
+            account: account.to_string(),
+        });
+    }
+    Ok(())
+}
+
+pub fn check_customer_credit_limits(
+    journal_entry: &JournalEntry,
+    credit_limits: &HashMap<String, f64>,
+    customer_outstanding: &HashMap<String, f64>,
+    bypass_credit_limit_check: &HashMap<String, bool>,
+) -> Result<(), JournalEntryError> {
+    let mut customers = journal_entry
+        .accounts
+        .iter()
+        .filter(|row| {
+            row.party_type.as_deref() == Some("Customer")
+                && row.party.as_deref().is_some_and(|party| !party.is_empty())
+                && flt(row.debit) > 0.0
+        })
+        .filter_map(|row| row.party.clone())
+        .collect::<Vec<_>>();
+    customers.sort();
+    customers.dedup();
+
+    for customer in customers {
+        if bypass_credit_limit_check
+            .get(&customer)
+            .copied()
+            .unwrap_or(false)
+        {
+            continue;
+        }
+        let credit_limit = credit_limits.get(&customer).copied().unwrap_or(0.0);
+        if credit_limit == 0.0 {
+            continue;
+        }
+        let outstanding = customer_outstanding.get(&customer).copied().unwrap_or(0.0);
+        if credit_limit > 0.0 && flt(outstanding) > credit_limit {
+            return Err(JournalEntryError::CreditLimitCrossed {
+                customer,
+                outstanding: format_amount(flt(outstanding)),
+                credit_limit: format_amount(credit_limit),
+            });
+        }
+    }
+
+    Ok(())
 }
 
 pub fn make_inter_company_journal_entry(
