@@ -73,6 +73,12 @@ pub struct FormattingRule {
     format_properties: Value,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DependencyResolver {
+    rows: Vec<FinancialReportRow>,
+    pub dependencies: BTreeMap<String, Vec<String>>,
+}
+
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct EngineFilterValidation {
     pub missing_required: Vec<String>,
@@ -273,6 +279,95 @@ impl FinancialReportEngine {
     }
 }
 
+impl DependencyResolver {
+    pub fn new(template: &FinancialReportTemplate) -> Result<Self, String> {
+        let rows = template.rows.clone();
+        let dependencies = collect_dependencies(&rows);
+        if has_cycle(&dependencies) {
+            return Err("Circular dependency detected".to_string());
+        }
+        Ok(Self { rows, dependencies })
+    }
+
+    pub fn get_processing_order(&self) -> Vec<FinancialReportRow> {
+        let mut api_rows = Vec::new();
+        let mut account_rows = Vec::new();
+        let mut formula_rows = Vec::new();
+        let mut other_rows = Vec::new();
+
+        for row in &self.rows {
+            match row.data_source.as_deref() {
+                Some("Custom API") => api_rows.push(row.clone()),
+                Some("Account Data") => account_rows.push(row.clone()),
+                Some("Calculated Amount") => formula_rows.push(row.clone()),
+                _ => other_rows.push(row.clone()),
+            }
+        }
+
+        let mut ordered_rows = api_rows;
+        ordered_rows.extend(account_rows);
+        ordered_rows.extend(self.topological_sort_formula_rows(&formula_rows));
+        ordered_rows.extend(other_rows);
+        ordered_rows
+    }
+
+    fn topological_sort_formula_rows(
+        &self,
+        formula_rows: &[FinancialReportRow],
+    ) -> Vec<FinancialReportRow> {
+        let formula_row_map = formula_rows
+            .iter()
+            .filter_map(|row| non_empty_reference(row).map(|code| (code.to_string(), row.clone())))
+            .collect::<BTreeMap<_, _>>();
+        let mut adj_list = formula_row_map
+            .keys()
+            .map(|code| (code.clone(), Vec::<String>::new()))
+            .collect::<BTreeMap<_, _>>();
+        let mut in_degree = formula_row_map
+            .keys()
+            .map(|code| (code.clone(), 0usize))
+            .collect::<BTreeMap<_, _>>();
+
+        for code in formula_row_map.keys() {
+            for dep in self.dependencies.get(code).into_iter().flatten() {
+                if formula_row_map.contains_key(dep) {
+                    adj_list.entry(dep.clone()).or_default().push(code.clone());
+                    *in_degree.entry(code.clone()).or_default() += 1;
+                }
+            }
+        }
+
+        let mut queue = in_degree
+            .iter()
+            .filter(|(_, degree)| **degree == 0)
+            .map(|(code, _)| code.clone())
+            .collect::<Vec<_>>();
+        let mut result = Vec::new();
+
+        while let Some(current) = queue.first().cloned() {
+            queue.remove(0);
+            if let Some(row) = formula_row_map.get(&current) {
+                result.push(row.clone());
+            }
+            for neighbor in adj_list.get(&current).into_iter().flatten() {
+                if let Some(degree) = in_degree.get_mut(neighbor) {
+                    *degree -= 1;
+                    if *degree == 0 {
+                        queue.push(neighbor.clone());
+                    }
+                }
+            }
+        }
+
+        for row in formula_rows {
+            if !result.iter().any(|existing| existing == row) {
+                result.push(row.clone());
+            }
+        }
+        result
+    }
+}
+
 fn get_string<'a>(value: &'a Value, key: &str) -> Option<&'a str> {
     value.get(key).and_then(Value::as_str)
 }
@@ -296,4 +391,76 @@ fn reverse_nonzero(value: f64) -> f64 {
     } else {
         -value
     }
+}
+
+fn collect_dependencies(rows: &[FinancialReportRow]) -> BTreeMap<String, Vec<String>> {
+    let reference_codes = rows
+        .iter()
+        .filter_map(non_empty_reference)
+        .map(ToString::to_string)
+        .collect::<Vec<_>>();
+    let mut dependencies = BTreeMap::new();
+
+    for row in rows {
+        let Some(code) = non_empty_reference(row) else {
+            continue;
+        };
+        let formula = row.calculation_formula.as_deref().unwrap_or_default();
+        let deps = reference_codes
+            .iter()
+            .filter(|reference| *reference != code)
+            .filter(|reference| formula_contains_reference(formula, reference))
+            .cloned()
+            .collect::<Vec<_>>();
+        if !deps.is_empty() {
+            dependencies.insert(code.to_string(), deps);
+        }
+    }
+
+    dependencies
+}
+
+fn non_empty_reference(row: &FinancialReportRow) -> Option<&str> {
+    row.reference_code
+        .as_deref()
+        .map(str::trim)
+        .filter(|code| !code.is_empty())
+}
+
+fn formula_contains_reference(formula: &str, reference: &str) -> bool {
+    let tokens = formula
+        .split(|ch: char| !(ch.is_ascii_alphanumeric() || ch == '_'))
+        .filter(|token| !token.is_empty());
+    tokens.into_iter().any(|token| token == reference)
+}
+
+fn has_cycle(dependencies: &BTreeMap<String, Vec<String>>) -> bool {
+    fn visit(
+        code: &str,
+        dependencies: &BTreeMap<String, Vec<String>>,
+        visiting: &mut Vec<String>,
+        visited: &mut Vec<String>,
+    ) -> bool {
+        if visiting.iter().any(|item| item == code) {
+            return true;
+        }
+        if visited.iter().any(|item| item == code) {
+            return false;
+        }
+        visiting.push(code.to_string());
+        for dep in dependencies.get(code).into_iter().flatten() {
+            if visit(dep, dependencies, visiting, visited) {
+                return true;
+            }
+        }
+        visiting.retain(|item| item != code);
+        visited.push(code.to_string());
+        false
+    }
+
+    let mut visiting = Vec::new();
+    let mut visited = Vec::new();
+    dependencies
+        .keys()
+        .any(|code| visit(code, dependencies, &mut visiting, &mut visited))
 }

@@ -64,16 +64,19 @@ fn financial_report_template_clear_hidden_fields_matches_erpnext() {
                 data_source: Some("Account Data".to_string()),
                 balance_type: Some("Closing Balance".to_string()),
                 calculation_formula: Some("account_category == 'Revenue'".to_string()),
+                ..Default::default()
             },
             FinancialReportRow {
                 data_source: Some("Blank Line".to_string()),
                 balance_type: Some("Opening Balance".to_string()),
                 calculation_formula: Some("REV100 + REV200".to_string()),
+                ..Default::default()
             },
             FinancialReportRow {
                 data_source: Some("Calculated Amount".to_string()),
                 balance_type: Some("Period Movement (Debits - Credits)".to_string()),
                 calculation_formula: Some("REV100 - EXP100".to_string()),
+                ..Default::default()
             },
         ],
         ..Default::default()
@@ -143,4 +146,38 @@ fn financial_report_template_export_and_delete_plans_match_erpnext_guards() {
     let no_module = FinancialReportTemplate::default();
     assert_eq!(no_module.export_template_plan(false, false), None);
     assert_eq!(template.delete_template_dir_plan(false), None);
+}
+
+#[test]
+fn financial_report_template_test_fixture_rows_match_erpnext_testcase() {
+    let template = FinancialReportTemplate::test_profit_and_loss_template();
+
+    assert_eq!(template.template_name, "Test P&L Template");
+    assert_eq!(
+        template.report_type.as_deref(),
+        Some("Profit and Loss Statement")
+    );
+    assert_eq!(template.rows.len(), 3);
+    assert_eq!(template.rows[0].reference_code.as_deref(), Some("INC001"));
+    assert_eq!(template.rows[0].display_name.as_deref(), Some("Income"));
+    assert_eq!(template.rows[0].indentation_level, 0);
+    assert_eq!(
+        template.rows[0].data_source.as_deref(),
+        Some("Account Data")
+    );
+    assert_eq!(
+        template.rows[0].balance_type.as_deref(),
+        Some("Closing Balance")
+    );
+    assert_eq!(template.rows[0].bold_text, 1);
+    assert_eq!(
+        template.rows[0].calculation_formula.as_deref(),
+        Some("[\"root_type\", \"=\", \"Income\"]")
+    );
+    assert_eq!(template.rows[1].reference_code.as_deref(), Some("EXP001"));
+    assert_eq!(template.rows[2].reference_code.as_deref(), Some("NET001"));
+    assert_eq!(
+        template.rows[2].calculation_formula.as_deref(),
+        Some("INC001 - EXP001")
+    );
 }

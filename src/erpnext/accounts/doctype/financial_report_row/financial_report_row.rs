@@ -2,8 +2,13 @@ use crate::erpnext::{DocumentController, FieldSpec};
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct FinancialReportRow {
+    pub reference_code: Option<String>,
+    pub display_name: Option<String>,
+    pub indentation_level: i32,
     pub data_source: Option<String>,
     pub balance_type: Option<String>,
+    pub bold_text: i32,
+    pub reverse_sign: i32,
     pub calculation_formula: Option<String>,
 }
 

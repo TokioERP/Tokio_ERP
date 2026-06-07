@@ -1,7 +1,8 @@
 use tokio_erp::erpnext::accounts::doctype::financial_report_row::financial_report_row::FinancialReportRow;
 use tokio_erp::erpnext::accounts::doctype::financial_report_template::financial_report_engine::{
-    AccountData, EngineFilterValidation, FinancialReportEngine, FormattingRule, PeriodValue,
-    ReportContext, RowData, SectionData, SegmentData, DEFAULT_BULLET_PREFIX, SEGMENT_PREFIX,
+    AccountData, DependencyResolver, EngineFilterValidation, FinancialReportEngine, FormattingRule,
+    PeriodValue, ReportContext, RowData, SectionData, SegmentData, DEFAULT_BULLET_PREFIX,
+    SEGMENT_PREFIX,
 };
 use tokio_erp::erpnext::accounts::doctype::financial_report_template::financial_report_template::FinancialReportTemplate;
 
@@ -183,4 +184,105 @@ fn financial_report_engine_filter_validation_matches_required_and_warning_rules(
     }));
     assert!(fiscal_year.missing_required.is_empty());
     assert!(fiscal_year.warnings.is_empty());
+}
+
+#[test]
+fn dependency_resolver_matches_erpnext_ordering_and_reference_extraction() {
+    let template = FinancialReportTemplate {
+        template_name: "Dependency Test".to_string(),
+        rows: vec![
+            FinancialReportRow {
+                reference_code: Some("CALC001".to_string()),
+                display_name: Some("Calculated".to_string()),
+                data_source: Some("Calculated Amount".to_string()),
+                calculation_formula: Some("API001 + ACC001".to_string()),
+                ..Default::default()
+            },
+            FinancialReportRow {
+                reference_code: None,
+                display_name: Some("Spacing".to_string()),
+                data_source: Some("Blank Line".to_string()),
+                ..Default::default()
+            },
+            FinancialReportRow {
+                reference_code: Some("API001".to_string()),
+                display_name: Some("API".to_string()),
+                data_source: Some("Custom API".to_string()),
+                ..Default::default()
+            },
+            FinancialReportRow {
+                reference_code: Some("ACC001".to_string()),
+                display_name: Some("Account".to_string()),
+                data_source: Some("Account Data".to_string()),
+                calculation_formula: Some("[\"account_type\", \"=\", \"Income\"]".to_string()),
+                ..Default::default()
+            },
+            FinancialReportRow {
+                reference_code: Some("FINAL001".to_string()),
+                display_name: Some("Final".to_string()),
+                data_source: Some("Calculated Amount".to_string()),
+                calculation_formula: Some("(CALC001 + API001) * 0.5".to_string()),
+                ..Default::default()
+            },
+        ],
+        ..Default::default()
+    };
+
+    let resolver = DependencyResolver::new(&template).unwrap();
+    assert_eq!(
+        resolver.dependencies.get("CALC001").cloned().unwrap(),
+        vec!["API001".to_string(), "ACC001".to_string()]
+    );
+    assert_eq!(
+        resolver.dependencies.get("FINAL001").cloned().unwrap(),
+        vec!["CALC001".to_string(), "API001".to_string()]
+    );
+
+    let order = resolver
+        .get_processing_order()
+        .iter()
+        .map(|row| {
+            row.reference_code
+                .as_deref()
+                .unwrap_or(row.data_source.as_deref().unwrap_or(""))
+                .to_string()
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        order,
+        vec!["API001", "ACC001", "CALC001", "FINAL001", "Blank Line"]
+    );
+}
+
+#[test]
+fn dependency_resolver_rejects_circular_formula_dependencies() {
+    let template = FinancialReportTemplate {
+        template_name: "Cycle Test".to_string(),
+        rows: vec![
+            FinancialReportRow {
+                reference_code: Some("A001".to_string()),
+                data_source: Some("Calculated Amount".to_string()),
+                calculation_formula: Some("C001 + 100".to_string()),
+                ..Default::default()
+            },
+            FinancialReportRow {
+                reference_code: Some("B001".to_string()),
+                data_source: Some("Calculated Amount".to_string()),
+                calculation_formula: Some("A001 + 200".to_string()),
+                ..Default::default()
+            },
+            FinancialReportRow {
+                reference_code: Some("C001".to_string()),
+                data_source: Some("Calculated Amount".to_string()),
+                calculation_formula: Some("B001 * 1.5".to_string()),
+                ..Default::default()
+            },
+        ],
+        ..Default::default()
+    };
+
+    assert_eq!(
+        DependencyResolver::new(&template).unwrap_err(),
+        "Circular dependency detected".to_string()
+    );
 }

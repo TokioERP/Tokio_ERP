@@ -105,6 +105,45 @@ impl FinancialReportTemplate {
             scrub(name)
         ))
     }
+
+    pub fn test_profit_and_loss_template() -> Self {
+        Self {
+            template_name: "Test P&L Template".to_string(),
+            report_type: Some("Profit and Loss Statement".to_string()),
+            rows: vec![
+                FinancialReportRow {
+                    reference_code: Some("INC001".to_string()),
+                    display_name: Some("Income".to_string()),
+                    indentation_level: 0,
+                    data_source: Some("Account Data".to_string()),
+                    balance_type: Some("Closing Balance".to_string()),
+                    bold_text: 1,
+                    calculation_formula: Some(r#"["root_type", "=", "Income"]"#.to_string()),
+                    ..Default::default()
+                },
+                FinancialReportRow {
+                    reference_code: Some("EXP001".to_string()),
+                    display_name: Some("Expenses".to_string()),
+                    indentation_level: 0,
+                    data_source: Some("Account Data".to_string()),
+                    balance_type: Some("Closing Balance".to_string()),
+                    bold_text: 1,
+                    calculation_formula: Some(r#"["root_type", "=", "Expense"]"#.to_string()),
+                    ..Default::default()
+                },
+                FinancialReportRow {
+                    reference_code: Some("NET001".to_string()),
+                    display_name: Some("Net Profit/Loss".to_string()),
+                    indentation_level: 0,
+                    data_source: Some("Calculated Amount".to_string()),
+                    bold_text: 1,
+                    calculation_formula: Some("INC001 - EXP001".to_string()),
+                    ..Default::default()
+                },
+            ],
+            ..Default::default()
+        }
+    }
 }
 
 impl DocumentController for FinancialReportTemplate {
