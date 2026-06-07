@@ -1,8 +1,11 @@
 use tokio_erp::erpnext::accounts::doctype::gl_entry::gl_entry::{
-    update_against_account, update_outstanding_amount, validate_balance_type,
-    validate_frozen_account, AccountDetails, AgainstAccountUpdate, CostCenterDetails,
-    DimensionCheck, GlEntry, GlEntryContext, GlEntryError, GlEntryLedgerRow, OutstandingInput,
-    OutstandingUpdate, RenamePlan,
+    rename_temporarily_named_docs, update_against_account, update_outstanding_amount,
+    validate_balance_type, validate_frozen_account, AccountDetails, AgainstAccountUpdate,
+    CostCenterDetails, DimensionCheck, GlEntry, GlEntryContext, GlEntryError, GlEntryLedgerRow,
+    OutstandingInput, OutstandingUpdate, RenamePlan, TemporaryRenameRow, TemporaryRenameUpdate,
+};
+use tokio_erp::erpnext::accounts::general_ledger::{
+    process_debit_credit_difference, GlEntry as LedgerGlEntry, RoundOffSettings,
 };
 use tokio_erp::erpnext::{DocumentController, FieldSpec};
 
@@ -290,4 +293,137 @@ fn gl_entry_dimension_cancel_index_and_rename_plans_match_erpnext() {
             hooks: vec!["on_gle_rename", "on_sle_rename"],
         }
     );
+}
+
+#[test]
+fn gl_entry_python_round_off_entry_regression_matches_erpnext() {
+    let mut gl_map = vec![
+        LedgerGlEntry {
+            company: "_Test Company".to_string(),
+            account: "_Test Account Cost for Goods Sold - _TC".to_string(),
+            posting_date: "2026-05-23".to_string(),
+            voucher_type: "Journal Entry".to_string(),
+            voucher_no: "ACC-JV-0001".to_string(),
+            cost_center: Some("_Test Cost Center - _TC".to_string()),
+            debit: 100.01,
+            debit_in_account_currency: 100.01,
+            debit_in_transaction_currency: 100.01,
+            ..LedgerGlEntry::default()
+        },
+        LedgerGlEntry {
+            company: "_Test Company".to_string(),
+            account: "_Test Bank - _TC".to_string(),
+            posting_date: "2026-05-23".to_string(),
+            voucher_type: "Journal Entry".to_string(),
+            voucher_no: "ACC-JV-0001".to_string(),
+            cost_center: Some("_Test Cost Center - _TC".to_string()),
+            credit: 100.0,
+            credit_in_account_currency: 100.0,
+            credit_in_transaction_currency: 100.0,
+            ..LedgerGlEntry::default()
+        },
+    ];
+
+    process_debit_credit_difference(
+        &mut gl_map,
+        2,
+        RoundOffSettings {
+            round_off_account: Some("_Test Write Off - _TC".to_string()),
+            round_off_cost_center: Some("_Test Cost Center - _TC".to_string()),
+            round_off_for_opening: None,
+            default_expense_account: None,
+        },
+        false,
+    )
+    .unwrap();
+
+    let round_off_entry = gl_map
+        .iter()
+        .find(|entry| {
+            entry.voucher_type == "Journal Entry"
+                && entry.voucher_no == "ACC-JV-0001"
+                && entry.account == "_Test Write Off - _TC"
+                && entry.cost_center.as_deref() == Some("_Test Cost Center - _TC")
+        })
+        .expect("round-off GL Entry");
+
+    assert_eq!((round_off_entry.debit, round_off_entry.credit), (0.0, 0.01));
+}
+
+#[test]
+fn gl_entry_python_rename_entries_regression_updates_names_flags_and_series() {
+    let rows = vec![
+        TemporaryRenameRow::new("tmp-gle-a", true),
+        TemporaryRenameRow::new("tmp-gle-b", true),
+    ];
+
+    let plan =
+        rename_temporarily_named_docs("GL Entry", &rows, "ACC-GLE-.YYYY.-.#####", 27, "2026");
+
+    assert_eq!(
+        plan.updates,
+        vec![
+            TemporaryRenameUpdate {
+                old_name: "tmp-gle-a".to_string(),
+                new_name: "ACC-GLE-2026-00028".to_string(),
+                to_rename: false,
+            },
+            TemporaryRenameUpdate {
+                old_name: "tmp-gle-b".to_string(),
+                new_name: "ACC-GLE-2026-00029".to_string(),
+                to_rename: false,
+            },
+        ]
+    );
+    assert_eq!(plan.series_current_value, 29);
+    assert!(plan
+        .updates
+        .iter()
+        .all(|update| update.old_name != update.new_name));
+}
+
+#[test]
+fn gl_entry_python_party_type_regression_rejects_non_receivable_payable_and_allows_equity() {
+    let mut entry = GlEntry {
+        account: Some("_Test Account Cost for Goods Sold - _TC".to_string()),
+        company: Some("_Test Company".to_string()),
+        voucher_type: Some("Journal Entry".to_string()),
+        voucher_no: Some("ACC-JV-0002".to_string()),
+        posting_date: Some("2026-05-23".to_string()),
+        cost_center: Some("_Test Cost Center - _TC".to_string()),
+        debit: 100.0,
+        debit_in_account_currency: 100.0,
+        party_type: Some("Supplier".to_string()),
+        party: Some("_Test Supplier".to_string()),
+        ..GlEntry::default()
+    };
+    let mut ctx = base_context();
+    ctx.account.as_mut().unwrap().account_type = Some("Expense Account".to_string());
+    ctx.account.as_mut().unwrap().report_type = Some("Profit and Loss".to_string());
+
+    assert_eq!(
+        entry.validate_core(&ctx).unwrap_err(),
+        GlEntryError::Validation(
+            "Party Type and Party can only be set for Receivable / Payable account<br><br>_Test Account Cost for Goods Sold - _TC"
+                .to_string()
+        )
+    );
+
+    let mut shareholder = GlEntry {
+        account: Some("Opening Balance Equity - _TC".to_string()),
+        company: Some("_Test Company".to_string()),
+        voucher_type: Some("Journal Entry".to_string()),
+        voucher_no: Some("ACC-JV-0003".to_string()),
+        posting_date: Some("2026-05-23".to_string()),
+        credit: 100.0,
+        credit_in_account_currency: 100.0,
+        party_type: Some("Shareholder".to_string()),
+        party: Some("_Test Shareholder".to_string()),
+        ..GlEntry::default()
+    };
+    let mut shareholder_ctx = base_context();
+    shareholder_ctx.account.as_mut().unwrap().account_type = Some("Equity".to_string());
+    shareholder_ctx.account.as_mut().unwrap().report_type = Some("Balance Sheet".to_string());
+
+    shareholder.validate_core(&shareholder_ctx).unwrap();
 }

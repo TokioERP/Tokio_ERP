@@ -868,7 +868,7 @@
     {
       "source": "accounts/doctype/gl_entry/test_gl_entry.py",
       "target": "accounts/doctype/gl_entry/test_gl_entry.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/invoice_discounting/__init__.py",

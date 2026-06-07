@@ -126,6 +126,27 @@ pub struct RenamePlan {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TemporaryRenameRow {
+    pub name: String,
+    pub to_rename: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TemporaryRenameUpdate {
+    pub old_name: String,
+    pub new_name: String,
+    pub to_rename: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TemporaryRenamePlan {
+    pub doctype: String,
+    pub updates: Vec<TemporaryRenameUpdate>,
+    pub series_current_value: i64,
+    pub hooks: Vec<&'static str>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum GlEntryError {
     InvalidAccountCurrency(String),
     ReportingCurrencyExchangeNotFound(String),
@@ -347,6 +368,7 @@ impl GlEntry {
             self.check_mandatory(context)?;
             self.validate_cost_center(context)?;
             self.check_pl_account(context)?;
+            self.validate_party(context)?;
             self.validate_currency(context)?;
         }
 
@@ -565,6 +587,27 @@ impl GlEntry {
         Ok(())
     }
 
+    pub fn validate_party(&self, context: &GlEntryContext) -> Result<(), GlEntryError> {
+        if self.is_cancelled || !(has_value(&self.party_type) && has_value(&self.party)) {
+            return Ok(());
+        }
+
+        let account_type = context
+            .account
+            .as_ref()
+            .and_then(|account| account.account_type.as_deref());
+        if account_type.is_some_and(|account_type| {
+            !matches!(account_type, "Receivable" | "Payable" | "Equity")
+        }) {
+            return Err(GlEntryError::Validation(format!(
+                "Party Type and Party can only be set for Receivable / Payable account<br><br>{}",
+                self.account()
+            )));
+        }
+
+        Ok(())
+    }
+
     pub fn validate_currency(&mut self, context: &GlEntryContext) -> Result<(), GlEntryError> {
         if self.is_cancelled {
             return Ok(());
@@ -721,6 +764,42 @@ impl AgainstAccountUpdate {
     }
 }
 
+impl TemporaryRenameRow {
+    pub fn new(name: impl Into<String>, to_rename: bool) -> Self {
+        Self {
+            name: name.into(),
+            to_rename,
+        }
+    }
+}
+
+pub fn rename_temporarily_named_docs(
+    doctype: &str,
+    rows: &[TemporaryRenameRow],
+    autoname: &str,
+    series_current_value: i64,
+    naming_year: &str,
+) -> TemporaryRenamePlan {
+    let mut current = series_current_value;
+    let mut updates = Vec::new();
+
+    for row in rows.iter().filter(|row| row.to_rename).take(50_000) {
+        current += 1;
+        updates.push(TemporaryRenameUpdate {
+            old_name: row.name.clone(),
+            new_name: name_from_naming_series(autoname, current, naming_year),
+            to_rename: false,
+        });
+    }
+
+    TemporaryRenamePlan {
+        doctype: doctype.to_string(),
+        updates,
+        series_current_value: current,
+        hooks: vec!["on_gle_rename", "on_sle_rename"],
+    }
+}
+
 pub fn validate_balance_type(
     account: &str,
     adv_adj: bool,
@@ -871,6 +950,21 @@ fn join_set(values: &BTreeSet<String>) -> String {
 
 fn parse_amount(value: &str) -> f64 {
     value.parse().unwrap_or(0.0)
+}
+
+fn name_from_naming_series(autoname: &str, current: i64, naming_year: &str) -> String {
+    autoname
+        .split('.')
+        .map(|part| {
+            if part == "YYYY" {
+                naming_year.to_string()
+            } else if part.chars().all(|character| character == '#') && !part.is_empty() {
+                format!("{current:0width$}", width = part.len())
+            } else {
+                part.to_string()
+            }
+        })
+        .collect::<String>()
 }
 
 fn round_to_precision(value: f64, precision: u32) -> f64 {
