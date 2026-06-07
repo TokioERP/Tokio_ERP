@@ -2,11 +2,11 @@ use std::collections::BTreeMap;
 
 use tokio_erp::erpnext::accounts::doctype::financial_report_row::financial_report_row::FinancialReportRow;
 use tokio_erp::erpnext::accounts::doctype::financial_report_template::financial_report_engine::{
-    AccountData, AccountReportMeta, DependencyResolver, EngineFilterValidation,
+    AccountData, AccountReportMeta, ChartDataGenerator, DependencyResolver, EngineFilterValidation,
     FilterExpressionParser, FinancialQueryBuilder, FinancialReportEngine, FinancialReportPeriod,
     FormattingRule, FormulaCalculator, FormulaFieldExtractor, FormulaFieldUpdater, GlMovementRow,
-    PeriodValue, ReportContext, RowData, RowProcessor, SectionData, SegmentData,
-    DEFAULT_BULLET_PREFIX, SEGMENT_PREFIX,
+    GrowthViewTransformer, PeriodValue, ReportContext, RowData, RowProcessor, SectionData,
+    SegmentData, DEFAULT_BULLET_PREFIX, SEGMENT_PREFIX,
 };
 use tokio_erp::erpnext::accounts::doctype::financial_report_template::financial_report_template::FinancialReportTemplate;
 
@@ -849,4 +849,96 @@ fn row_processor_matches_erpnext_processing_order_and_row_value_outputs() {
         .as_ref()
         .unwrap()
         .contains_key("Cash"));
+}
+
+#[test]
+fn chart_data_generator_matches_erpnext_chart_row_filtering_and_chart_type() {
+    let mut context = ReportContext::new(FinancialReportTemplate::default());
+    context.currency = Some("USD".to_string());
+    context.filters = BTreeMap::from([("accumulated_values".to_string(), serde_json::json!(1))]);
+    context.period_list = vec![
+        BTreeMap::from([
+            ("key".to_string(), serde_json::json!("2024")),
+            ("label".to_string(), serde_json::json!("2024")),
+        ]),
+        BTreeMap::from([
+            ("key".to_string(), serde_json::json!("2025")),
+            ("label".to_string(), serde_json::json!("2025")),
+        ]),
+    ];
+    context.processed_rows = vec![
+        RowData {
+            row: FinancialReportRow {
+                display_name: Some("Revenue".to_string()),
+                data_source: Some("Account Data".to_string()),
+                include_in_charts: 1,
+                ..Default::default()
+            },
+            values: vec![2000.126, 3000.0],
+            ..Default::default()
+        },
+        RowData {
+            row: FinancialReportRow {
+                display_name: Some("Zero".to_string()),
+                data_source: Some("Account Data".to_string()),
+                include_in_charts: 1,
+                ..Default::default()
+            },
+            values: vec![0.0, 0.0],
+            ..Default::default()
+        },
+        RowData {
+            row: FinancialReportRow {
+                display_name: Some("Spacer".to_string()),
+                data_source: Some("Blank Line".to_string()),
+                include_in_charts: 1,
+                ..Default::default()
+            },
+            values: vec![999.0, 999.0],
+            ..Default::default()
+        },
+    ];
+
+    ChartDataGenerator::new(&mut context).generate();
+    assert_eq!(
+        context.raw_data.get("chart").unwrap(),
+        &serde_json::json!({
+            "data": {
+                "labels": ["2024", "2025"],
+                "datasets": [{"name": "Revenue", "values": [2000.13, 3000.0]}]
+            },
+            "type": "line",
+            "fieldtype": "Currency",
+            "options": "currency",
+            "currency": "USD"
+        })
+    );
+}
+
+#[test]
+fn growth_view_transformer_matches_erpnext_growth_rules() {
+    let mut context = ReportContext::new(FinancialReportTemplate::default());
+    context.period_list = vec![
+        BTreeMap::from([("key".to_string(), serde_json::json!("2024"))]),
+        BTreeMap::from([("key".to_string(), serde_json::json!("2025"))]),
+        BTreeMap::from([("key".to_string(), serde_json::json!("2026"))]),
+    ];
+    context.raw_data.insert(
+        "formatted_data".to_string(),
+        serde_json::json!([
+            {"account_name": "Expense", "2024": 2000.0, "2025": 3000.0, "2026": 0.0},
+            {"account_name": "New Income", "2024": 0.0, "2025": 50.0, "2026": null},
+            {"account_name": "", "is_blank_line": true, "2024": "", "2025": "", "2026": ""}
+        ]),
+    );
+
+    GrowthViewTransformer::new(&mut context).transform();
+    assert_eq!(
+        context.raw_data.get("formatted_data").unwrap(),
+        &serde_json::json!([
+            {"account_name": "Expense", "2024": 2000.0, "2025": 50.0, "2026": -100.0},
+            {"account_name": "New Income", "2024": 0.0, "2025": 100.0, "2026": null},
+            {"account_name": "", "is_blank_line": true, "2024": "", "2025": "", "2026": ""}
+        ])
+    );
 }

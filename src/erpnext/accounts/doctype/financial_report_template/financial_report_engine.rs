@@ -143,6 +143,14 @@ pub struct RowProcessor {
     period_keys: Vec<String>,
 }
 
+pub struct ChartDataGenerator<'a> {
+    context: &'a mut ReportContext,
+}
+
+pub struct GrowthViewTransformer<'a> {
+    context: &'a mut ReportContext,
+}
+
 impl PeriodValue {
     pub fn get_value(&self, balance_type: &str) -> f64 {
         match balance_type {
@@ -754,6 +762,149 @@ impl RowProcessor {
     }
 }
 
+impl<'a> ChartDataGenerator<'a> {
+    pub fn new(context: &'a mut ReportContext) -> Self {
+        Self { context }
+    }
+
+    pub fn generate(&mut self) {
+        let chart_rows = self
+            .context
+            .processed_rows
+            .iter()
+            .filter(|row| {
+                row.row.include_in_charts != 0
+                    && !matches!(
+                        row.row.data_source.as_deref(),
+                        Some("Blank Line" | "Column Break" | "Section Break")
+                    )
+            })
+            .collect::<Vec<_>>();
+
+        if chart_rows.is_empty() {
+            return;
+        }
+
+        let labels = self
+            .context
+            .period_list
+            .iter()
+            .map(|period| {
+                period
+                    .get("label")
+                    .cloned()
+                    .unwrap_or_else(|| Value::String(String::new()))
+            })
+            .collect::<Vec<_>>();
+        let mut datasets = Vec::new();
+
+        for row_data in chart_rows {
+            let values = self
+                .context
+                .period_list
+                .iter()
+                .enumerate()
+                .map(|(index, _)| {
+                    row_data
+                        .values
+                        .get(index)
+                        .copied()
+                        .map(|value| round_to(value, 2))
+                        .unwrap_or(0.0)
+                })
+                .collect::<Vec<_>>();
+
+            if values.iter().any(|value| *value != 0.0) {
+                datasets.push(serde_json::json!({
+                    "name": row_data.row.display_name.as_deref().unwrap_or_default(),
+                    "values": values,
+                }));
+            }
+        }
+
+        if datasets.is_empty() {
+            return;
+        }
+
+        let accumulated_values = self
+            .context
+            .filters
+            .get("accumulated_values")
+            .and_then(value_as_bool_or_int)
+            .unwrap_or(false);
+        let chart_type = if !accumulated_values || labels.len() <= 1 {
+            "bar"
+        } else {
+            "line"
+        };
+
+        self.context.raw_data.insert(
+            "chart".to_string(),
+            serde_json::json!({
+                "data": {"labels": labels, "datasets": datasets},
+                "type": chart_type,
+                "fieldtype": "Currency",
+                "options": "currency",
+                "currency": self.context.currency,
+            }),
+        );
+    }
+}
+
+impl<'a> GrowthViewTransformer<'a> {
+    pub fn new(context: &'a mut ReportContext) -> Self {
+        Self { context }
+    }
+
+    pub fn transform(&mut self) {
+        let period_keys = period_keys(&self.context.period_list);
+        let Some(rows) = self
+            .context
+            .raw_data
+            .get_mut("formatted_data")
+            .and_then(Value::as_array_mut)
+        else {
+            return;
+        };
+
+        for row in rows {
+            if row
+                .get("is_blank_line")
+                .and_then(Value::as_bool)
+                .unwrap_or(false)
+            {
+                continue;
+            }
+
+            let mut transformed_values = BTreeMap::new();
+            for (index, current_period) in period_keys.iter().enumerate() {
+                let current_value = row.get(current_period).cloned().unwrap_or(Value::Null);
+                if index == 0 {
+                    transformed_values.insert(current_period.clone(), current_value);
+                    continue;
+                }
+
+                let previous_period = &period_keys[index - 1];
+                let previous_value = row
+                    .get(previous_period)
+                    .and_then(Value::as_f64)
+                    .unwrap_or(0.0);
+                let growth_value = current_value
+                    .as_f64()
+                    .map(|current| calculate_growth(previous_value, current))
+                    .unwrap_or(Value::Null);
+                transformed_values.insert(current_period.clone(), growth_value);
+            }
+
+            if let Some(row_object) = row.as_object_mut() {
+                for (key, value) in transformed_values {
+                    row_object.insert(key, value);
+                }
+            }
+        }
+    }
+}
+
 impl FilterExpressionParser {
     pub const fn new() -> Self {
         Self
@@ -1126,6 +1277,25 @@ fn period_value_from_json(value: &Value) -> Option<PeriodValue> {
             .and_then(Value::as_f64)
             .unwrap_or(0.0),
     })
+}
+
+fn value_as_bool_or_int(value: &Value) -> Option<bool> {
+    value
+        .as_bool()
+        .or_else(|| value.as_i64().map(|number| number != 0))
+}
+
+fn calculate_growth(previous_value: f64, current_value: f64) -> Value {
+    if previous_value == 0.0 && current_value > 0.0 {
+        Value::from(100.0)
+    } else if previous_value == 0.0 && current_value <= 0.0 {
+        Value::from(0.0)
+    } else {
+        Value::from(round_to(
+            ((current_value - previous_value) / previous_value.abs()) * 100.0,
+            2,
+        ))
+    }
 }
 
 fn combine_conditions(operator: &str, conditions: Vec<String>) -> Option<String> {

@@ -9,6 +9,7 @@ pub struct FinancialReportRow {
     pub balance_type: Option<String>,
     pub bold_text: i32,
     pub reverse_sign: i32,
+    pub include_in_charts: i32,
     pub calculation_formula: Option<String>,
 }
 
