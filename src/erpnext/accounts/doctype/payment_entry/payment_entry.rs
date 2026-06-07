@@ -23,6 +23,7 @@ pub struct PaymentEntryReferenceRow {
     pub payment_request: Option<String>,
     pub advance_voucher_type: Option<String>,
     pub advance_voucher_no: Option<String>,
+    pub on_hold: bool,
 }
 
 impl Default for PaymentEntryReferenceRow {
@@ -47,6 +48,7 @@ impl Default for PaymentEntryReferenceRow {
             payment_request: None,
             advance_voucher_type: None,
             advance_voucher_no: None,
+            on_hold: false,
         }
     }
 }
@@ -70,6 +72,13 @@ impl Default for PaymentEntryDeductionRow {
             description: None,
         }
     }
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct SupplierBlockStatus {
+    pub on_hold: bool,
+    pub hold_type: Option<String>,
+    pub release_date: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -134,6 +143,7 @@ pub struct PaymentEntry {
     pub in_words: Option<String>,
     pub is_opening: String,
     pub apply_tds: bool,
+    pub supplier_block_status: Option<SupplierBlockStatus>,
     pub party_account_field: Option<String>,
     pub party_account: Option<String>,
     pub party_account_currency: Option<String>,
@@ -204,6 +214,7 @@ impl Default for PaymentEntry {
             in_words: None,
             is_opening: "No".to_string(),
             apply_tds: false,
+            supplier_block_status: None,
             party_account_field: None,
             party_account: None,
             party_account_currency: None,
@@ -230,6 +241,13 @@ pub enum PaymentEntryError {
         row: usize,
     },
     BankTransactionReferenceMandatory,
+    SupplierBlocked {
+        supplier: String,
+    },
+    ReferenceDocumentOnHold {
+        reference_doctype: String,
+        reference_name: String,
+    },
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -365,6 +383,7 @@ impl PaymentEntry {
         self.validate_payment_type()?;
         self.set_exchange_rate();
         self.validate_mandatory()?;
+        self.validate_reference_documents()?;
         self.validate_duplicate_entry()?;
         self.set_amounts()?;
         self.validate_amounts()?;
@@ -374,6 +393,7 @@ impl PaymentEntry {
         self.set_remarks();
         self.validate_payment_type_with_outstanding()?;
         self.validate_allocated_amount()?;
+        self.ensure_supplier_is_not_blocked()?;
         self.set_status(0);
         self.set_total_in_words();
         Ok(())
@@ -437,6 +457,18 @@ impl PaymentEntry {
         ] {
             if value == 0.0 {
                 return Err(PaymentEntryError::MandatoryField(field));
+            }
+        }
+        Ok(())
+    }
+
+    pub fn validate_reference_documents(&self) -> Result<(), PaymentEntryError> {
+        for row in &self.references {
+            if row.reference_doctype == "Purchase Invoice" && row.on_hold {
+                return Err(PaymentEntryError::ReferenceDocumentOnHold {
+                    reference_doctype: row.reference_doctype.clone(),
+                    reference_name: row.reference_name.clone(),
+                });
             }
         }
         Ok(())
@@ -757,6 +789,28 @@ impl PaymentEntry {
             }
         }
         Ok(())
+    }
+
+    pub fn ensure_supplier_is_not_blocked(&self) -> Result<(), PaymentEntryError> {
+        if self.payment_type != "Pay" || self.party_type.as_deref() != Some("Supplier") {
+            return Ok(());
+        }
+        let Some(status) = self.supplier_block_status.as_ref() else {
+            return Ok(());
+        };
+        if !status.on_hold || !matches!(status.hold_type.as_deref(), Some("All" | "Payments")) {
+            return Ok(());
+        }
+        if status
+            .release_date
+            .as_deref()
+            .is_some_and(|release_date| release_date < self.posting_date.as_str())
+        {
+            return Ok(());
+        }
+        Err(PaymentEntryError::SupplierBlocked {
+            supplier: self.party.clone().unwrap_or_default(),
+        })
     }
 
     pub fn set_status(&mut self, docstatus: i32) {

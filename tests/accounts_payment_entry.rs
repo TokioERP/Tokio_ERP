@@ -1,6 +1,6 @@
 use tokio_erp::erpnext::accounts::doctype::payment_entry::payment_entry::{
     GlEntryPlan, PaymentEntry, PaymentEntryDeductionRow, PaymentEntryError,
-    PaymentEntryReferenceRow,
+    PaymentEntryReferenceRow, SupplierBlockStatus,
 };
 use tokio_erp::erpnext::DocumentController;
 
@@ -298,4 +298,69 @@ fn payment_entry_build_gl_map_sets_party_account_when_validate_was_not_called() 
     assert_eq!(gl[0].account, "Debtors - TC");
     assert_eq!(gl[0].party_type.as_deref(), Some("Customer"));
     assert_eq!(gl[0].against.as_deref(), Some("Bank - TC"));
+}
+
+#[test]
+fn payment_entry_supplier_payment_hold_release_date_matches_erpnext() {
+    let mut blocked = receive_entry();
+    blocked.payment_type = "Pay".to_string();
+    blocked.party_type = Some("Supplier".to_string());
+    blocked.party = Some("_Test Supplier".to_string());
+    blocked.paid_from = Some("Bank - TC".to_string());
+    blocked.paid_from_account_currency = "USD".to_string();
+    blocked.paid_from_account_type = Some("Bank".to_string());
+    blocked.paid_to = Some("Creditors - TC".to_string());
+    blocked.paid_to_account_currency = "USD".to_string();
+    blocked.paid_to_account_type = Some("Payable".to_string());
+    blocked.reference_no = Some("CHK-SUP-1".to_string());
+    blocked.reference_date = Some("2026-06-06".to_string());
+    blocked.references[0].reference_doctype = "Purchase Invoice".to_string();
+    blocked.references[0].reference_name = "PINV-0001".to_string();
+    blocked.references[0].account = Some("Creditors - TC".to_string());
+    blocked.supplier_block_status = Some(SupplierBlockStatus {
+        on_hold: true,
+        hold_type: Some("Payments".to_string()),
+        release_date: Some("2026-06-06".to_string()),
+    });
+
+    assert_eq!(
+        blocked.validate(),
+        Err(PaymentEntryError::SupplierBlocked {
+            supplier: "_Test Supplier".to_string()
+        })
+    );
+
+    blocked.supplier_block_status = Some(SupplierBlockStatus {
+        on_hold: true,
+        hold_type: Some("Payments".to_string()),
+        release_date: Some("2018-03-01".to_string()),
+    });
+
+    blocked.validate().unwrap();
+    assert_eq!(blocked.status, "Draft");
+}
+
+#[test]
+fn payment_entry_rejects_on_hold_purchase_invoice_reference_like_erpnext() {
+    let mut doc = receive_entry();
+    doc.payment_type = "Pay".to_string();
+    doc.party_type = Some("Supplier".to_string());
+    doc.party = Some("_Test Supplier".to_string());
+    doc.paid_from = Some("Bank - TC".to_string());
+    doc.paid_from_account_currency = "USD".to_string();
+    doc.paid_from_account_type = Some("Bank".to_string());
+    doc.paid_to = Some("Creditors - TC".to_string());
+    doc.paid_to_account_currency = "USD".to_string();
+    doc.paid_to_account_type = Some("Payable".to_string());
+    doc.references[0].reference_doctype = "Purchase Invoice".to_string();
+    doc.references[0].reference_name = "PINV-HOLD-0001".to_string();
+    doc.references[0].on_hold = true;
+
+    assert_eq!(
+        doc.validate(),
+        Err(PaymentEntryError::ReferenceDocumentOnHold {
+            reference_doctype: "Purchase Invoice".to_string(),
+            reference_name: "PINV-HOLD-0001".to_string()
+        })
+    );
 }
