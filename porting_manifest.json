@@ -1973,7 +1973,7 @@
     {
       "source": "accounts/doctype/purchase_invoice/test_purchase_invoice.py",
       "target": "accounts/doctype/purchase_invoice/test_purchase_invoice.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "accounts/doctype/purchase_invoice_advance/__init__.py",

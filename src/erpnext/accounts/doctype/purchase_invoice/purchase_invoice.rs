@@ -35,6 +35,13 @@ pub struct AccountMeta {
     pub account_currency: Option<String>,
 }
 
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct SupplierBlockStatus {
+    pub on_hold: bool,
+    pub hold_type: Option<String>,
+    pub release_date: Option<String>,
+}
+
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct PurchaseInvoiceItemRow {
     pub qty: f64,
@@ -51,6 +58,7 @@ pub enum PurchaseInvoiceError {
     CreditToAccountMissing(String),
     CreditToMustBeBalanceSheet,
     CreditToMustBePayable,
+    SupplierBlocked { supplier: String },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -87,6 +95,7 @@ pub struct PurchaseInvoice {
     pub internal_transfer: bool,
     pub has_submitted_debit_note: bool,
     pub per_received: f64,
+    pub supplier_block_status: Option<SupplierBlockStatus>,
     pub items: Vec<PurchaseInvoiceItemRow>,
 }
 
@@ -125,6 +134,7 @@ impl Default for PurchaseInvoice {
             internal_transfer: false,
             has_submitted_debit_note: false,
             per_received: 0.0,
+            supplier_block_status: None,
             items: Vec::new(),
         }
     }
@@ -405,6 +415,7 @@ impl PurchaseInvoice {
         if self.is_paid == 1 {
             self.validate_cash(base_grand_total_precision)?;
         }
+        self.ensure_supplier_is_not_blocked(today)?;
         self.validate_credit_to_acc(accounts)?;
         self.set_status(None, today);
         self.set_percentage_received();
@@ -461,6 +472,25 @@ impl PurchaseInvoice {
         Ok(())
     }
 
+    pub fn ensure_supplier_is_not_blocked(&self, today: &str) -> Result<(), PurchaseInvoiceError> {
+        let Some(status) = self.supplier_block_status.as_ref() else {
+            return Ok(());
+        };
+        if !status.on_hold || !matches!(status.hold_type.as_deref(), Some("All" | "Invoices")) {
+            return Ok(());
+        }
+        if status
+            .release_date
+            .as_deref()
+            .is_some_and(|release_date| release_date < today)
+        {
+            return Ok(());
+        }
+        Err(PurchaseInvoiceError::SupplierBlocked {
+            supplier: self.supplier.clone().unwrap_or_default(),
+        })
+    }
+
     pub fn create_remarks(&mut self) {
         if self.remarks.is_none() {
             if let Some(bill_no) = self.bill_no.as_deref() {
@@ -503,10 +533,6 @@ impl PurchaseInvoice {
             return self.status.clone();
         }
 
-        if self.docstatus == 2 {
-            return self.status.clone();
-        }
-
         self.status = if self.docstatus == 1 {
             if self.internal_transfer {
                 "Internal Transfer".to_string()
@@ -526,6 +552,8 @@ impl PurchaseInvoice {
             } else {
                 "Submitted".to_string()
             }
+        } else if self.docstatus == 2 {
+            "Cancelled".to_string()
         } else {
             "Draft".to_string()
         };

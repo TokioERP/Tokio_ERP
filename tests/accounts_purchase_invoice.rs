@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use tokio_erp::erpnext::accounts::doctype::purchase_invoice::purchase_invoice::{
     AccountMeta, OnloadPlan, PurchaseInvoice, PurchaseInvoiceError, PurchaseInvoiceItemRow,
-    StatusUpdaterSpec, SupplierTaxMeta,
+    StatusUpdaterSpec, SupplierBlockStatus, SupplierTaxMeta,
 };
 use tokio_erp::erpnext::DocumentController;
 
@@ -211,6 +211,31 @@ fn purchase_invoice_core_validation_guards_match_erpnext() {
         non_payable_account.validate_core("2026-06-06", 2, &accounts),
         Err(PurchaseInvoiceError::CreditToMustBePayable)
     );
+
+    let mut blocked_supplier = PurchaseInvoice {
+        supplier: Some("_Test Supplier".to_string()),
+        supplier_block_status: Some(SupplierBlockStatus {
+            on_hold: true,
+            hold_type: Some("Invoices".to_string()),
+            release_date: None,
+        }),
+        ..Default::default()
+    };
+    assert_eq!(
+        blocked_supplier.validate_core("2026-06-06", 2, &HashMap::new()),
+        Err(PurchaseInvoiceError::SupplierBlocked {
+            supplier: "_Test Supplier".to_string()
+        })
+    );
+
+    blocked_supplier.supplier_block_status = Some(SupplierBlockStatus {
+        on_hold: true,
+        hold_type: Some("Payments".to_string()),
+        release_date: Some("2026-06-06".to_string()),
+    });
+    blocked_supplier
+        .validate_core("2026-06-06", 2, &HashMap::new())
+        .unwrap();
 }
 
 #[test]
@@ -248,10 +273,10 @@ fn purchase_invoice_status_branches_match_erpnext_order() {
     doc.internal_transfer = true;
     assert_eq!(doc.set_status(None, "2026-06-06"), "Internal Transfer");
     doc.docstatus = 2;
-    assert_eq!(doc.set_status(None, "2026-06-06"), "Internal Transfer");
+    assert_eq!(doc.set_status(None, "2026-06-06"), "Cancelled");
     assert_eq!(
         doc.set_status(Some("Force Skipped"), "2026-06-06"),
-        "Internal Transfer"
+        "Cancelled"
     );
     doc.docstatus = 0;
     assert_eq!(doc.set_status(None, "2026-06-06"), "Draft");
