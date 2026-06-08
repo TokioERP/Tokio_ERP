@@ -10383,7 +10383,7 @@
     {
       "source": "stock/dashboard/item_dashboard.py",
       "target": "stock/dashboard/item_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/dashboard/warehouse_capacity_dashboard.py",
