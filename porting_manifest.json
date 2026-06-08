@@ -10643,12 +10643,12 @@
     {
       "source": "stock/doctype/item_customer_detail/__init__.py",
       "target": "stock/doctype/item_customer_detail/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/item_customer_detail/item_customer_detail.py",
       "target": "stock/doctype/item_customer_detail/item_customer_detail.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/item_default/__init__.py",
@@ -10748,12 +10748,12 @@
     {
       "source": "stock/doctype/item_variant/__init__.py",
       "target": "stock/doctype/item_variant/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/item_variant/item_variant.py",
       "target": "stock/doctype/item_variant/item_variant.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/item_variant_attribute/__init__.py",
@@ -10783,12 +10783,12 @@
     {
       "source": "stock/doctype/item_website_specification/__init__.py",
       "target": "stock/doctype/item_website_specification/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/item_website_specification/item_website_specification.py",
       "target": "stock/doctype/item_website_specification/item_website_specification.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/landed_cost_item/__init__.py",
@@ -10823,12 +10823,12 @@
     {
       "source": "stock/doctype/landed_cost_vendor_invoice/__init__.py",
       "target": "stock/doctype/landed_cost_vendor_invoice/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/landed_cost_vendor_invoice/landed_cost_vendor_invoice.py",
       "target": "stock/doctype/landed_cost_vendor_invoice/landed_cost_vendor_invoice.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/landed_cost_voucher/__init__.py",
@@ -11183,22 +11183,22 @@
     {
       "source": "stock/doctype/shipment_delivery_note/__init__.py",
       "target": "stock/doctype/shipment_delivery_note/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/shipment_delivery_note/shipment_delivery_note.py",
       "target": "stock/doctype/shipment_delivery_note/shipment_delivery_note.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/shipment_parcel/__init__.py",
       "target": "stock/doctype/shipment_parcel/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/shipment_parcel/shipment_parcel.py",
       "target": "stock/doctype/shipment_parcel/shipment_parcel.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/shipment_parcel_template/__init__.py",
