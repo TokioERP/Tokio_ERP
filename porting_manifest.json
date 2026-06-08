@@ -10978,12 +10978,12 @@
     {
       "source": "stock/doctype/price_list_country/__init__.py",
       "target": "stock/doctype/price_list_country/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/price_list_country/price_list_country.py",
       "target": "stock/doctype/price_list_country/price_list_country.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/purchase_receipt/__init__.py",

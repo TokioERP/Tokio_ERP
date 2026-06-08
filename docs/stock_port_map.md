@@ -77,3 +77,10 @@ This map tracks Stock source files whose Rust parity surface is complete.
 | `stock/doctype/warehouse_type/__init__.py` | `src/erpnext/stock/doctype/warehouse_type/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Warehouse Type doctype module. |
 | `stock/doctype/warehouse_type/warehouse_type.py` | `src/erpnext/stock/doctype/warehouse_type/warehouse_type.rs` | parity_tested | Python controller is pass/no-op; Rust preserves prompt autoname, quick-entry, sort order, track-changes, description Small Text field metadata, and empty controller hooks. JSON permissions remain metadata/runtime integration. |
 | `stock/doctype/warehouse_type/test_warehouse_type.py` | `tests/stock_warehouse_type.rs` | parity_tested | ERPNext test class is pass/no-op; Rust covers metadata and pass controller behavior directly. |
+
+## Doctype / Price List Country
+
+| Source | Target | Status | Notes |
+| --- | --- | --- | --- |
+| `stock/doctype/price_list_country/__init__.py` | `src/erpnext/stock/doctype/price_list_country/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Price List Country child-table module. |
+| `stock/doctype/price_list_country/price_list_country.py` | `src/erpnext/stock/doctype/price_list_country/price_list_country.rs` | parity_tested | Python controller is pass/no-op; Rust preserves child-table metadata, editable-grid, sort order, Country link field metadata, required/list-view flags, parent linkage fields from generated type hints, and empty controller hooks. JSON permissions remain metadata/runtime integration. |
