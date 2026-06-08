@@ -10478,7 +10478,7 @@
     {
       "source": "stock/doctype/delivery_note/__init__.py",
       "target": "stock/doctype/delivery_note/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/delivery_note/delivery_note.py",
@@ -10488,7 +10488,7 @@
     {
       "source": "stock/doctype/delivery_note/delivery_note_dashboard.py",
       "target": "stock/doctype/delivery_note/delivery_note_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/delivery_note/patches/__init__.py",
@@ -10863,7 +10863,7 @@
     {
       "source": "stock/doctype/material_request/__init__.py",
       "target": "stock/doctype/material_request/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/material_request/material_request.py",
@@ -10873,7 +10873,7 @@
     {
       "source": "stock/doctype/material_request/material_request_dashboard.py",
       "target": "stock/doctype/material_request/material_request_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/material_request/test_material_request.py",
@@ -10933,7 +10933,7 @@
     {
       "source": "stock/doctype/pick_list/__init__.py",
       "target": "stock/doctype/pick_list/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/pick_list/pick_list.py",
@@ -10943,7 +10943,7 @@
     {
       "source": "stock/doctype/pick_list/pick_list_dashboard.py",
       "target": "stock/doctype/pick_list/pick_list_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/pick_list/test_pick_list.py",
@@ -10988,7 +10988,7 @@
     {
       "source": "stock/doctype/purchase_receipt/__init__.py",
       "target": "stock/doctype/purchase_receipt/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/purchase_receipt/purchase_receipt.py",
@@ -10998,7 +10998,7 @@
     {
       "source": "stock/doctype/purchase_receipt/purchase_receipt_dashboard.py",
       "target": "stock/doctype/purchase_receipt/purchase_receipt_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/purchase_receipt/test_purchase_receipt.py",
@@ -11233,7 +11233,7 @@
     {
       "source": "stock/doctype/stock_closing_entry/__init__.py",
       "target": "stock/doctype/stock_closing_entry/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/stock_closing_entry/stock_closing_entry.py",
@@ -11243,7 +11243,7 @@
     {
       "source": "stock/doctype/stock_closing_entry/stock_closing_entry_dashboard.py",
       "target": "stock/doctype/stock_closing_entry/stock_closing_entry_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/stock_closing_entry/test_stock_closing_entry.py",
@@ -11253,7 +11253,7 @@
     {
       "source": "stock/doctype/stock_entry/__init__.py",
       "target": "stock/doctype/stock_entry/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/stock_entry/stock_entry.py",
@@ -11263,7 +11263,7 @@
     {
       "source": "stock/doctype/stock_entry/stock_entry_dashboard.py",
       "target": "stock/doctype/stock_entry/stock_entry_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/stock_entry/stock_entry_utils.py",

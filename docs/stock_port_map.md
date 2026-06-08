@@ -39,6 +39,23 @@ This map tracks Stock source files whose Rust parity surface is complete.
 | `stock/doctype/batch/__init__.py` | `src/erpnext/stock/doctype/batch/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Batch doctype module. |
 | `stock/doctype/batch/batch_dashboard.py` | `src/erpnext/stock/doctype/batch/batch_dashboard.rs` | parity_tested | Rust preserves the exact frontend dashboard payload contract: fieldname `batch_no`, transaction section order, translated label source strings, and item lists for Buy, Sell, Move, and Quality. Runtime translation remains adapter integration. |
 
+## Doctype / Static Dashboards
+
+| Source | Target | Status | Notes |
+| --- | --- | --- | --- |
+| `stock/doctype/stock_closing_entry/__init__.py` | `src/erpnext/stock/doctype/stock_closing_entry/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Stock Closing Entry doctype module. |
+| `stock/doctype/stock_closing_entry/stock_closing_entry_dashboard.py` | `src/erpnext/stock/doctype/stock_closing_entry/stock_closing_entry_dashboard.rs` | parity_tested | Rust preserves the exact frontend dashboard payload: fieldname `stock_closing_entry` plus the Stock Closing Log transaction section and Stock Closing Balance item. Runtime translation remains adapter integration. |
+| `stock/doctype/stock_entry/__init__.py` | `src/erpnext/stock/doctype/stock_entry/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Stock Entry doctype module. |
+| `stock/doctype/stock_entry/stock_entry_dashboard.py` | `src/erpnext/stock/doctype/stock_entry/stock_entry_dashboard.rs` | parity_tested | Rust preserves the exact frontend dashboard payload: fieldname `stock_entry`, Stock Reservation Entry non-standard fieldname mapping, and Stock Reservation transaction section. Runtime translation remains adapter integration. |
+| `stock/doctype/material_request/__init__.py` | `src/erpnext/stock/doctype/material_request/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Material Request doctype module. |
+| `stock/doctype/material_request/material_request_dashboard.py` | `src/erpnext/stock/doctype/material_request/material_request_dashboard.rs` | parity_tested | Rust preserves the exact frontend dashboard payload: fieldname `material_request`, Sales Order/Project/Cost Center internal links, and Reference, Stock, Manufacturing, Internal Transfer, and Accounting Dimensions transaction sections in ERPNext order. Runtime translation remains adapter integration. |
+| `stock/doctype/pick_list/__init__.py` | `src/erpnext/stock/doctype/pick_list/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Pick List doctype module. |
+| `stock/doctype/pick_list/pick_list_dashboard.py` | `src/erpnext/stock/doctype/pick_list/pick_list_dashboard.rs` | parity_tested | Rust preserves the exact frontend dashboard payload: fieldname `pick_list`, Stock Reservation Entry and Delivery Note non-standard fieldname mappings, Sales Order internal link, and Sales, Manufacturing, and Reference sections. Runtime translation remains adapter integration. |
+| `stock/doctype/delivery_note/__init__.py` | `src/erpnext/stock/doctype/delivery_note/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Delivery Note doctype module. |
+| `stock/doctype/delivery_note/delivery_note_dashboard.py` | `src/erpnext/stock/doctype/delivery_note/delivery_note_dashboard.rs` | parity_tested | Rust preserves the exact frontend dashboard payload: fieldname `delivery_note`, non-standard fieldname mappings, internal links, internal-and-external Sales Invoice link, and Related, Reference, Returns, Subscription, and Internal Transfer transaction sections. Runtime translation remains adapter integration. |
+| `stock/doctype/purchase_receipt/__init__.py` | `src/erpnext/stock/doctype/purchase_receipt/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Purchase Receipt doctype module. |
+| `stock/doctype/purchase_receipt/purchase_receipt_dashboard.py` | `src/erpnext/stock/doctype/purchase_receipt/purchase_receipt_dashboard.rs` | parity_tested | Rust preserves the exact frontend dashboard payload: fieldname `purchase_receipt_no`, non-standard fieldname mappings, internal links, internal-and-external Purchase Invoice link, and Related, Reference, Returns, and Subscription transaction sections. Runtime translation remains adapter integration. |
+
 ## Doctype / Customs Tariff Number
 
 | Source | Target | Status | Notes |
