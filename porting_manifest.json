@@ -10423,12 +10423,12 @@
     {
       "source": "stock/doctype/__init__.py",
       "target": "stock/doctype/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/batch/__init__.py",
       "target": "stock/doctype/batch/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/batch/batch.py",
@@ -10438,7 +10438,7 @@
     {
       "source": "stock/doctype/batch/batch_dashboard.py",
       "target": "stock/doctype/batch/batch_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/batch/test_batch.py",

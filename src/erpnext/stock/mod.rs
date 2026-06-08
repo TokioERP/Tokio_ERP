@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 pub mod dashboard;
 pub mod dashboard_chart_source;
+pub mod doctype;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum InstallDoc {

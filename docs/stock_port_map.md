@@ -25,3 +25,16 @@ This map tracks Stock source files whose Rust parity surface is complete.
 | `stock/dashboard_chart_source/stock_value_by_item_group/stock_value_by_item_group.py` | `src/erpnext/stock/dashboard_chart_source/stock_value_by_item_group/stock_value_by_item_group.rs` | parity_tested | Rust covers ERPNext filter company/default company fallback, Warehouse filter shape, Bin-Item join query plan, optional warehouse `isin` condition, top-10 grouping/order metadata, zero stock-value row skip, and returned chart dataset shape. Live Frappe query execution, translation, cache decorator behavior, and JSON filter parsing remain external integration. |
 | `stock/dashboard_chart_source/warehouse_wise_stock_value/__init__.py` | `src/erpnext/stock/dashboard_chart_source/warehouse_wise_stock_value/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching warehouse-wise-stock-value module. |
 | `stock/dashboard_chart_source/warehouse_wise_stock_value/warehouse_wise_stock_value.py` | `src/erpnext/stock/dashboard_chart_source/warehouse_wise_stock_value/warehouse_wise_stock_value.rs` | parity_tested | Rust covers ERPNext company Warehouse filter shape, warehouse list name ordering, Bin aggregate query filters/group/order/limit, empty result returning an empty list, and bar chart dataset shape. Live Frappe query execution, translation, cache decorator behavior, and JSON filter parsing remain external integration. |
+
+## Doctype
+
+| Source | Target | Status | Notes |
+| --- | --- | --- | --- |
+| `stock/doctype/__init__.py` | `src/erpnext/stock/doctype/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Stock doctype module. |
+
+## Doctype / Batch
+
+| Source | Target | Status | Notes |
+| --- | --- | --- | --- |
+| `stock/doctype/batch/__init__.py` | `src/erpnext/stock/doctype/batch/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Batch doctype module. |
+| `stock/doctype/batch/batch_dashboard.py` | `src/erpnext/stock/doctype/batch/batch_dashboard.rs` | parity_tested | Rust preserves the exact frontend dashboard payload contract: fieldname `batch_no`, transaction section order, translated label source strings, and item lists for Buy, Sell, Move, and Quality. Runtime translation remains adapter integration. |
