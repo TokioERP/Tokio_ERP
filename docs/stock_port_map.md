@@ -84,3 +84,11 @@ This map tracks Stock source files whose Rust parity surface is complete.
 | --- | --- | --- | --- |
 | `stock/doctype/price_list_country/__init__.py` | `src/erpnext/stock/doctype/price_list_country/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Price List Country child-table module. |
 | `stock/doctype/price_list_country/price_list_country.py` | `src/erpnext/stock/doctype/price_list_country/price_list_country.rs` | parity_tested | Python controller is pass/no-op; Rust preserves child-table metadata, editable-grid, sort order, Country link field metadata, required/list-view flags, parent linkage fields from generated type hints, and empty controller hooks. JSON permissions remain metadata/runtime integration. |
+
+## Doctype / Quality Inspection Parameter Group
+
+| Source | Target | Status | Notes |
+| --- | --- | --- | --- |
+| `stock/doctype/quality_inspection_parameter_group/__init__.py` | `src/erpnext/stock/doctype/quality_inspection_parameter_group/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Quality Inspection Parameter Group doctype module. |
+| `stock/doctype/quality_inspection_parameter_group/quality_inspection_parameter_group.py` | `src/erpnext/stock/doctype/quality_inspection_parameter_group/quality_inspection_parameter_group.rs` | parity_tested | Python controller is pass/no-op; Rust preserves field-based autoname, editable-grid, quick-entry, sort order, track-changes, group name field metadata, required/list-view/unique flags, and empty controller hooks. JSON permissions remain metadata/runtime integration. |
+| `stock/doctype/quality_inspection_parameter_group/test_quality_inspection_parameter_group.py` | `tests/stock_quality_inspection_parameter_group.rs` | parity_tested | ERPNext test class is pass/no-op; Rust covers metadata and pass controller behavior directly. |

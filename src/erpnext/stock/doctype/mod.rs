@@ -4,5 +4,6 @@ pub mod dashboard;
 pub mod delivery_settings;
 pub mod delivery_stop;
 pub mod price_list_country;
+pub mod quality_inspection_parameter_group;
 pub mod uom_category;
 pub mod warehouse_type;
