@@ -1,4 +1,5 @@
 pub mod accounts;
+pub mod stock;
 
 use std::collections::BTreeMap;
 

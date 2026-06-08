@@ -10378,7 +10378,7 @@
     {
       "source": "stock/dashboard/__init__.py",
       "target": "stock/dashboard/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/dashboard/item_dashboard.py",
@@ -10388,7 +10388,7 @@
     {
       "source": "stock/dashboard/warehouse_capacity_dashboard.py",
       "target": "stock/dashboard/warehouse_capacity_dashboard.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/dashboard_chart_source/__init__.py",
