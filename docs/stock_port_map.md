@@ -69,3 +69,11 @@ This map tracks Stock source files whose Rust parity surface is complete.
 | `stock/doctype/uom_category/__init__.py` | `src/erpnext/stock/doctype/uom_category/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching UOM Category doctype module. |
 | `stock/doctype/uom_category/uom_category.py` | `src/erpnext/stock/doctype/uom_category/uom_category.rs` | parity_tested | Python controller is pass/no-op; Rust preserves autoname, allow-rename, editable-grid, quick-entry, sort order, category name field metadata, required/list-view/unique flags, and empty controller hooks. JSON permissions remain metadata/runtime integration. |
 | `stock/doctype/uom_category/test_uom_category.py` | `tests/stock_uom_category.rs` | parity_tested | ERPNext test class is pass/no-op; Rust covers metadata and pass controller behavior directly. |
+
+## Doctype / Warehouse Type
+
+| Source | Target | Status | Notes |
+| --- | --- | --- | --- |
+| `stock/doctype/warehouse_type/__init__.py` | `src/erpnext/stock/doctype/warehouse_type/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Warehouse Type doctype module. |
+| `stock/doctype/warehouse_type/warehouse_type.py` | `src/erpnext/stock/doctype/warehouse_type/warehouse_type.rs` | parity_tested | Python controller is pass/no-op; Rust preserves prompt autoname, quick-entry, sort order, track-changes, description Small Text field metadata, and empty controller hooks. JSON permissions remain metadata/runtime integration. |
+| `stock/doctype/warehouse_type/test_warehouse_type.py` | `tests/stock_warehouse_type.rs` | parity_tested | ERPNext test class is pass/no-op; Rust covers metadata and pass controller behavior directly. |

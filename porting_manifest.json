@@ -11453,17 +11453,17 @@
     {
       "source": "stock/doctype/warehouse_type/__init__.py",
       "target": "stock/doctype/warehouse_type/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/warehouse_type/test_warehouse_type.py",
       "target": "stock/doctype/warehouse_type/test_warehouse_type.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/warehouse_type/warehouse_type.py",
       "target": "stock/doctype/warehouse_type/warehouse_type.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/get_item_details.py",
