@@ -10393,27 +10393,27 @@
     {
       "source": "stock/dashboard_chart_source/__init__.py",
       "target": "stock/dashboard_chart_source/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/dashboard_chart_source/stock_value_by_item_group/__init__.py",
       "target": "stock/dashboard_chart_source/stock_value_by_item_group/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/dashboard_chart_source/stock_value_by_item_group/stock_value_by_item_group.py",
       "target": "stock/dashboard_chart_source/stock_value_by_item_group/stock_value_by_item_group.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/dashboard_chart_source/warehouse_wise_stock_value/__init__.py",
       "target": "stock/dashboard_chart_source/warehouse_wise_stock_value/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/dashboard_chart_source/warehouse_wise_stock_value/warehouse_wise_stock_value.py",
       "target": "stock/dashboard_chart_source/warehouse_wise_stock_value/warehouse_wise_stock_value.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/deprecated_serial_batch.py",
