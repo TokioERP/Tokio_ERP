@@ -11423,17 +11423,17 @@
     {
       "source": "stock/doctype/variant_field/__init__.py",
       "target": "stock/doctype/variant_field/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/variant_field/test_variant_field.py",
       "target": "stock/doctype/variant_field/test_variant_field.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/variant_field/variant_field.py",
       "target": "stock/doctype/variant_field/variant_field.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/warehouse/__init__.py",

@@ -92,3 +92,11 @@ This map tracks Stock source files whose Rust parity surface is complete.
 | `stock/doctype/quality_inspection_parameter_group/__init__.py` | `src/erpnext/stock/doctype/quality_inspection_parameter_group/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Quality Inspection Parameter Group doctype module. |
 | `stock/doctype/quality_inspection_parameter_group/quality_inspection_parameter_group.py` | `src/erpnext/stock/doctype/quality_inspection_parameter_group/quality_inspection_parameter_group.rs` | parity_tested | Python controller is pass/no-op; Rust preserves field-based autoname, editable-grid, quick-entry, sort order, track-changes, group name field metadata, required/list-view/unique flags, and empty controller hooks. JSON permissions remain metadata/runtime integration. |
 | `stock/doctype/quality_inspection_parameter_group/test_quality_inspection_parameter_group.py` | `tests/stock_quality_inspection_parameter_group.rs` | parity_tested | ERPNext test class is pass/no-op; Rust covers metadata and pass controller behavior directly. |
+
+## Doctype / Variant Field
+
+| Source | Target | Status | Notes |
+| --- | --- | --- | --- |
+| `stock/doctype/variant_field/__init__.py` | `src/erpnext/stock/doctype/variant_field/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Variant Field child-table module. |
+| `stock/doctype/variant_field/variant_field.py` | `src/erpnext/stock/doctype/variant_field/variant_field.rs` | parity_tested | Python controller is pass/no-op; Rust preserves editable-grid, quick-entry, sort order, track-changes, Autocomplete field metadata, required/list-view flags, parent linkage fields from generated type hints, and empty controller hooks. |
+| `stock/doctype/variant_field/test_variant_field.py` | `tests/stock_variant_field.rs` | parity_tested | ERPNext test class is pass/no-op; Rust covers metadata and pass controller behavior directly. |
