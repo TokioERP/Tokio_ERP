@@ -10728,12 +10728,12 @@
     {
       "source": "stock/doctype/item_supplier/__init__.py",
       "target": "stock/doctype/item_supplier/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/item_supplier/item_supplier.py",
       "target": "stock/doctype/item_supplier/item_supplier.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/item_tax/__init__.py",
