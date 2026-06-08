@@ -93,6 +93,20 @@ This map tracks Stock source files whose Rust parity surface is complete.
 | `stock/doctype/shipment_parcel/__init__.py` | `src/erpnext/stock/doctype/shipment_parcel/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Shipment Parcel child-table module. |
 | `stock/doctype/shipment_parcel/shipment_parcel.py` | `src/erpnext/stock/doctype/shipment_parcel/shipment_parcel.rs` | parity_tested | Python controller is pass/no-op; Rust preserves child-table metadata, editable-grid, quick-entry, sort order, track-changes, parcel dimension/weight/count field metadata, defaults, precision, required/list-view flags, parent linkage fields from generated type hints, and empty controller hooks. |
 
+## Doctype / More Small Stock Tables
+
+| Source | Target | Status | Notes |
+| --- | --- | --- | --- |
+| `stock/doctype/item_tax/__init__.py` | `src/erpnext/stock/doctype/item_tax/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Item Tax child-table module. |
+| `stock/doctype/item_tax/item_tax.py` | `src/erpnext/stock/doctype/item_tax/item_tax.rs` | parity_tested | Python controller is pass/no-op; Rust preserves child-table metadata, editable-grid, sort order, field-order driven frontend order, item-tax-template required link metadata, tax-category link metadata, valid-from date metadata, min/max net-rate float metadata, oldfield metadata, parent linkage fields from generated type hints, and empty controller hooks. |
+| `stock/doctype/item_variant_attribute/__init__.py` | `src/erpnext/stock/doctype/item_variant_attribute/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Item Variant Attribute child-table module. |
+| `stock/doctype/item_variant_attribute/item_variant_attribute.py` | `src/erpnext/stock/doctype/item_variant_attribute/item_variant_attribute.rs` | parity_tested | Python controller is pass/no-op; Rust preserves child-table metadata, editable-grid, sort order, field-order driven frontend order, variant/attribute link metadata, attribute value, numeric range fields, dependency/fetch/default/search flags, parent linkage fields from generated type hints, and empty controller hooks. |
+| `stock/doctype/landed_cost_purchase_receipt/__init__.py` | `src/erpnext/stock/doctype/landed_cost_purchase_receipt/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Landed Cost Purchase Receipt child-table module. |
+| `stock/doctype/landed_cost_purchase_receipt/landed_cost_purchase_receipt.py` | `src/erpnext/stock/doctype/landed_cost_purchase_receipt/landed_cost_purchase_receipt.rs` | parity_tested | Python controller is pass/no-op; Rust preserves child-table metadata, editable-grid, ASC sort order, receipt document select/dynamic-link metadata, supplier/posting-date/grand-total metadata, oldfield and width flags, parent linkage fields from generated type hints, and empty controller hooks. JSON print-width remains metadata/runtime integration. |
+| `stock/doctype/shipment_parcel_template/__init__.py` | `src/erpnext/stock/doctype/shipment_parcel_template/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Shipment Parcel Template doctype module. |
+| `stock/doctype/shipment_parcel_template/shipment_parcel_template.py` | `src/erpnext/stock/doctype/shipment_parcel_template/shipment_parcel_template.rs` | parity_tested | Python controller is pass/no-op; Rust preserves editable-grid, quick-entry, sort order, track-changes, parcel template name uniqueness, length/width/height/weight float metadata, precision, required/list-view flags, and empty controller hooks. |
+| `stock/doctype/shipment_parcel_template/test_shipment_parcel_template.py` | `tests/stock_more_small_doctypes.rs` | parity_tested | ERPNext test class is pass/no-op; Rust covers metadata and pass controller behavior directly. |
+
 ## Doctype / UOM Category
 
 | Source | Target | Status | Notes |

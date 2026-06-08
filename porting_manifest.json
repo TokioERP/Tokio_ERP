@@ -10738,12 +10738,12 @@
     {
       "source": "stock/doctype/item_tax/__init__.py",
       "target": "stock/doctype/item_tax/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/item_tax/item_tax.py",
       "target": "stock/doctype/item_tax/item_tax.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/item_variant/__init__.py",
@@ -10758,12 +10758,12 @@
     {
       "source": "stock/doctype/item_variant_attribute/__init__.py",
       "target": "stock/doctype/item_variant_attribute/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/item_variant_attribute/item_variant_attribute.py",
       "target": "stock/doctype/item_variant_attribute/item_variant_attribute.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/item_variant_settings/__init__.py",
@@ -10803,12 +10803,12 @@
     {
       "source": "stock/doctype/landed_cost_purchase_receipt/__init__.py",
       "target": "stock/doctype/landed_cost_purchase_receipt/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/landed_cost_purchase_receipt/landed_cost_purchase_receipt.py",
       "target": "stock/doctype/landed_cost_purchase_receipt/landed_cost_purchase_receipt.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/landed_cost_taxes_and_charges/__init__.py",
@@ -11203,17 +11203,17 @@
     {
       "source": "stock/doctype/shipment_parcel_template/__init__.py",
       "target": "stock/doctype/shipment_parcel_template/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/shipment_parcel_template/shipment_parcel_template.py",
       "target": "stock/doctype/shipment_parcel_template/shipment_parcel_template.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/shipment_parcel_template/test_shipment_parcel_template.py",
       "target": "stock/doctype/shipment_parcel_template/test_shipment_parcel_template.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/stock_closing_balance/__init__.py",
