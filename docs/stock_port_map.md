@@ -54,3 +54,10 @@ This map tracks Stock source files whose Rust parity surface is complete.
 | `stock/doctype/delivery_settings/__init__.py` | `src/erpnext/stock/doctype/delivery_settings/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Delivery Settings module. |
 | `stock/doctype/delivery_settings/delivery_settings.py` | `src/erpnext/stock/doctype/delivery_settings/delivery_settings.rs` | parity_tested | Python controller is pass/no-op; Rust preserves singleton settings metadata, field order, frontend field specs for dispatch template/attachment/send-with-attachment/stop-delay, defaults, dependencies, descriptions, quick-entry, sort order, row format, track-changes, and empty controller hooks. JSON permissions remain metadata/runtime integration. |
 | `stock/doctype/delivery_settings/test_delivery_settings.py` | `tests/stock_delivery_settings.rs` | parity_tested | ERPNext test class is pass/no-op; Rust covers metadata and pass controller behavior directly. |
+
+## Doctype / Delivery Stop
+
+| Source | Target | Status | Notes |
+| --- | --- | --- | --- |
+| `stock/doctype/delivery_stop/__init__.py` | `src/erpnext/stock/doctype/delivery_stop/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Delivery Stop doctype module. |
+| `stock/doctype/delivery_stop/delivery_stop.py` | `src/erpnext/stock/doctype/delivery_stop/delivery_stop.rs` | parity_tested | Python controller is pass/no-op; Rust preserves child-table metadata, field order, frontend field specs, defaults, list-view/print/no-copy/read-only/hidden/dependency flags, quick-entry, sort order, track-changes, and empty controller hooks. JSON permissions remain metadata/runtime integration. |

@@ -10533,12 +10533,12 @@
     {
       "source": "stock/doctype/delivery_stop/__init__.py",
       "target": "stock/doctype/delivery_stop/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/delivery_stop/delivery_stop.py",
       "target": "stock/doctype/delivery_stop/delivery_stop.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/delivery_trip/__init__.py",
