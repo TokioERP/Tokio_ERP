@@ -38,3 +38,11 @@ This map tracks Stock source files whose Rust parity surface is complete.
 | --- | --- | --- | --- |
 | `stock/doctype/batch/__init__.py` | `src/erpnext/stock/doctype/batch/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Batch doctype module. |
 | `stock/doctype/batch/batch_dashboard.py` | `src/erpnext/stock/doctype/batch/batch_dashboard.rs` | parity_tested | Rust preserves the exact frontend dashboard payload contract: fieldname `batch_no`, transaction section order, translated label source strings, and item lists for Buy, Sell, Move, and Quality. Runtime translation remains adapter integration. |
+
+## Doctype / Customs Tariff Number
+
+| Source | Target | Status | Notes |
+| --- | --- | --- | --- |
+| `stock/doctype/customs_tariff_number/__init__.py` | `src/erpnext/stock/doctype/customs_tariff_number/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Customs Tariff Number module. |
+| `stock/doctype/customs_tariff_number/customs_tariff_number.py` | `src/erpnext/stock/doctype/customs_tariff_number/customs_tariff_number.rs` | parity_tested | Python controller is pass/no-op; Rust preserves doctype/module names, autoname, field order, allow-rename, quick-entry, sort order, track-changes, tariff number required/unique/list-view field, description list-view field, and empty controller hooks. JSON permissions remain metadata/runtime integration. |
+| `stock/doctype/customs_tariff_number/test_customs_tariff_number.py` | `tests/stock_customs_tariff_number.rs` | parity_tested | ERPNext test class is pass/no-op; Rust covers metadata and pass controller behavior directly. |
