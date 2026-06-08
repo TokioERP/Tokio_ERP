@@ -11048,17 +11048,17 @@
     {
       "source": "stock/doctype/quality_inspection_parameter/__init__.py",
       "target": "stock/doctype/quality_inspection_parameter/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/quality_inspection_parameter/quality_inspection_parameter.py",
       "target": "stock/doctype/quality_inspection_parameter/quality_inspection_parameter.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/quality_inspection_parameter/test_quality_inspection_parameter.py",
       "target": "stock/doctype/quality_inspection_parameter/test_quality_inspection_parameter.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/quality_inspection_parameter_group/__init__.py",

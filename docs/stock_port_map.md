@@ -93,6 +93,14 @@ This map tracks Stock source files whose Rust parity surface is complete.
 | `stock/doctype/quality_inspection_parameter_group/quality_inspection_parameter_group.py` | `src/erpnext/stock/doctype/quality_inspection_parameter_group/quality_inspection_parameter_group.rs` | parity_tested | Python controller is pass/no-op; Rust preserves field-based autoname, editable-grid, quick-entry, sort order, track-changes, group name field metadata, required/list-view/unique flags, and empty controller hooks. JSON permissions remain metadata/runtime integration. |
 | `stock/doctype/quality_inspection_parameter_group/test_quality_inspection_parameter_group.py` | `tests/stock_quality_inspection_parameter_group.rs` | parity_tested | ERPNext test class is pass/no-op; Rust covers metadata and pass controller behavior directly. |
 
+## Doctype / Quality Inspection Parameter
+
+| Source | Target | Status | Notes |
+| --- | --- | --- | --- |
+| `stock/doctype/quality_inspection_parameter/__init__.py` | `src/erpnext/stock/doctype/quality_inspection_parameter/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Quality Inspection Parameter doctype module. |
+| `stock/doctype/quality_inspection_parameter/quality_inspection_parameter.py` | `src/erpnext/stock/doctype/quality_inspection_parameter/quality_inspection_parameter.rs` | parity_tested | Python controller is pass/no-op; Rust preserves field-based autoname, editable-grid, quick-entry, sort order, track-changes, field-order driven frontend order, parameter required/list-view/unique flags, parameter group link metadata, description Text Editor metadata, and empty controller hooks. JSON permissions remain metadata/runtime integration. |
+| `stock/doctype/quality_inspection_parameter/test_quality_inspection_parameter.py` | `tests/stock_quality_inspection_parameter.rs` | parity_tested | ERPNext test class is pass/no-op; Rust covers metadata and pass controller behavior directly. |
+
 ## Doctype / Variant Field
 
 | Source | Target | Status | Notes |
