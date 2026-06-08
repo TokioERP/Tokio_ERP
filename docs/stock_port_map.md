@@ -2,6 +2,12 @@
 
 This map tracks Stock source files whose Rust parity surface is complete.
 
+## Root
+
+| Source | Target | Status | Notes |
+| --- | --- | --- | --- |
+| `stock/__init__.py` | `src/erpnext/stock/mod.rs` | parity_tested | Rust covers ERPNext install doc order/fields, warehouse account map cache rebuild rules including company and test-mode behavior, Warehouse `get_all` query plan, parent warehouse account inheritance, missing-parent rebuild-tree action, ancestor-account SQL plan and first-row fallback, company default inventory account cached lookup, Stock account fallback lookup, group warehouse no-throw behavior, and exact missing-account error message. Live Frappe flag storage, DB execution, translation, and nested-set rebuild execution remain adapter/runtime integration. |
+
 ## Dashboard
 
 | Source | Target | Status | Notes |

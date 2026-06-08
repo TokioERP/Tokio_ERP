@@ -10373,7 +10373,7 @@
     {
       "source": "stock/__init__.py",
       "target": "stock/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/dashboard/__init__.py",
