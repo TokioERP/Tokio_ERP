@@ -3,6 +3,7 @@ pub mod customs_tariff_number;
 pub mod dashboard;
 pub mod delivery_settings;
 pub mod delivery_stop;
+pub mod item_attribute_value;
 pub mod item_supplier;
 pub mod price_list_country;
 pub mod quality_inspection_parameter;

@@ -69,6 +69,13 @@ This map tracks Stock source files whose Rust parity surface is complete.
 | `stock/doctype/item_supplier/__init__.py` | `src/erpnext/stock/doctype/item_supplier/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Item Supplier child-table module. |
 | `stock/doctype/item_supplier/item_supplier.py` | `src/erpnext/stock/doctype/item_supplier/item_supplier.rs` | parity_tested | Python controller is pass/no-op; Rust preserves child-table metadata, editable-grid, sort order, track-changes, field-order driven frontend order, supplier required/list-view link metadata, supplier part number list/global-search/width metadata, parent linkage fields from generated type hints, and empty controller hooks. JSON permissions and print-width remain metadata/runtime integration. |
 
+## Doctype / Item Attribute Value
+
+| Source | Target | Status | Notes |
+| --- | --- | --- | --- |
+| `stock/doctype/item_attribute_value/__init__.py` | `src/erpnext/stock/doctype/item_attribute_value/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Item Attribute Value child-table module. |
+| `stock/doctype/item_attribute_value/item_attribute_value.py` | `src/erpnext/stock/doctype/item_attribute_value/item_attribute_value.rs` | parity_tested | Python controller is pass/no-op; Rust preserves child-table metadata, editable-grid, sort order, field-order driven frontend order, attribute value required/list-view metadata, abbreviation required/list-view/search-index/description metadata, parent linkage fields from generated type hints, and empty controller hooks. JSON permissions remain metadata/runtime integration. |
+
 ## Doctype / UOM Category
 
 | Source | Target | Status | Notes |
