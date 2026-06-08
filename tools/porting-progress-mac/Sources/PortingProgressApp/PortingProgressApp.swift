@@ -32,7 +32,7 @@ enum CommandLineReporter {
             let report = try calculator.report(repoRoot: repoRoot)
             print("repo=\(report.repoRoot.path)")
             printScope("overall", report.overall)
-            printScope("accounts", report.accounts)
+            printScope("stock", report.stock)
             exit(0)
         } catch {
             fputs("\(error.localizedDescription)\n", stderr)
@@ -144,7 +144,7 @@ struct DashboardView: View {
     private var sidebar: some View {
         List {
             Label("Overview", systemImage: "chart.pie")
-            Label("Accounts", systemImage: "folder")
+            Label("Stock", systemImage: "shippingbox")
             Label("Incomplete", systemImage: "tray")
         }
         .listStyle(.sidebar)
@@ -172,7 +172,7 @@ struct DashboardView: View {
                         spacing: 16
                     ) {
                         ScopeCard(scope: report.overall, systemImage: "globe")
-                        ScopeCard(scope: report.accounts, systemImage: "building.columns")
+                        ScopeCard(scope: report.stock, systemImage: "shippingbox")
                     }
                     StatusTable(scope: report.overall, title: "Overall Status")
                     IncompleteList(entries: Array(report.incompleteEntries.prefix(80)))

@@ -2,7 +2,7 @@ import XCTest
 @testable import PortingProgressCore
 
 final class ProgressCalculatorTests: XCTestCase {
-    func testReportCalculatesOverallAndAccountsProgressFromManifestAndSourceLines() throws {
+    func testReportCalculatesOverallAndStockProgressFromManifestAndSourceLines() throws {
         let root = try temporaryDirectory()
         let sourceRoot = root.appendingPathComponent("erpnext/apps/erpnext/erpnext")
         try FileManager.default.createDirectory(
@@ -61,10 +61,10 @@ final class ProgressCalculatorTests: XCTestCase {
         XCTAssertEqual(report.overall.completeFiles, 2)
         XCTAssertEqual(report.overall.completeLines, 4)
         XCTAssertEqual(report.overall.parityFiles, 1)
-        XCTAssertEqual(report.accounts.files, 2)
-        XCTAssertEqual(report.accounts.lines, 5)
-        XCTAssertEqual(report.accounts.completeFiles, 1)
-        XCTAssertEqual(report.accounts.completeLines, 3)
+        XCTAssertEqual(report.stock.files, 1)
+        XCTAssertEqual(report.stock.lines, 1)
+        XCTAssertEqual(report.stock.completeFiles, 1)
+        XCTAssertEqual(report.stock.completeLines, 1)
         XCTAssertEqual(report.incompleteEntries.map(\.source), ["accounts/open.py"])
     }
 

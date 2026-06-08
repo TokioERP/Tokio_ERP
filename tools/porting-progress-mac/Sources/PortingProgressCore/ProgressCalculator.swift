@@ -98,7 +98,7 @@ public struct ProgressReport: Equatable {
     public let sourceRoot: URL
     public let generatedAt: Date
     public let overall: ProgressScope
-    public let accounts: ProgressScope
+    public let stock: ProgressScope
     public let entries: [ManifestEntry]
 
     public var incompleteEntries: [ManifestEntry] {
@@ -160,10 +160,10 @@ public struct ProgressCalculator {
             entries: pythonEntries,
             sourceRoot: resolvedSourceRoot
         )
-        let accountsEntries = pythonEntries.filter { $0.source.hasPrefix("accounts/") }
-        let accounts = scope(
-            title: "Accounts",
-            entries: accountsEntries,
+        let stockEntries = pythonEntries.filter { $0.source.hasPrefix("stock/") }
+        let stock = scope(
+            title: "Stock",
+            entries: stockEntries,
             sourceRoot: resolvedSourceRoot
         )
 
@@ -172,7 +172,7 @@ public struct ProgressCalculator {
             sourceRoot: resolvedSourceRoot,
             generatedAt: now,
             overall: overall,
-            accounts: accounts,
+            stock: stock,
             entries: pythonEntries
         )
     }
