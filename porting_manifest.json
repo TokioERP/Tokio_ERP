@@ -10518,17 +10518,17 @@
     {
       "source": "stock/doctype/delivery_settings/__init__.py",
       "target": "stock/doctype/delivery_settings/mod.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/delivery_settings/delivery_settings.py",
       "target": "stock/doctype/delivery_settings/delivery_settings.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/delivery_settings/test_delivery_settings.py",
       "target": "stock/doctype/delivery_settings/test_delivery_settings.rs",
-      "status": "not_started"
+      "status": "parity_tested"
     },
     {
       "source": "stock/doctype/delivery_stop/__init__.py",

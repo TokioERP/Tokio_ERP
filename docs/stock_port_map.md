@@ -46,3 +46,11 @@ This map tracks Stock source files whose Rust parity surface is complete.
 | `stock/doctype/customs_tariff_number/__init__.py` | `src/erpnext/stock/doctype/customs_tariff_number/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Customs Tariff Number module. |
 | `stock/doctype/customs_tariff_number/customs_tariff_number.py` | `src/erpnext/stock/doctype/customs_tariff_number/customs_tariff_number.rs` | parity_tested | Python controller is pass/no-op; Rust preserves doctype/module names, autoname, field order, allow-rename, quick-entry, sort order, track-changes, tariff number required/unique/list-view field, description list-view field, and empty controller hooks. JSON permissions remain metadata/runtime integration. |
 | `stock/doctype/customs_tariff_number/test_customs_tariff_number.py` | `tests/stock_customs_tariff_number.rs` | parity_tested | ERPNext test class is pass/no-op; Rust covers metadata and pass controller behavior directly. |
+
+## Doctype / Delivery Settings
+
+| Source | Target | Status | Notes |
+| --- | --- | --- | --- |
+| `stock/doctype/delivery_settings/__init__.py` | `src/erpnext/stock/doctype/delivery_settings/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Delivery Settings module. |
+| `stock/doctype/delivery_settings/delivery_settings.py` | `src/erpnext/stock/doctype/delivery_settings/delivery_settings.rs` | parity_tested | Python controller is pass/no-op; Rust preserves singleton settings metadata, field order, frontend field specs for dispatch template/attachment/send-with-attachment/stop-delay, defaults, dependencies, descriptions, quick-entry, sort order, row format, track-changes, and empty controller hooks. JSON permissions remain metadata/runtime integration. |
+| `stock/doctype/delivery_settings/test_delivery_settings.py` | `tests/stock_delivery_settings.rs` | parity_tested | ERPNext test class is pass/no-op; Rust covers metadata and pass controller behavior directly. |
