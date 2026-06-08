@@ -61,3 +61,11 @@ This map tracks Stock source files whose Rust parity surface is complete.
 | --- | --- | --- | --- |
 | `stock/doctype/delivery_stop/__init__.py` | `src/erpnext/stock/doctype/delivery_stop/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching Delivery Stop doctype module. |
 | `stock/doctype/delivery_stop/delivery_stop.py` | `src/erpnext/stock/doctype/delivery_stop/delivery_stop.rs` | parity_tested | Python controller is pass/no-op; Rust preserves child-table metadata, field order, frontend field specs, defaults, list-view/print/no-copy/read-only/hidden/dependency flags, quick-entry, sort order, track-changes, and empty controller hooks. JSON permissions remain metadata/runtime integration. |
+
+## Doctype / UOM Category
+
+| Source | Target | Status | Notes |
+| --- | --- | --- | --- |
+| `stock/doctype/uom_category/__init__.py` | `src/erpnext/stock/doctype/uom_category/mod.rs` | parity_tested | Python package marker is empty; Rust exposes the matching UOM Category doctype module. |
+| `stock/doctype/uom_category/uom_category.py` | `src/erpnext/stock/doctype/uom_category/uom_category.rs` | parity_tested | Python controller is pass/no-op; Rust preserves autoname, allow-rename, editable-grid, quick-entry, sort order, category name field metadata, required/list-view/unique flags, and empty controller hooks. JSON permissions remain metadata/runtime integration. |
+| `stock/doctype/uom_category/test_uom_category.py` | `tests/stock_uom_category.rs` | parity_tested | ERPNext test class is pass/no-op; Rust covers metadata and pass controller behavior directly. |
